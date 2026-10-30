@@ -1,0 +1,1405 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Capacitix - AI-powered competency and learning management dashboard">
+
+    <title>Dashboard | Capacitix</title>
+
+    <style>
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #f5f7fb;
+            color: #172033;
+        }
+
+        /* =========================
+           LAYOUT
+        ========================= */
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .sidebar {
+            width: 260px;
+            background: #111827;
+            color: white;
+            padding: 24px 16px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px 28px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #4f46e5, #14b8a6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+        }
+
+        .menu-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #8b95a7;
+            padding: 0 12px;
+            margin: 18px 0 10px;
+            letter-spacing: 1px;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-menu li {
+            margin-bottom: 5px;
+        }
+
+        .nav-menu a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 9px;
+            text-decoration: none;
+            color: #cbd5e1;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: #1f2937;
+            color: white;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* =========================
+           MAIN CONTENT
+        ========================= */
+
+        .main-content {
+            margin-left: 260px;
+            width: calc(100% - 260px);
+            min-height: 100vh;
+        }
+
+        /* =========================
+           TOPBAR
+        ========================= */
+
+        .topbar {
+            height: 72px;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: #f3f4f6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4f46e5, #14b8a6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .user-info {
+            line-height: 1.3;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* =========================
+           CONTENT
+        ========================= */
+
+        .content {
+            padding: 32px;
+        }
+
+        .welcome-section {
+            margin-bottom: 28px;
+        }
+
+        .welcome-section h1 {
+            font-size: 28px;
+            margin-bottom: 7px;
+        }
+
+        .welcome-section p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        /* =========================
+           STAT CARDS
+        ========================= */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+        }
+
+        .blue {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .green {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .orange {
+            background: #fff7ed;
+            color: #ea580c;
+        }
+
+        .purple {
+            background: #f5f3ff;
+            color: #7c3aed;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 13px;
+            margin-top: 3px;
+        }
+
+        /* =========================
+           GRID
+        ========================= */
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 22px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 24px;
+            margin-bottom: 22px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .card-header h2 {
+            font-size: 17px;
+        }
+
+        .view-all {
+            color: #4f46e5;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* =========================
+           COMPETENCY
+        ========================= */
+
+        .competency-item {
+            margin-bottom: 20px;
+        }
+
+        .competency-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .competency-name {
+            font-weight: 600;
+        }
+
+        .competency-score {
+            color: #6b7280;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            border-radius: 20px;
+            background: linear-gradient(90deg, #4f46e5, #14b8a6);
+        }
+
+        /* =========================
+           SKILL GAP
+        ========================= */
+
+        .skill-gap {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .skill-gap:last-child {
+            border-bottom: none;
+        }
+
+        .skill-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .skill-level {
+            font-size: 12px;
+            margin-top: 4px;
+            color: #6b7280;
+        }
+
+        .badge {
+            padding: 5px 9px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-high {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .badge-medium {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .badge-low {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        /* =========================
+           LEARNING PATH
+        ========================= */
+
+        .learning-item {
+            display: flex;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .learning-item:last-child {
+            border-bottom: none;
+        }
+
+        .learning-icon {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            border-radius: 9px;
+            background: #eef2ff;
+            color: #4f46e5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .learning-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .learning-meta {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        /* =========================
+           ACTION BUTTONS
+        ========================= */
+
+        .action-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .action-btn {
+            display: block;
+            text-decoration: none;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            border-radius: 10px;
+            color: #172033;
+            transition: 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: #4f46e5;
+            background: #f8faff;
+        }
+
+        .action-btn strong {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .action-btn span {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        /* =========================
+           LOGOUT
+        ========================= */
+
+        .logout-section {
+            margin-top: 25px;
+            padding-top: 18px;
+            border-top: 1px solid #374151;
+        }
+
+        .logout-button {
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: #cbd5e1;
+            padding: 12px;
+            text-align: left;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .logout-button:hover {
+            background: #1f2937;
+            color: white;
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 1100px) {
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+
+            .sidebar {
+                width: 72px;
+                padding: 20px 10px;
+            }
+
+            .logo {
+                justify-content: center;
+                padding-left: 0;
+                padding-right: 0;
+            }
+
+            .logo-text,
+            .menu-title,
+            .nav-text {
+                display: none;
+            }
+
+            .nav-menu a {
+                justify-content: center;
+            }
+
+            .main-content {
+                margin-left: 72px;
+                width: calc(100% - 72px);
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .user-info {
+                display: none;
+            }
+        }
+
+        @media (max-width: 550px) {
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: 17px;
+            }
+
+            .welcome-section h1 {
+                font-size: 23px;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="dashboard-container">
+
+    <!-- =========================
+         SIDEBAR
+    ========================== -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+                C
+            </div>
+
+            <span class="logo-text">
+                Capacitix
+            </span>
+
+        </div>
+
+
+        <div class="menu-title">
+            Main Menu
+        </div>
+
+
+        <ul class="nav-menu">
+
+            <li>
+                <a href="/dashboard" class="active">
+
+                    <span class="nav-icon">⌂</span>
+
+                    <span class="nav-text">
+                        Dashboard
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/assessments">
+
+                    <span class="nav-icon">✓</span>
+
+                    <span class="nav-text">
+                        Assessments
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/competencies">
+
+                    <span class="nav-icon">◈</span>
+
+                    <span class="nav-text">
+                        My Competencies
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/skill-gaps">
+
+                    <span class="nav-icon">△</span>
+
+                    <span class="nav-text">
+                        Skill Gaps
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/learning-path">
+
+                    <span class="nav-icon">▣</span>
+
+                    <span class="nav-text">
+                        Learning Path
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/training">
+
+                    <span class="nav-icon">▶</span>
+
+                    <span class="nav-text">
+                        Training
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/practical-assessment">
+
+                    <span class="nav-icon">◆</span>
+
+                    <span class="nav-text">
+                        Practical Tasks
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/progress">
+
+                    <span class="nav-icon">↗</span>
+
+                    <span class="nav-text">
+                        Progress
+                    </span>
+
+                </a>
+            </li>
+
+        </ul>
+
+
+        <div class="menu-title">
+            Account
+        </div>
+
+
+        <ul class="nav-menu">
+
+            <li>
+                <a href="/profile">
+
+                    <span class="nav-icon">●</span>
+
+                    <span class="nav-text">
+                        My Profile
+                    </span>
+
+                </a>
+            </li>
+
+
+            <li>
+                <a href="/settings">
+
+                    <span class="nav-icon">⚙</span>
+
+                    <span class="nav-text">
+                        Settings
+                    </span>
+
+                </a>
+            </li>
+
+        </ul>
+
+
+        <!-- LOGOUT -->
+
+        <div class="logout-section">
+
+            <form th:action="@{/logout}"
+                  method="post">
+
+                <button type="submit"
+                        class="logout-button">
+
+                    <span class="nav-icon">
+                        ↪
+                    </span>
+
+                    <span class="nav-text">
+                        Logout
+                    </span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="page-title">
+                Dashboard
+            </div>
+
+
+            <div class="topbar-right">
+
+                <div class="notification">
+                    🔔
+                </div>
+
+
+                <div class="user-profile">
+
+                    <div class="avatar"
+                         th:text="${userInitial != null ? userInitial : 'U'}">
+                        U
+                    </div>
+
+                    <div class="user-info">
+
+                        <div class="user-name"
+                             th:text="${userName != null ? userName : 'User'}">
+                            User
+                        </div>
+
+                        <div class="user-role">
+                            Employee
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- CONTENT -->
+
+        <section class="content">
+
+
+            <!-- WELCOME -->
+
+            <div class="welcome-section">
+
+                <h1>
+                    Welcome back,
+                    <span th:text="${userName != null ? userName : 'User'}">
+                        User
+                    </span>
+                </h1>
+
+                <p>
+                    Track your competencies, identify skill gaps and follow your personalized learning journey.
+                </p>
+
+            </div>
+
+
+            <!-- =========================
+                 STATISTICS
+            ========================== -->
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div>
+                            <div class="stat-value"
+                                 th:text="${competencyScore != null ? competencyScore + '%' : '72%'}">
+                                72%
+                            </div>
+
+                            <div class="stat-label">
+                                Competency Score
+                            </div>
+                        </div>
+
+                        <div class="stat-icon blue">
+                            ◈
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div>
+                            <div class="stat-value"
+                                 th:text="${skillGapCount != null ? skillGapCount : '4'}">
+                                4
+                            </div>
+
+                            <div class="stat-label">
+                                Skill Gaps
+                            </div>
+                        </div>
+
+                        <div class="stat-icon orange">
+                            △
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div>
+                            <div class="stat-value"
+                                 th:text="${learningProgress != null ? learningProgress + '%' : '58%'}">
+                                58%
+                            </div>
+
+                            <div class="stat-label">
+                                Learning Progress
+                            </div>
+                        </div>
+
+                        <div class="stat-icon green">
+                            ↗
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <div>
+                            <div class="stat-value"
+                                 th:text="${completedTasks != null ? completedTasks : '8'}">
+                                8
+                            </div>
+
+                            <div class="stat-label">
+                                Tasks Completed
+                            </div>
+                        </div>
+
+                        <div class="stat-icon purple">
+                            ✓
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 MAIN DASHBOARD GRID
+            ========================== -->
+
+            <div class="dashboard-grid">
+
+
+                <!-- LEFT COLUMN -->
+
+                <div>
+
+
+                    <!-- COMPETENCY MAP -->
+
+                    <div class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                My Competency Map
+                            </h2>
+
+                            <a href="/competencies"
+                               class="view-all">
+                                View Details
+                            </a>
+
+                        </div>
+
+
+                        <div class="competency-item">
+
+                            <div class="competency-info">
+
+                                <span class="competency-name">
+                                    Java
+                                </span>
+
+                                <span class="competency-score">
+                                    82%
+                                </span>
+
+                            </div>
+
+                            <div class="progress-bar">
+
+                                <div class="progress"
+                                     style="width:82%">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="competency-item">
+
+                            <div class="competency-info">
+
+                                <span class="competency-name">
+                                    Spring Boot
+                                </span>
+
+                                <span class="competency-score">
+                                    70%
+                                </span>
+
+                            </div>
+
+                            <div class="progress-bar">
+
+                                <div class="progress"
+                                     style="width:70%">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="competency-item">
+
+                            <div class="competency-info">
+
+                                <span class="competency-name">
+                                    SQL
+                                </span>
+
+                                <span class="competency-score">
+                                    76%
+                                </span>
+
+                            </div>
+
+                            <div class="progress-bar">
+
+                                <div class="progress"
+                                     style="width:76%">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="competency-item">
+
+                            <div class="competency-info">
+
+                                <span class="competency-name">
+                                    REST API
+                                </span>
+
+                                <span class="competency-score">
+                                    61%
+                                </span>
+
+                            </div>
+
+                            <div class="progress-bar">
+
+                                <div class="progress"
+                                     style="width:61%">
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- LEARNING PATH -->
+
+                    <div class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Personalized Learning Path
+                            </h2>
+
+                            <a href="/learning-path"
+                               class="view-all">
+                                View Path
+                            </a>
+
+                        </div>
+
+
+                        <div class="learning-item">
+
+                            <div class="learning-icon">
+                                ▶
+                            </div>
+
+                            <div>
+
+                                <div class="learning-title">
+                                    Advanced Spring Boot
+                                </div>
+
+                                <div class="learning-meta">
+                                    Course • 6 modules • In Progress
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="learning-item">
+
+                            <div class="learning-icon">
+                                ▣
+                            </div>
+
+                            <div>
+
+                                <div class="learning-title">
+                                    REST API Development
+                                </div>
+
+                                <div class="learning-meta">
+                                    Learning Resource • 4 modules
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="learning-item">
+
+                            <div class="learning-icon">
+                                ◆
+                            </div>
+
+                            <div>
+
+                                <div class="learning-title">
+                                    Spring Boot Practical Task
+                                </div>
+
+                                <div class="learning-meta">
+                                    Practical Assessment • Pending
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- RIGHT COLUMN -->
+
+                <div>
+
+
+                    <!-- SKILL GAPS -->
+
+                    <div class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Skill Gaps
+                            </h2>
+
+                            <a href="/skill-gaps"
+                               class="view-all">
+                                View All
+                            </a>
+
+                        </div>
+
+
+                        <div class="skill-gap">
+
+                            <div>
+
+                                <div class="skill-name">
+                                    REST API
+                                </div>
+
+                                <div class="skill-level">
+                                    Current: Intermediate
+                                </div>
+
+                            </div>
+
+                            <span class="badge badge-high">
+                                High
+                            </span>
+
+                        </div>
+
+
+                        <div class="skill-gap">
+
+                            <div>
+
+                                <div class="skill-name">
+                                    Spring Security
+                                </div>
+
+                                <div class="skill-level">
+                                    Current: Beginner
+                                </div>
+
+                            </div>
+
+                            <span class="badge badge-high">
+                                High
+                            </span>
+
+                        </div>
+
+
+                        <div class="skill-gap">
+
+                            <div>
+
+                                <div class="skill-name">
+                                    Microservices
+                                </div>
+
+                                <div class="skill-level">
+                                    Current: Beginner
+                                </div>
+
+                            </div>
+
+                            <span class="badge badge-medium">
+                                Medium
+                            </span>
+
+                        </div>
+
+
+                        <div class="skill-gap">
+
+                            <div>
+
+                                <div class="skill-name">
+                                    Docker
+                                </div>
+
+                                <div class="skill-level">
+                                    Current: Basic
+                                </div>
+
+                            </div>
+
+                            <span class="badge badge-low">
+                                Low
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- QUICK ACTIONS -->
+
+                    <div class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Quick Actions
+                            </h2>
+
+                        </div>
+
+
+                        <div class="action-grid">
+
+                            <a href="/assessments"
+                               class="action-btn">
+
+                                <strong>
+                                    Take Assessment
+                                </strong>
+
+                                <span>
+                                    Evaluate your skills
+                                </span>
+
+                            </a>
+
+
+                            <a href="/learning-path"
+                               class="action-btn">
+
+                                <strong>
+                                    Continue Learning
+                                </strong>
+
+                                <span>
+                                    Resume your path
+                                </span>
+
+                            </a>
+
+
+                            <a href="/practical-assessment"
+                               class="action-btn">
+
+                                <strong>
+                                    Practical Task
+                                </strong>
+
+                                <span>
+                                    Test your skills
+                                </span>
+
+                            </a>
+
+
+                            <a href="/progress"
+                               class="action-btn">
+
+                                <strong>
+                                    View Progress
+                                </strong>
+
+                                <span>
+                                    Track improvement
+                                </span>
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- TRAINING IMPACT -->
+
+                    <div class="card">
+
+                        <div class="card-header">
+
+                            <h2>
+                                Training Impact
+                            </h2>
+
+                        </div>
+
+                        <div style="text-align:center; padding:10px 0;">
+
+                            <div style="
+                                font-size:42px;
+                                font-weight:700;
+                                color:#4f46e5;">
+                                68%
+                            </div>
+
+                            <p style="
+                                color:#6b7280;
+                                font-size:13px;
+                                margin-top:5px;">
+                                Estimated competency improvement
+                            </p>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>
+

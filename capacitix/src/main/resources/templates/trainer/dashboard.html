@@ -1,0 +1,1362 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Capacitix Trainer Dashboard">
+<title>Trainer Dashboard | Capacitix</title>
+
+<style>
+:root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --bg: #f5f6fa;
+    --white: #ffffff;
+    --text: #1e293b;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --green: #15803d;
+    --green-bg: #dcfce7;
+    --orange: #c2410c;
+    --orange-bg: #ffedd5;
+    --red: #b91c1c;
+    --red-bg: #fee2e2;
+    --sidebar: #172033;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    min-height: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+button, input {
+    font: inherit;
+}
+
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 250px;
+    background: var(--sidebar);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+}
+
+.brand {
+    height: 75px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 22px;
+    border-bottom: 1px solid #303b50;
+}
+
+.brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 9px;
+    background: var(--primary);
+    display: grid;
+    place-items: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.brand-name {
+    font-size: 21px;
+    font-weight: bold;
+}
+
+.nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px 12px;
+}
+
+.menu-label {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin: 18px 10px 9px;
+    letter-spacing: .5px;
+}
+
+.menu {
+    list-style: none;
+}
+
+.menu a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    margin: 3px 0;
+    border-radius: 7px;
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+.menu a:hover {
+    background: #29364c;
+    color: white;
+}
+
+.menu a.active {
+    background: var(--primary);
+    color: white;
+}
+
+.icon {
+    width: 22px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.sidebar-bottom {
+    padding: 14px 12px;
+    border-top: 1px solid #303b50;
+}
+
+.logout form {
+    margin: 0;
+}
+
+.logout button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+}
+
+.logout button:hover {
+    background: #29364c;
+    color: white;
+}
+
+.main {
+    margin-left: 250px;
+    min-height: 100vh;
+}
+
+.header {
+    min-height: 75px;
+    padding: 14px 30px;
+    background: var(--white);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 500;
+}
+
+.header-title {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.header-subtitle {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.header-btn {
+    position: relative;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: white;
+    cursor: pointer;
+}
+
+.badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 20px;
+    background: #dc2626;
+    color: white;
+    font-size: 10px;
+    display: grid;
+    place-items: center;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.avatar {
+    width: 39px;
+    height: 39px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: bold;
+}
+
+.name {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.role-name {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.mobile-menu {
+    display: none;
+    width: 38px;
+    height: 38px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: white;
+    cursor: pointer;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.content {
+    max-width: 1450px;
+    margin: auto;
+    padding: 28px 30px 45px;
+}
+
+.hero {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.hero-tag {
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.hero h1 {
+    font-size: 25px;
+    margin-bottom: 9px;
+}
+
+.hero p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: 620px;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 17px;
+}
+
+.hero-btn {
+    display: inline-block;
+    padding: 10px 15px;
+    border-radius: 6px;
+    background: var(--primary);
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.hero-btn:hover {
+    background: #4338ca;
+}
+
+.hero-btn.ghost {
+    background: white;
+    color: var(--primary);
+    border: 1px solid var(--border);
+}
+
+.hero-btn.ghost:hover {
+    background: var(--primary-light);
+}
+
+.hero-side {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+}
+
+.welcome-date {
+    color: var(--text);
+    font-size: 12px;
+    text-align: right;
+    padding: 10px 13px;
+    background: var(--bg);
+    border-radius: 7px;
+}
+
+.welcome-date small {
+    display: block;
+    color: var(--muted);
+    margin-bottom: 5px;
+}
+
+.ring {
+    position: relative;
+    width: 95px;
+    height: 95px;
+    flex-shrink: 0;
+}
+
+.ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.ring circle {
+    fill: none;
+    stroke-width: 8;
+}
+
+.ring .track {
+    stroke: #e2e8f0;
+}
+
+.ring .val {
+    stroke: var(--primary);
+    stroke-dasharray: 283;
+    stroke-dashoffset: 283;
+}
+
+.ring-text {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.ring-text small {
+    display: block;
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: normal;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.stat {
+    padding: 19px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.stat-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.number {
+    font-size: 27px;
+    font-weight: bold;
+}
+
+.label {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.stat-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    font-size: 18px;
+}
+
+.blue { background: #eef2ff; color: #4338ca; }
+.green { background: #dcfce7; color: #15803d; }
+.orange { background: #ffedd5; color: #c2410c; }
+.purple { background: #f3e8ff; color: #7e22ce; }
+
+.trend {
+    border-top: 1px solid var(--border);
+    margin-top: 13px;
+    padding-top: 10px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.trend.ok { color: var(--green); }
+.trend.warn { color: var(--orange); }
+
+.grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, .9fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.card {
+    padding: 20px;
+    margin-bottom: 18px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.card-head h2 {
+    font-size: 16px;
+}
+
+.card-head p {
+    margin-top: 5px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.card-head a {
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.card-head a:hover {
+    text-decoration: underline;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+    margin-bottom: 12px;
+}
+
+.search {
+    flex: 1 1 200px;
+    min-width: 0;
+    height: 38px;
+    padding: 0 11px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+}
+
+.search:focus {
+    outline: 1px solid var(--primary);
+    border-color: var(--primary);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: white;
+    color: var(--muted);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.chip.on {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+.trainee {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 5px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.trainee:last-of-type {
+    border-bottom: none;
+}
+
+.trainee[hidden] {
+    display: none;
+}
+
+.trainee-avatar {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.trainee-info {
+    min-width: 0;
+    flex: 1;
+}
+
+.trainee-name {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.trainee-skill {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.mini {
+    height: 6px;
+    max-width: 220px;
+    margin-top: 8px;
+    background: #edf0f4;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.mini i {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--primary);
+}
+
+.pf-low {
+    background: #ea580c !important;
+}
+
+.pf-high {
+    background: #059669 !important;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.status-green {
+    background: var(--green-bg);
+    color: var(--green);
+}
+
+.status-orange {
+    background: var(--orange-bg);
+    color: var(--orange);
+}
+
+.status-red {
+    background: var(--red-bg);
+    color: var(--red);
+}
+
+.status-grey {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.assessment {
+    padding: 14px 5px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.assessment:last-child {
+    border-bottom: none;
+}
+
+.assessment-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.assessment-title {
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.assessment-percent {
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.assessment-info {
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.progress {
+    height: 7px;
+    margin-top: 10px;
+    background: #edf0f4;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    width: 0;
+    background: var(--primary);
+}
+
+.actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.action {
+    min-height: 105px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: white;
+}
+
+.action:hover {
+    border-color: #a5b4fc;
+    background: #fafaff;
+}
+
+.action-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 9px;
+    border-radius: 6px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-size: 15px;
+}
+
+.action strong {
+    display: block;
+    font-size: 12px;
+}
+
+.action span {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.gap-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 13px 4px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.gap-item:last-child {
+    border-bottom: none;
+}
+
+.gap-icon {
+    width: 34px;
+    height: 34px;
+    display: grid;
+    place-items: center;
+    border-radius: 7px;
+    background: var(--orange-bg);
+    color: var(--orange);
+    font-weight: bold;
+}
+
+.gap-name {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.gap-meta {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.gap-count {
+    margin-left: auto;
+    padding: 5px 8px;
+    background: var(--orange-bg);
+    color: var(--orange);
+    border-radius: 5px;
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.empty {
+    padding: 25px 12px;
+    text-align: center;
+    color: var(--muted);
+}
+
+.empty-icon {
+    font-size: 25px;
+    margin-bottom: 10px;
+}
+
+.empty strong {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.empty p {
+    max-width: 300px;
+    margin: 7px auto 12px;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.empty a {
+    display: inline-block;
+    padding: 8px 12px;
+    border-radius: 5px;
+    background: var(--primary);
+    color: white;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+#noMatch {
+    display: none;
+}
+
+.notification-panel {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    width: min(340px, calc(100vw - 30px));
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: white;
+    box-shadow: 0 8px 25px rgba(15,23,42,.12);
+    z-index: 1200;
+    display: none;
+}
+
+.notification-panel.show {
+    display: block;
+}
+
+.notification-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.notification-head strong {
+    font-size: 14px;
+}
+
+.notification-head button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.notice {
+    display: flex;
+    gap: 10px;
+    padding: 10px 5px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.notice-dot {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    margin-top: 5px;
+    border-radius: 50%;
+    background: var(--primary);
+}
+
+.notice p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+.notice strong {
+    color: var(--text);
+}
+
+.overlay {
+    display: none;
+}
+
+@media (max-width: 1100px) {
+    .stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .sidebar {
+        width: 250px;
+        transform: translateX(-100%);
+        transition: transform .25s ease;
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .overlay.show {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,.45);
+        z-index: 900;
+    }
+
+    .main {
+        margin-left: 0;
+    }
+
+    .mobile-menu {
+        display: block;
+    }
+
+    .header {
+        padding: 12px 15px;
+    }
+
+    .content {
+        padding: 18px 14px 30px;
+    }
+
+    .hero {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 20px;
+    }
+
+    .hero h1 {
+        font-size: 21px;
+    }
+
+    .hero-side {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .header-subtitle,
+    .name,
+    .role-name,
+    .welcome-date {
+        display: none;
+    }
+}
+
+@media (max-width: 430px) {
+    .stats,
+    .actions {
+        grid-template-columns: 1fr;
+    }
+
+    .header-title {
+        font-size: 16px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .trainee {
+        flex-wrap: wrap;
+    }
+
+    .status {
+        margin-left: 50px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+
+    <div class="brand">
+        <div class="brand-mark">C</div>
+        <div class="brand-name">Capacitix</div>
+    </div>
+
+    <nav class="nav" id="nav">
+
+        <div class="menu-label">Training</div>
+
+        <ul class="menu">
+            <li><a href="/trainer/dashboard" class="active"><span class="icon">⌂</span>Dashboard</a></li>
+            <li><a href="/trainer/employees"><span class="icon">♙</span>My Trainees</a></li>
+            <li><a href="/trainer/skill-gaps"><span class="icon">△</span>Skill Gaps</a></li>
+            <li><a href="/trainer/learning-resources"><span class="icon">▣</span>Learning Resources</a></li>
+            <li><a href="/trainer/assessments"><span class="icon">✓</span>Assessments</a></li>
+        </ul>
+
+        <div class="menu-label">Analytics</div>
+
+        <ul class="menu">
+            <li><a href="/trainer/practical-tasks"><span class="icon">◆</span>Practical Tasks</a></li>
+            <li><a href="/trainer/progress"><span class="icon">↗</span>Trainee Progress</a></li>
+            <li><a href="/trainer/reports"><span class="icon">▤</span>Reports</a></li>
+        </ul>
+
+        <div class="menu-label">Account</div>
+
+        <ul class="menu">
+            <li><a href="/trainer/profile"><span class="icon">☺</span>My Profile</a></li>
+            <li><a href="/trainer/settings"><span class="icon">⚙</span>Settings</a></li>
+        </ul>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="logout">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit">
+                    <span class="icon">↪</span>
+                    Logout
+                </button>
+            </form>
+        </div>
+    </div>
+
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main">
+
+    <header class="header">
+
+        <div class="header-left">
+            <button class="mobile-menu" id="mobileMenu" type="button">☰</button>
+
+            <div>
+                <div class="header-title">Trainer Dashboard</div>
+                <div class="header-subtitle">Manage trainees and monitor their progress</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+
+            <button class="header-btn" id="notificationBtn" type="button"
+                    aria-label="Notifications" aria-expanded="false">
+                🔔
+                <span class="badge"
+                      th:if="${notifications != null and !notifications.isEmpty()}"
+                      th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">0</span>
+            </button>
+
+            <div class="profile">
+                <div class="avatar"
+                     th:text="${userInitial != null and !userInitial.isBlank() ? userInitial : 'T'}">T</div>
+                <div>
+                    <div class="name"
+                         th:text="${userName != null and !userName.isBlank() ? userName : 'Trainer'}">Trainer</div>
+                    <div class="role-name">Trainer</div>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <section class="content">
+
+        <!-- WELCOME -->
+        <section class="hero">
+
+            <div>
+                <span class="hero-tag">TRAINER WORKSPACE</span>
+
+                <h1>
+                    <span id="greeting">Welcome back</span>,
+                    <span th:text="${userName != null and !userName.isBlank() ? userName : 'Trainer'}">Trainer</span>
+                </h1>
+
+                <p>
+                    Manage employee learning, identify skill gaps and monitor trainee development.
+                </p>
+
+                
+            </div>
+
+            <div class="hero-side">
+
+                <div class="welcome-date">
+                    <small>Today</small>
+                    <span id="today"></span>
+                </div>
+
+                
+
+            </div>
+        </section>
+
+        <!-- STATISTICS -->
+        <div class="stats">
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number"
+                             th:data-count="${totalTrainees != null ? totalTrainees : 0}"
+                             th:text="${totalTrainees != null ? totalTrainees : 0}">0</div>
+                        <div class="label">Assigned Trainees</div>
+                    </div>
+                    <div class="stat-icon blue">♙</div>
+                </div>
+                <div class="trend"
+                     th:classappend="${totalTrainees != null and totalTrainees > 0} ? 'ok'"
+                     th:text="${totalTrainees != null and totalTrainees > 0 ? 'Under your guidance' : 'No trainees assigned yet'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number"
+                             th:data-count="${activeSkillGaps != null ? activeSkillGaps : 0}"
+                             th:text="${activeSkillGaps != null ? activeSkillGaps : 0}">0</div>
+                        <div class="label">Active Skill Gaps</div>
+                    </div>
+                    <div class="stat-icon orange">△</div>
+                </div>
+                <div class="trend"
+                     th:classappend="${activeSkillGaps != null and activeSkillGaps > 0} ? 'warn' : 'ok'"
+                     th:text="${activeSkillGaps != null and activeSkillGaps > 0 ? 'Needs attention' : 'No open gaps'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number"
+                             th:data-count="${totalAssessments != null ? totalAssessments : 0}"
+                             th:text="${totalAssessments != null ? totalAssessments : 0}">0</div>
+                        <div class="label">Assessments</div>
+                    </div>
+                    <div class="stat-icon purple">✓</div>
+                </div>
+                <div class="trend"
+                     th:text="${completedAssessments != null ? completedAssessments + ' completed' : 'Created by you'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number"
+                             th:data-count="${completionRate != null ? completionRate : 0}"
+                             data-suffix="%"
+                             th:text="${(completionRate != null ? #numbers.formatDecimal(completionRate, 1, 0) : 0) + '%'}">0%</div>
+                        <div class="label">Training Completion</div>
+                    </div>
+                    <div class="stat-icon green">↗</div>
+                </div>
+                <div class="trend"
+                     th:classappend="${completionRate != null and completionRate >= 75} ? 'ok' : 'warn'"
+                     th:text="${completionRate == null ? 'No data yet' : (completionRate >= 75 ? 'On target' : 'Below 75% target')}">—</div>
+            </div>
+
+        </div>
+
+        <!-- DASHBOARD CONTENT -->
+        
+
+    </section>
+</main>
+
+<!-- NOTIFICATIONS -->
+<div class="notification-panel" id="notificationPanel">
+
+    <div class="notification-head">
+        <strong>Notifications</strong>
+        <button id="closeNotifications" type="button">✕</button>
+    </div>
+
+    <div class="notice"
+         th:each="n : ${notifications}"
+         th:if="${notifications != null}">
+
+        <span class="notice-dot"></span>
+
+        <p>
+            <strong th:text="${n.title}">Title</strong><br>
+            <span th:text="${n.message}">Message</span>
+        </p>
+    </div>
+
+    <div class="empty"
+         th:if="${notifications == null or notifications.isEmpty()}">
+        <strong>You're all caught up</strong>
+        <p>New trainee activity will appear here.</p>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    "use strict";
+
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+    // Greeting and date
+    const hour = new Date().getHours();
+
+    $("#greeting").textContent =
+        hour < 12 ? "Good morning" :
+        hour < 17 ? "Good afternoon" : "Good evening";
+
+    $("#today").textContent = new Date().toLocaleDateString(undefined, {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    });
+
+    // Mobile sidebar
+    const sidebar = $("#sidebar");
+    const overlay = $("#overlay");
+    const mobileMenu = $("#mobileMenu");
+
+    function setSidebar(open) {
+        sidebar.classList.toggle("open", open);
+        overlay.classList.toggle("show", open);
+        mobileMenu.setAttribute("aria-expanded", String(open));
+    }
+
+    mobileMenu.addEventListener("click", () => {
+        setSidebar(!sidebar.classList.contains("open"));
+    });
+
+    overlay.addEventListener("click", () => setSidebar(false));
+
+    $$(".menu a").forEach(link => {
+        link.addEventListener("click", () => {
+            if (window.innerWidth <= 700) setSidebar(false);
+        });
+    });
+
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 700) setSidebar(false);
+    });
+
+    // Notifications
+    const notificationBtn = $("#notificationBtn");
+    const notificationPanel = $("#notificationPanel");
+
+    function setNotifications(open) {
+        notificationPanel.classList.toggle("show", open);
+        notificationBtn.setAttribute("aria-expanded", String(open));
+    }
+
+    notificationBtn.addEventListener("click", e => {
+        e.stopPropagation();
+        setNotifications(!notificationPanel.classList.contains("show"));
+    });
+
+    $("#closeNotifications").addEventListener("click", () => {
+        setNotifications(false);
+    });
+
+    document.addEventListener("click", e => {
+        if (!notificationPanel.contains(e.target) &&
+            !notificationBtn.contains(e.target)) {
+            setNotifications(false);
+        }
+    });
+
+    // Close panels with Escape
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape") {
+            setSidebar(false);
+            setNotifications(false);
+        }
+    });
+
+    // Progress bars
+    function clamp(value) {
+        const n = parseFloat(value);
+        return Number.isNaN(n) ? 0 : Math.max(0, Math.min(100, n));
+    }
+
+    $$(".progress-fill, .mini i").forEach(el => {
+        const width = clamp(el.dataset.width);
+        el.style.width = width + "%";
+
+        if (width < 40) el.classList.add("pf-low");
+        if (width >= 75) el.classList.add("pf-high");
+    });
+
+    // Completion ring
+    const ring = $(".ring");
+    const ringValue = $(".ring .val");
+
+    if (ring && ringValue) {
+        const percent = clamp(ring.dataset.pct);
+        ringValue.style.strokeDashoffset = 283 - (283 * percent / 100);
+    }
+
+    // Trainee search and filters
+    const search = $("#traineeSearch");
+
+    if (search) {
+        const rows = $$(".trainee");
+        const chips = $$(".chip");
+        const noMatch = $("#noMatch");
+
+        let status = "all";
+
+        function applyFilters() {
+            const query = search.value.trim().toLowerCase();
+            let visible = 0;
+
+            rows.forEach(row => {
+                const matchesStatus =
+                    status === "all" ||
+                    row.dataset.status === status;
+
+                const matchesSearch =
+                    (row.dataset.search || "").includes(query);
+
+                const show = matchesStatus && matchesSearch;
+
+                row.hidden = !show;
+                if (show) visible++;
+            });
+
+            noMatch.style.display = visible ? "none" : "block";
+        }
+
+        search.addEventListener("input", applyFilters);
+
+        chips.forEach(chip => {
+            chip.addEventListener("click", () => {
+                chips.forEach(c => c.classList.remove("on"));
+                chip.classList.add("on");
+                status = chip.dataset.filter;
+                applyFilters();
+            });
+        });
+
+        document.addEventListener("keydown", e => {
+            if (e.key === "/" &&
+                !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                search.focus();
+            }
+        });
+    }
+
+})();
+</script>
+
+</body>
+</html>

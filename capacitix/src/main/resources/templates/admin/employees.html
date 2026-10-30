@@ -1,0 +1,966 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#172033">
+
+    <title>Employees | CapacitiX</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #4f46e5;
+            --dark: #172033;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+            --background: #f8fafc;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background: var(--dark);
+            color: white;
+            padding: 22px 15px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 5px 10px 23px;
+            border-bottom: 1px solid #344054;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 21px;
+            font-weight: bold;
+        }
+
+        .brand-name {
+            font-size: 21px;
+            font-weight: bold;
+        }
+
+        .brand-name span {
+            color: #818cf8;
+        }
+
+        .nav-title {
+            font-size: 10px;
+            font-weight: bold;
+            color: #98a2b3;
+            letter-spacing: 1px;
+            margin: 25px 10px 10px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            margin-bottom: 5px;
+            border-radius: 7px;
+            color: #cbd5e1;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .nav-icon {
+            width: 20px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .nav-link:hover {
+            background: #283750;
+            color: white;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* SIDEBAR BOTTOM */
+
+        .sidebar-bottom {
+            margin-top: auto;
+            padding-top: 25px;
+        }
+
+        .admin-info {
+            border-top: 1px solid #344054;
+            padding: 18px 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .admin-details strong {
+            display: block;
+            font-size: 12px;
+        }
+
+        .admin-details small {
+            display: block;
+            color: #aab4c5;
+            font-size: 10px;
+            margin-top: 4px;
+        }
+
+        .logout button {
+            width: 100%;
+            padding: 11px;
+            background: transparent;
+            color: #e2e8f0;
+            border: 1px solid #475467;
+            border-radius: 7px;
+            cursor: pointer;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .logout button:hover {
+            background: #344054;
+        }
+
+        /* MAIN */
+
+        .main {
+            margin-left: 250px;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+
+        .header {
+            height: 75px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 35px;
+        }
+
+        .header h2 {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        .header-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .profile-text strong {
+            display: block;
+            font-size: 13px;
+        }
+
+        .profile-text small {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        /* CONTENT */
+
+        .content {
+            padding: 30px 35px;
+            max-width: 1450px;
+            margin: auto;
+        }
+
+        .page-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .page-heading h1 {
+            font-size: 24px;
+            margin-bottom: 7px;
+        }
+
+        .page-heading p {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* ADD BUTTON */
+
+        .add-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--primary);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .add-btn:hover {
+            background: #3730a3;
+            transform: translateY(-2px);
+        }
+
+        /* MESSAGES */
+
+        .message {
+            padding: 13px 16px;
+            margin-bottom: 18px;
+            border-radius: 7px;
+            font-size: 13px;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .error {
+            background: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        /* SECTION */
+
+        .section-header {
+            margin-bottom: 17px;
+        }
+
+        .section-header h3 {
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        .section-header p {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* STATISTICS */
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 17px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 21px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            transition: 0.2s;
+            min-width: 0;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: #c7d2fe;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 17px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 9px;
+            font-size: 19px;
+        }
+
+        .purple {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .green {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .orange {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .stat-number {
+            font-size: 29px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .stat-description {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* TABLE */
+
+        .table-card {
+            background: white;
+            padding: 23px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .table-header h2 {
+            font-size: 17px;
+        }
+
+        .table-header p {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 400px;
+        }
+
+        thead {
+            background: #f8fafc;
+        }
+
+        th {
+            padding: 15px;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: left;
+            letter-spacing: 0.4px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        td {
+            padding: 16px 15px;
+            font-size: 13px;
+            color: #374151;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tbody tr:hover {
+            background: #fafbff;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .serial {
+            color: #64748b;
+            width: 100px;
+        }
+
+        .email {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 15px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1100px) {
+            .stats {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+        .table-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+}
+
+.table-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.table-header h2 {
+    font-size: 18px;
+    color: #172033;
+    margin-bottom: 5px;
+}
+
+.table-header p {
+    font-size: 13px;
+    color: #667085;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+thead {
+    background: #f8fafc;
+}
+
+th {
+    padding: 15px 22px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: #667085;
+}
+
+td {
+    padding: 17px 22px;
+    border-top: 1px solid #edf0f4;
+    font-size: 13px;
+    color: #344054;
+}
+
+tbody tr:hover {
+    background: #f8faff;
+}
+
+.serial {
+    width: 110px;
+    color: #667085;
+    font-weight: 600;
+}
+
+.email {
+    display: table-cell;
+    color: #3730a3;
+    font-weight: 600;
+}
+
+.email-icon {
+    margin-right: 9px;
+    color: #667085;
+}
+
+.empty-state {
+    padding: 35px;
+    text-align: center;
+    color: #98a2b3;
+}
+
+        @media (max-width: 750px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .sidebar-bottom {
+                margin-top: 10px;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .header {
+                padding: 15px 20px;
+                height: auto;
+                min-height: 70px;
+            }
+
+            .content {
+                padding: 22px 18px;
+            }
+        }
+
+        @media (max-width: 500px) {
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .page-heading h1 {
+                font-size: 21px;
+            }
+
+            .add-btn {
+                width: 100%;
+            }
+
+            .header h2 {
+                font-size: 16px;
+            }
+
+            .profile-text strong {
+                font-size: 11px;
+            }
+
+            .profile-text small {
+                font-size: 9px;
+            }
+
+            .table-card {
+                padding: 15px;
+            }
+        }
+
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">C</div>
+            <div class="brand-name">Capaciti<span>X</span></div>
+        </div>
+
+        <nav>
+
+            <div class="nav-title">OVERVIEW</div>
+
+            <a th:href="@{/admin/dashboard}" class="nav-link">
+                <span class="nav-icon">⌂</span>
+                Dashboard
+            </a>
+
+            <div class="nav-title">WORKFORCE MANAGEMENT</div>
+
+            <a th:href="@{/admin/employees}" class="nav-link active">
+                <span class="nav-icon">♙</span>
+                Employees
+            </a>
+
+            <a th:href="@{/admin/trainers}" class="nav-link">
+                <span class="nav-icon">♟</span>
+                Trainers
+            </a>
+
+            <div class="nav-title">COMPETENCY MANAGEMENT</div>
+
+            <a th:href="@{/admin/competencies}" class="nav-link">
+                <span class="nav-icon">◈</span>
+                Competencies
+            </a>
+
+            <a th:href="@{/admin/skill-heatmap}" class="nav-link">
+                <span class="nav-icon">▦</span>
+                Skill Heatmap
+            </a>
+
+            <a th:href="@{/admin/skill-gaps}" class="nav-link">
+                <span class="nav-icon">△</span>
+                Skill Gaps
+            </a>
+
+            <div class="nav-title">LEARNING MANAGEMENT</div>
+
+            <a th:href="@{/admin/assessments}" class="nav-link">
+                <span class="nav-icon">✓</span>
+                Assessments
+            </a>
+
+            <a th:href="@{/admin/reports}" class="nav-link">
+                <span class="nav-icon">▤</span>
+                Reports
+            </a>
+
+            <a th:href="@{/admin/training}" class="nav-link">
+                <span class="nav-icon">▣</span>
+                Training
+            </a>
+
+            <div class="nav-title">SYSTEM</div>
+
+            <a th:href="@{/admin/settings}" class="nav-link">
+                <span class="nav-icon">⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <div class="admin-info">
+
+                <div class="avatar">A</div>
+
+                <div class="admin-details">
+                    <strong th:text="${userName != null ? userName : 'Administrator'}">
+                        Administrator
+                    </strong>
+
+                    <small>Organization Admin</small>
+                </div>
+
+            </div>
+
+            <div class="logout">
+
+                <form th:action="@{/logout}" method="post">
+
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+
+                    <button type="submit">
+                        ↪ &nbsp; Logout
+                    </button>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="main">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <div>
+                <h2>Employee Management</h2>
+                <p>Organization Administration</p>
+            </div>
+
+            <div class="header-profile">
+
+                <div class="avatar">A</div>
+
+                <div class="profile-text">
+
+                    <strong th:text="${userName != null ? userName : 'Administrator'}">
+                        Administrator
+                    </strong>
+
+                    <small>Administrator</small>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- PAGE CONTENT -->
+
+        <section class="content">
+
+
+            <!-- SUCCESS MESSAGE -->
+
+            <div th:if="${successMessage != null}"
+                 class="message success"
+                 th:text="${successMessage}">
+            </div>
+
+
+            <!-- ERROR MESSAGE -->
+
+            <div th:if="${errorMessage != null}"
+                 class="message error"
+                 th:text="${errorMessage}">
+            </div>
+
+
+            <!-- PAGE HEADING -->
+
+            <div class="page-heading">
+
+                <div>
+                    <h1>Employees</h1>
+                    <p>Manage and monitor your organization employees.</p>
+                </div>
+
+                <a th:href="@{/admin/employees/add}" class="add-btn">
+                    <span>+</span>
+                    Add Employee
+                </a>
+
+            </div>
+
+
+            <!-- STATISTICS -->
+
+            <div class="section-header">
+                <h3>Employee Overview</h3>
+                <p>Current employee registration and assignment details</p>
+            </div>
+
+
+            <div class="stats">
+
+
+                <!-- TOTAL EMPLOYEES -->
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">TOTAL EMPLOYEES</span>
+
+                        <div class="stat-icon purple">♙</div>
+
+                    </div>
+
+                    <div class="stat-number"
+                         th:text="${totalEmployees != null ? totalEmployees : 0}">
+                        0
+                    </div>
+
+                    <div class="stat-description">
+                        Registered employees
+                    </div>
+
+                </div>
+
+
+                <!-- ACTIVE EMPLOYEES -->
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">ACTIVE EMPLOYEES</span>
+
+                        <div class="stat-icon green">✓</div>
+
+                    </div>
+
+                    <div class="stat-number"
+                         th:text="${activeEmployees != null ? activeEmployees : 0}">
+                        0
+                    </div>
+
+                    <div class="stat-description">
+                        Currently active employees
+                    </div>
+
+                </div>
+
+
+                <!-- ASSIGNED EMPLOYEES -->
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">TRAINER ASSIGNED</span>
+
+                        <div class="stat-icon blue">♟</div>
+
+                    </div>
+
+                    <div class="stat-number"
+                         th:text="${assignedEmployees != null ? assignedEmployees : 0}">
+                        0
+                    </div>
+
+                    <div class="stat-description">
+                        Employees with assigned trainers
+                    </div>
+
+                </div>
+
+
+                <!-- DISABLED EMPLOYEES -->
+
+                <div class="stat-card">
+
+                    <div class="stat-top">
+
+                        <span class="stat-label">DISABLED EMPLOYEES</span>
+
+                        <div class="stat-icon orange">⊘</div>
+
+                    </div>
+
+                    <div class="stat-number"
+                         th:text="${disabledEmployees != null ? disabledEmployees : 0}">
+                        0
+                    </div>
+
+                    <div class="stat-description">
+                        Currently disabled employees
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- EMPLOYEE TABLE -->
+
+            <div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th>SR. NO.</th>
+                <th>EMPLOYEE ID</th>
+                <th>FULL NAME</th>
+                <th>EMAIL</th>
+                <th>PHONE</th>
+                <th>DEPARTMENT</th>
+                <th>DESIGNATION</th>
+                <th>STATUS</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr th:each="employee, status : ${employees}">
+                <td th:text="${status.count}"></td>
+
+                <td th:text="${employee.employeeId != null ? employee.employeeId : 'N/A'}"></td>
+
+                <td th:text="${employee.fullName}"></td>
+
+                <td th:text="${employee.email}"></td>
+
+                <td th:text="${employee.phoneNumber != null ? employee.phoneNumber : 'N/A'}"></td>
+
+                <td th:text="${employee.department != null ? employee.department : 'N/A'}"></td>
+
+                <td th:text="${employee.designation != null ? employee.designation : 'N/A'}"></td>
+
+                <td>
+                    <span th:if="${employee.enabled}">Active</span>
+                    <span th:unless="${employee.enabled}">Inactive</span>
+                </td>
+            </tr>
+
+            <tr th:if="${employees == null or #lists.isEmpty(employees)}">
+                <td colspan="8" style="text-align:center;">
+                    No employees found.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+        </section>
+
+    </main>
+
+</body>
+</html>

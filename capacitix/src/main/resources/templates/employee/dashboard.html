@@ -1,0 +1,774 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CapacitiX Employee Dashboard">
+    <title>Employee Dashboard | CapacitiX</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --navy: #111827;
+            --navy-light: #1f2937;
+            --primary: #4f46e5;
+            --primary-light: #eef0ff;
+            --background: #f5f6fa;
+            --border: #e5e7eb;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            width: 245px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--navy);
+            color: white;
+            padding: 22px 15px;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 5px 10px 25px;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 22px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--primary);
+            border-radius: 9px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .menu-label {
+            font-size: 11px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 10px 12px;
+            margin-top: 13px;
+        }
+
+        .menu {
+            list-style: none;
+        }
+
+        .menu li {
+            margin-bottom: 5px;
+        }
+
+        .menu a {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 11px 13px;
+            border-radius: 7px;
+            color: #d1d5db;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .menu a:hover,
+        .menu a.active {
+            background: #312e81;
+            color: white;
+        }
+
+        .menu a.active {
+            border-left: 3px solid #818cf8;
+        }
+
+        .logout {
+            margin-top: 25px;
+            padding-top: 18px;
+            border-top: 1px solid #374151;
+        }
+
+        .logout button {
+            width: 100%;
+            border: none;
+            background: #7f1d1d;
+            color: white;
+            padding: 12px;
+            border-radius: 7px;
+            text-align: left;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .logout button:hover {
+            background: #991b1b;
+        }
+
+        /* MAIN */
+
+        .main {
+            margin-left: 245px;
+            min-height: 100vh;
+        }
+
+        .header {
+            min-height: 78px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 21px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .profile-name {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .role {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .content {
+            padding: 25px 30px;
+        }
+
+        /* WELCOME */
+
+        .welcome {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 23px;
+        }
+
+        .welcome h2 {
+            font-size: 22px;
+            margin-bottom: 9px;
+        }
+
+        .welcome p {
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.7;
+            max-width: 700px;
+        }
+
+        .primary-btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .primary-btn:hover {
+            background: #4338ca;
+        }
+
+        /* ALERT */
+
+        .alert {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            padding: 13px 16px;
+            border-radius: 7px;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        /* STATISTICS */
+
+        .section-title {
+            font-size: 17px;
+            margin-bottom: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 25px;
+        }
+
+        .stat {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 19px;
+        }
+
+        .stat-label {
+            color: var(--muted);
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .stat-value {
+            font-size: 27px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        /* CARDS */
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 21px;
+        }
+
+        .card h2 {
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .card-description {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 17px;
+        }
+
+        .card-link {
+            display: inline-block;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .card-link:hover {
+            text-decoration: underline;
+        }
+
+        .ai-insight {
+            background: #f5f3ff;
+            border-left: 4px solid var(--primary);
+            border-radius: 5px;
+            padding: 14px;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #4338ca;
+            margin-bottom: 15px;
+        }
+
+        /* QUICK ACTIONS */
+
+        .quick-actions {
+            margin-top: 23px;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+        }
+
+        .action {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 17px;
+            transition: 0.2s;
+        }
+
+        .action:hover {
+            border-color: var(--primary);
+            background: #fafaff;
+        }
+
+        .action-icon {
+            width: 35px;
+            height: 35px;
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 7px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 17px;
+            margin-bottom: 12px;
+        }
+
+        .action strong {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 6px;
+        }
+
+        .action span {
+            display: block;
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* EMPTY */
+
+        .empty {
+            color: var(--muted);
+            font-size: 13px;
+            padding: 12px 0;
+            line-height: 1.6;
+        }
+
+        /* FOOTER */
+
+        .footer {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 11px;
+            padding: 25px;
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 1100px) {
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .actions {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 800px) {
+            .sidebar {
+                width: 210px;
+            }
+
+            .main {
+                margin-left: 210px;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+                padding: 15px;
+            }
+
+            .brand {
+                margin-bottom: 10px;
+                padding-bottom: 15px;
+            }
+
+            .sidebar nav {
+                max-height: 250px;
+                overflow-y: auto;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .header {
+                padding: 15px;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .stats {
+                gap: 10px;
+            }
+
+            .stat {
+                padding: 14px;
+            }
+
+            .stat-value {
+                font-size: 23px;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome {
+                padding: 19px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+    <div class="brand">
+        <div class="brand-icon">C</div>
+        <div class="brand-name">CapacitiX</div>
+    </div>
+
+    <nav>
+
+        <div class="menu-label">My Development</div>
+
+        <ul class="menu">
+            <li><a th:href="@{/employee/dashboard}" class="active">⌂ Dashboard</a></li>
+            <li><a th:href="@{/employee/competencies}">◈ My Competencies</a></li>
+            <li><a th:href="@{/employee/assessments}">✓ Assessments</a></li>
+            <li><a th:href="@{/employee/skill-gaps}">△ Skill Gaps</a></li>
+            <li><a th:href="@{/employee/learning-path}">▣ My Learning Path</a></li>
+            <li><a th:href="@{/employee/training}">▶ Training</a></li>
+            <li><a th:href="@{/employee/practical-tasks}">◆ Practical Tasks</a></li>
+        </ul>
+
+        <div class="menu-label">Progress</div>
+
+        <ul class="menu">
+            <li><a th:href="@{/employee/progress}">↗ My Progress</a></li>
+            <li><a th:href="@{/employee/certificates}">▤ Certificates</a></li>
+        </ul>
+
+        <div class="menu-label">Account</div>
+
+        <ul class="menu">
+            <li><a th:href="@{/employee/profile}">☺ My Profile</a></li>
+            <li><a th:href="@{/employee/settings}">⚙ Settings</a></li>
+        </ul>
+
+    </nav>
+
+    <form class="logout" th:action="@{/logout}" method="post">
+        <button type="submit">↪ Logout</button>
+    </form>
+
+</aside>
+
+
+<!-- MAIN CONTENT -->
+
+<main class="main">
+
+    <!-- HEADER -->
+
+    <header class="header">
+
+        <div>
+            <h1>Employee Dashboard</h1>
+            <p>Track your learning and competency development</p>
+        </div>
+
+        <div class="profile">
+
+            <div class="avatar"
+                 th:text="${userInitial != null ? userInitial : 'E'}">E</div>
+
+            <div>
+                <div class="profile-name"
+                     th:text="${userName != null ? userName : 'Employee'}">
+                    Employee
+                </div>
+                <div class="role">Employee</div>
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <section class="content">
+
+        <!-- ERROR MESSAGE -->
+
+        <div class="alert"
+             th:if="${error != null}"
+             th:text="${error}">
+            Something went wrong.
+        </div>
+
+
+        <!-- WELCOME -->
+
+        <section class="welcome">
+
+            <h2>
+                Welcome,
+                <span th:text="${userName != null ? userName : 'Employee'}">
+                    Employee
+                </span>!
+            </h2>
+
+            <p>
+                Welcome to CapacitiX. Improve your professional skills,
+                complete assessments, identify skill gaps and follow
+                your personalized learning journey.
+            </p>
+
+            <a class="primary-btn" th:href="@{/employee/learning-path}">
+                View Learning Path →
+            </a>
+
+        </section>
+
+
+        <!-- STATISTICS -->
+
+        <h2 class="section-title">My Overview</h2>
+
+        <div class="stats">
+
+            <div class="stat">
+                <p class="stat-label">Competency Score</p>
+                <div class="stat-value">
+                    <span th:text="${competencyScore != null ? competencyScore : 0}">0</span>%
+                </div>
+            </div>
+
+            <div class="stat">
+                <p class="stat-label">Active Skill Gaps</p>
+                <div class="stat-value"
+                     th:text="${activeSkillGaps != null ? activeSkillGaps : 0}">
+                    0
+                </div>
+            </div>
+
+            <div class="stat">
+                <p class="stat-label">Learning Progress</p>
+                <div class="stat-value">
+                    <span th:text="${learningProgress != null ? learningProgress : 0}">0</span>%
+                </div>
+            </div>
+
+            <div class="stat">
+                <p class="stat-label">Approved Practical Tasks</p>
+                <div class="stat-value"
+                     th:text="${tasksCompleted != null ? tasksCompleted : 0}">
+                    0
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- LEARNING INFORMATION -->
+
+        <h2 class="section-title">Learning Overview</h2>
+
+        <div class="grid">
+
+            <!-- AI INSIGHT -->
+
+            <section class="card"
+                     th:if="${aiInsight != null and !#strings.isEmpty(aiInsight)}">
+
+                <h2>AI Learning Insight</h2>
+
+                <p class="card-description">
+                    Personalized suggestions based on your learning progress.
+                </p>
+
+                <div class="ai-insight" th:text="${aiInsight}">
+                    Your personalized learning insight.
+                </div>
+
+                <a class="card-link" th:href="@{/employee/skill-gaps}">
+                    View Skill Gaps →
+                </a>
+
+            </section>
+
+            <!-- ASSESSMENT -->
+
+            <section class="card"
+                     th:unless="${aiInsight != null and !#strings.isEmpty(aiInsight)}">
+
+                <h2>Start Your Learning Journey</h2>
+
+                <p class="card-description">
+                    Complete an assessment to identify your current
+                    competencies and skill gaps.
+                </p>
+
+                <a class="card-link" th:href="@{/employee/assessments}">
+                    Take Assessment →
+                </a>
+
+            </section>
+
+            <!-- SKILL DEVELOPMENT -->
+
+            <section class="card">
+
+                <h2>Improve Your Skills</h2>
+
+                <p class="card-description">
+                    Review your skill gaps and follow your assigned
+                    learning path to improve your competencies.
+                </p>
+
+                <a class="card-link" th:href="@{/employee/learning-path}">
+                    Continue Learning →
+                </a>
+
+            </section>
+
+        </div>
+
+
+        <!-- QUICK ACTIONS -->
+
+        <section class="quick-actions">
+
+            <h2 class="section-title">Quick Actions</h2>
+
+            <div class="actions">
+
+                <a class="action" th:href="@{/employee/competencies}">
+                    <div class="action-icon">◈</div>
+                    <strong>My Competencies</strong>
+                    <span>View your current competency levels.</span>
+                </a>
+
+                <a class="action" th:href="@{/employee/assessments}">
+                    <div class="action-icon">✓</div>
+                    <strong>Assessments</strong>
+                    <span>Check and complete your assessments.</span>
+                </a>
+
+                <a class="action" th:href="@{/employee/skill-gaps}">
+                    <div class="action-icon">△</div>
+                    <strong>Skill Gaps</strong>
+                    <span>Identify skills that need improvement.</span>
+                </a>
+
+                <a class="action" th:href="@{/employee/learning-path}">
+                    <div class="action-icon">▣</div>
+                    <strong>Learning Path</strong>
+                    <span>Continue your personalized learning plan.</span>
+                </a>
+
+                <a class="action" th:href="@{/employee/training}">
+                    <div class="action-icon">▶</div>
+                    <strong>Training</strong>
+                    <span>Access your assigned training materials.</span>
+                </a>
+
+                <a class="action" th:href="@{/employee/practical-tasks}">
+                    <div class="action-icon">◆</div>
+                    <strong>Practical Tasks</strong>
+                    <span>Complete practical learning activities.</span>
+                </a>
+
+            </div>
+
+        </section>
+
+    </section>
+
+
+    <footer class="footer">
+        © 2026 CapacitiX. Employee Learning Platform.
+    </footer>
+
+</main>
+
+
+<!-- AI ASSISTANT -->
+
+<div th:replace="~{employee/fragments/ai-assistant :: ai-assistant}"></div>
+
+</body>
+</html>

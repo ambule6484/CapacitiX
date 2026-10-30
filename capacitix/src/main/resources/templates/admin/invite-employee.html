@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Add Employee | Capacitix">
+<title>Add Employee | Capacitix</title>
+<style>
+:root{--bg:#f4f6fb;--text:#172033;--muted:#667085;--line:#e6e9f0;--brand:#4f46e5;--bad:#dc2626;--ok:#059669;--shadow:0 12px 30px rgba(15,23,42,.08)}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+button,input,select,textarea{font:inherit}
+:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px;border-radius:8px}
+::-webkit-scrollbar{width:7px}::-webkit-scrollbar-thumb{background:#c5cbd8;border-radius:20px}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;padding:8px 14px;border-radius:8px;z-index:3000}
+.skip:focus{left:8px}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-12px,10px)}}
+.rise{animation:rise .6s ease both;animation-delay:var(--d,0s)}
+
+/* SIDEBAR */
+.sidebar{position:fixed;inset:0 auto 0 0;width:270px;background:linear-gradient(180deg,#0b1220,#101828 45%,#111c2e);color:#fff;padding:20px 14px;z-index:1000;display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.05);animation:slideIn .6s ease;transition:transform .3s ease}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 12px 18px}
+.brand-icon{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#635bff,#14b8a6);display:grid;place-items:center;font-weight:900;font-size:20px;box-shadow:0 8px 25px rgba(99,91,255,.35);animation:float 4s ease-in-out infinite}
+.brand-name{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.nav{flex:1}
+.nav-title{color:#667085;font-size:10px;text-transform:uppercase;letter-spacing:1.3px;margin:16px 12px 7px}
+.nav-link{position:relative;display:flex;align-items:center;gap:12px;padding:11px 12px;margin:3px 0;border-radius:11px;color:#aab4c3;font-size:13px;font-weight:500;transition:.25s}
+.nav-link:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(4px)}
+.nav-link.active{background:linear-gradient(90deg,rgba(99,91,255,.3),rgba(20,184,166,.1));color:#fff;box-shadow:inset 3px 0 #6366f1}
+.nav-link.active::after{content:"";position:absolute;right:12px;width:6px;height:6px;border-radius:50%;background:#14b8a6;box-shadow:0 0 10px #14b8a6}
+.nav-icon{width:22px;text-align:center;font-size:16px}
+.role-box{margin:16px 4px 10px;padding:14px;border-radius:14px;background:linear-gradient(135deg,rgba(99,91,255,.2),rgba(20,184,166,.08));border:1px solid rgba(255,255,255,.07)}
+.role-box small{display:block;color:#98a2b3;font-size:10px;margin-bottom:4px}
+.role-box strong{font-size:13px}
+.logout-btn{width:100%;border:0;background:transparent;color:#aab4c3;display:flex;align-items:center;gap:12px;padding:12px;border-radius:9px;cursor:pointer;font-size:14px;transition:.25s}
+.logout-btn:hover{background:rgba(239,68,68,.14);color:#fca5a5;transform:translateX(3px)}
+.scrim{display:none;position:fixed;inset:0;background:rgba(15,23,42,.5);backdrop-filter:blur(3px);z-index:900}
+
+/* TOPBAR */
+.main{margin-left:270px;min-height:100vh}
+.topbar{height:74px;position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(255,255,255,.9);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.top-left{display:flex;align-items:center;gap:14px}
+.burger{display:none;width:42px;height:42px;border:1px solid var(--line);background:#fff;border-radius:12px;cursor:pointer;font-size:19px}
+.page-title h1{font-size:20px;font-weight:750;letter-spacing:-.3px}
+.page-title p{color:var(--muted);font-size:12px;margin-top:3px}
+.admin-profile{display:flex;align-items:center;gap:11px}
+.profile-info{text-align:right}
+.profile-info strong{display:block;font-size:13px}
+.profile-info small{color:var(--muted);font-size:11px}
+.profile-avatar{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#635bff,#14b8a6);color:#fff;display:grid;place-items:center;font-weight:800;box-shadow:0 5px 18px rgba(99,91,255,.25)}
+
+/* CONTENT */
+.content{padding:26px 32px 56px;max-width:1280px}
+.back-btn{display:inline-flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;font-weight:650;margin-bottom:18px;transition:.2s}
+.back-btn:hover{color:var(--brand);transform:translateX(-3px)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:22px;align-items:start}
+
+/* CARD */
+.card{background:#fff;border:1px solid var(--line);border-radius:17px;box-shadow:0 8px 30px rgba(15,23,42,.045);overflow:hidden}
+.card-header{padding:24px 28px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:15px;background:linear-gradient(90deg,rgba(99,91,255,.04),rgba(20,184,166,.02))}
+.card-icon{width:48px;height:48px;border-radius:13px;background:linear-gradient(135deg,#eef2ff,#ecfeff);display:grid;place-items:center;font-size:22px}
+.card-header h2{font-size:18px;margin-bottom:4px}
+.card-header p{font-size:12px;color:var(--muted);line-height:1.6}
+.card-body{padding:28px}
+
+.error-box{display:flex;gap:10px;align-items:flex-start;margin-bottom:22px;padding:13px 15px;border-radius:11px;border:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-size:13px;animation:shake .5s ease}
+.error-box b{width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;display:grid;place-items:center;font-size:12px;flex-shrink:0}
+
+.steps{display:flex;align-items:center;gap:10px;margin-bottom:24px}
+.steps-bar{flex:1;height:6px;background:#eef2f6;border-radius:20px;overflow:hidden}
+.steps-bar i{display:block;height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#635bff,#14b8a6);transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.steps span{font-size:12px;font-weight:650;color:var(--muted);white-space:nowrap}
+.steps.done span{color:var(--ok)}
+
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#98a2b3;margin:6px 0 14px;display:flex;align-items:center;gap:10px}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec:not(:first-of-type){margin-top:26px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 22px}
+.form-group{display:flex;flex-direction:column}
+.form-group.full{grid-column:1/-1}
+.label-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.form-label{font-size:13px;font-weight:700;color:#344054}
+.required{color:#ef4444}
+.opt{font-size:11px;font-weight:500;color:#98a2b3;margin-left:6px}
+.counter{font-size:11px;color:#98a2b3;font-variant-numeric:tabular-nums}
+.counter.warn{color:#d97706}.counter.max{color:var(--bad);font-weight:700}
+.input-wrap{position:relative}
+.input-wrap .ico{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#98a2b3;font-size:14px;pointer-events:none;transition:color .2s}
+.input-wrap input{padding-left:38px}
+.input-wrap:focus-within .ico{color:var(--brand)}
+.form-input,.form-select,.form-textarea{width:100%;border:1px solid #dfe3eb;border-radius:10px;background:#fff;color:#1f2937;outline:0;transition:.2s}
+.form-input,.form-select{height:46px;padding:0 14px;font-size:14px}
+.form-select{cursor:pointer}
+.form-textarea{min-height:110px;padding:13px 14px;resize:vertical;font-size:14px;line-height:1.6}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.12)}
+.valid .form-input{border-color:#6ee7b7}
+.valid .input-wrap::after{content:"✓";position:absolute;right:13px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:#10b981;color:#fff;font-size:11px;display:grid;place-items:center;animation:pop .3s ease}
+.invalid .form-input{border-color:#f87171!important;box-shadow:0 0 0 4px rgba(248,113,113,.12)}
+.invalid{animation:shake .4s ease}
+.help-text{margin-top:7px;font-size:11px;color:#98a0af}
+.field-error{display:none;margin-top:7px;font-size:12px;font-weight:600;color:var(--bad)}
+.invalid .field-error{display:block}
+.invalid .help-text{display:none}
+.suggest{display:none;margin-top:7px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px}
+.suggest.show{display:block;animation:rise .3s ease}
+.suggest button{border:0;background:transparent;color:var(--brand);font-weight:700;cursor:pointer;text-decoration:underline}
+
+/* NOTES */
+.note{display:flex;gap:12px;padding:15px;border-radius:12px;margin-top:20px}
+.note.info{background:#eef2ff;border:1px solid #c7d2fe}
+.note.sec-ok{background:#ecfdf5;border:1px solid #a7f3d0;margin-top:12px}
+.note-ico{font-size:19px;flex-shrink:0}
+.note h4{font-size:13px;margin-bottom:5px}
+.note p{font-size:12px;line-height:1.65}
+.note.info h4{color:#312e81}.note.info p{color:#4f46e5}
+.note.sec-ok h4{color:#065f46}.note.sec-ok p{color:#047857}
+
+.form-actions{margin-top:26px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px}
+.btn{height:44px;padding:0 20px;border-radius:10px;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:13px;font-weight:700;transition:.25s}
+.btn-cancel{background:#fff;border-color:#dfe3eb;color:#596273}
+.btn-cancel:hover{background:#f8f9fc;transform:translateY(-2px)}
+.btn-submit{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;box-shadow:0 7px 17px rgba(79,70,229,.2)}
+.btn-submit:hover{transform:translateY(-2px);box-shadow:0 11px 24px rgba(79,70,229,.3)}
+.btn-submit:disabled{opacity:.75;cursor:not-allowed;transform:none}
+.spinner{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite}
+
+/* PREVIEW */
+.summary{position:sticky;top:96px}
+.sum-card{background:#fff;border:1px solid var(--line);border-radius:17px;padding:22px;box-shadow:0 8px 30px rgba(15,23,42,.045);overflow:hidden;position:relative}
+.sum-card::before{content:"";position:absolute;width:130px;height:130px;border-radius:50%;background:rgba(99,91,255,.07);right:-40px;top:-50px;animation:drift 8s ease-in-out infinite}
+.sum-card h3{position:relative;font-size:15px;margin-bottom:4px}
+.sum-card>p{position:relative;font-size:12px;color:var(--muted);margin-bottom:16px}
+.person{position:relative;display:flex;align-items:center;gap:13px;padding:14px;border-radius:14px;background:linear-gradient(135deg,#f5f3ff,#eefcf9);margin-bottom:14px}
+.p-av{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#4f46e5,#14b8a6);color:#fff;display:grid;place-items:center;font-weight:800;font-size:19px;flex-shrink:0;transition:transform .3s}
+.p-av.bump{animation:pop .3s ease}
+.p-name{font-size:14px;font-weight:700;word-break:break-word}
+.p-mail{font-size:11px;color:var(--muted);margin-top:3px;word-break:break-all}
+.p-name.empty,.p-mail.empty,.row b.empty{color:#b0b7c3;font-style:italic;font-weight:500}
+.row{position:relative;padding:11px 0;border-top:1px solid #f0f2f5;display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.row small{font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#98a2b3;flex-shrink:0}
+.row b{font-size:13px;font-weight:650;text-align:right;word-break:break-word}
+.mail{position:relative;margin-top:14px;border:1px dashed #d0d5dd;border-radius:12px;padding:14px;background:#fafbfc;font-size:12px;color:#475467;line-height:1.7}
+.mail .tag{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#98a2b3;margin-bottom:6px}
+.mail strong{color:var(--text)}
+.mail .fake-btn{display:inline-block;margin-top:8px;background:linear-gradient(135deg,#635bff,#4f46e5);color:#fff;padding:7px 13px;border-radius:8px;font-size:11px;font-weight:700}
+
+.toast{position:fixed;right:24px;bottom:24px;background:#111827;color:#fff;padding:13px 18px;border-radius:12px;font-size:13px;box-shadow:var(--shadow);opacity:0;transform:translateY(14px);pointer-events:none;transition:.3s;z-index:3000}
+.toast.show{opacity:1;transform:none}
+
+@media(max-width:1100px){.layout{grid-template-columns:1fr}.summary{position:static;order:-1}}
+@media(max-width:850px){
+ .sidebar{transform:translateX(-100%);animation:none}
+ .sidebar.open{transform:none}
+ .scrim.show{display:block}
+ .main{margin-left:0}
+ .burger{display:block}
+ .content,.topbar{padding-left:18px;padding-right:18px}
+ .profile-info{display:none}
+}
+@media(max-width:600px){
+ .page-title p{display:none}
+ .form-grid{grid-template-columns:1fr}
+ .form-group.full{grid-column:auto}
+ .card-body,.card-header{padding:18px}
+ .form-actions{flex-direction:column-reverse}
+ .btn{width:100%}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="scrim" id="scrim"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Admin navigation">
+  <div class="brand"><div class="brand-icon">C</div><div class="brand-name">Capacitix</div></div>
+  <nav class="nav">
+    <div class="nav-title">Overview</div>
+    <a th:href="@{/admin/dashboard}" class="nav-link"><span class="nav-icon">⌂</span><span>Dashboard</span></a>
+
+    <div class="nav-title">Workforce Management</div>
+    <a th:href="@{/admin/employees}" class="nav-link active" aria-current="page"><span class="nav-icon">👥</span><span>Employees</span></a>
+    <a th:href="@{/admin/trainers}" class="nav-link"><span class="nav-icon">🎓</span><span>Trainers</span></a>
+    
+    <div class="nav-title">Competency Intelligence</div>
+    <a th:href="@{/admin/competencies}" class="nav-link"><span class="nav-icon">◈</span><span>Competencies</span></a>
+    <a th:href="@{/admin/skill-heatmap}" class="nav-link"><span class="nav-icon">▦</span><span>Skill Heatmap</span></a>
+    <a th:href="@{/admin/skill-gaps}" class="nav-link"><span class="nav-icon">△</span><span>Skill Gaps</span></a>
+
+    <div class="nav-title">Learning &amp; Assessment</div>
+    <a th:href="@{/admin/assessments}" class="nav-link"><span class="nav-icon">✓</span><span>Assessments</span></a>
+   
+    <a th:href="@{/admin/reports}" class="nav-link"><span class="nav-icon">▤</span><span>Reports</span></a>
+
+    <div class="nav-title">System</div>
+    <a th:href="@{/admin/settings}" class="nav-link"><span class="nav-icon">⚙</span><span>Settings</span></a>
+  </nav>
+  <div class="role-box"><small>Signed in as</small><strong>Organization Administrator</strong></div>
+  <!-- th:action adds the CSRF token automatically when Spring Security CSRF is on -->
+  <form th:action="@{/logout}" method="post" id="logoutForm" style="margin:0">
+    <button type="submit" class="logout-btn"><span class="nav-icon">↪</span><span>Logout</span></button>
+  </form>
+</aside>
+
+<main class="main">
+<header class="topbar">
+  <div class="top-left">
+    <button class="burger" id="burger" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+    <div class="page-title">
+      <h1>Add Employee</h1>
+      <p>Create an employee account and send a secure invitation.</p>
+    </div>
+  </div>
+  <div class="admin-profile">
+    <div class="profile-info">
+      <strong th:text="${userName != null ? userName : 'Administrator'}">Administrator</strong>
+      <small>Organization Admin</small>
+    </div>
+    <div class="profile-avatar" th:text="${userInitial != null ? userInitial : 'A'}">A</div>
+  </div>
+</header>
+
+<section class="content" id="content">
+
+  <a th:href="@{/admin/employees}" class="back-btn rise"><span>←</span><span>Back to Employees</span></a>
+
+  <div class="layout">
+
+    <!-- ============ FORM ============ -->
+    <div class="card rise" style="--d:.05s">
+      <div class="card-header">
+        <div class="card-icon">👤</div>
+        <div>
+          <h2>Employee Information</h2>
+          <p>Enter the employee details below. You do not need to create a password for the employee.</p>
+        </div>
+      </div>
+
+      <div class="card-body">
+
+        <div class="error-box" role="alert" th:if="${error != null}">
+          <b>!</b><span th:text="${error}">An error occurred.</span>
+        </div>
+
+        <div class="steps" id="steps" aria-live="polite">
+          <div class="steps-bar"><i id="stepsFill"></i></div>
+          <span id="stepsText">0 of 3 required fields</span>
+        </div>
+
+        <form th:action="@{/admin/employees/add}" method="post" id="employeeForm" autocomplete="off">
+
+          <div class="sec">Account</div>
+          <div class="form-grid">
+
+            <div class="form-group" data-field="name">
+              <div class="label-row"><label class="form-label" for="name">Full Name <span class="required" aria-hidden="true">*</span></label></div>
+              <div class="input-wrap"><span class="ico">👤</span>
+                <input type="text" id="name" name="name" class="form-input" maxlength="150" th:value="${name}"
+                       placeholder="Enter employee name" autocomplete="name" required aria-describedby="nameErr"></div>
+              <div class="field-error" id="nameErr" role="alert">Please enter the employee's full name.</div>
+            </div>
+
+            <div class="form-group" data-field="email">
+              <div class="label-row"><label class="form-label" for="email">Email Address <span class="required" aria-hidden="true">*</span></label></div>
+              <div class="input-wrap"><span class="ico">✉</span>
+                <input type="email" id="email" name="email" class="form-input" maxlength="254" th:value="${email}"
+                       placeholder="employee@example.com" autocomplete="email" inputmode="email" required aria-describedby="emailHelp emailErr"></div>
+              <div class="help-text" id="emailHelp">The invitation link will be sent to this email.</div>
+              <div class="field-error" id="emailErr" role="alert">Please enter a valid email address.</div>
+              <div class="suggest" id="suggest" role="status"></div>
+            </div>
+          </div>
+
+          <div class="sec">Work details</div>
+          <div class="form-grid">
+
+            <div class="form-group" data-field="employeeId">
+              <div class="label-row"><label class="form-label" for="employeeId">Employee ID <span class="required" aria-hidden="true">*</span></label></div>
+              <div class="input-wrap"><span class="ico">#</span>
+                <input type="text" id="employeeId" name="employeeId" class="form-input" maxlength="50" th:value="${employeeId}"
+                       placeholder="e.g. EMP001" required aria-describedby="idHelp idErr"></div>
+              <div class="help-text" id="idHelp">Unique internal employee identifier.</div>
+              <div class="field-error" id="idErr" role="alert">Please enter an employee ID.</div>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row"><label class="form-label" for="department">Department<span class="opt">Optional</span></label></div>
+              <select id="department" name="department" class="form-select">
+                <option value="">Select Department</option>
+                <option value="Engineering" th:selected="${department == 'Engineering'}">Engineering</option>
+                <option value="IT" th:selected="${department == 'IT'}">IT</option>
+                <option value="HR" th:selected="${department == 'HR'}">Human Resources</option>
+                <option value="Finance" th:selected="${department == 'Finance'}">Finance</option>
+                <option value="Sales" th:selected="${department == 'Sales'}">Sales</option>
+                <option value="Marketing" th:selected="${department == 'Marketing'}">Marketing</option>
+                <option value="Operations" th:selected="${department == 'Operations'}">Operations</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row"><label class="form-label" for="designation">Designation<span class="opt">Optional</span></label></div>
+              <div class="input-wrap"><span class="ico">💼</span>
+                <input type="text" id="designation" name="designation" class="form-input" maxlength="100" th:value="${designation}" placeholder="e.g. Software Developer"></div>
+            </div>
+
+            <div class="form-group" data-field="phone">
+              <div class="label-row"><label class="form-label" for="phone">Phone Number<span class="opt">Optional</span></label></div>
+              <div class="input-wrap"><span class="ico">📞</span>
+                <input type="tel" id="phone" name="phone" class="form-input" maxlength="20" th:value="${phone}"
+                       placeholder="+91 XXXXX XXXXX" autocomplete="tel" inputmode="tel" aria-describedby="phoneErr"></div>
+              <div class="field-error" id="phoneErr" role="alert">Please enter a valid phone number.</div>
+            </div>
+          </div>
+
+          <div class="sec">Note</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <div class="label-row">
+                <label class="form-label" for="message">Note<span class="opt">Optional</span></label>
+                <span class="counter" id="noteCount">0 / 1000</span>
+              </div>
+              <textarea id="message" name="message" class="form-textarea" maxlength="1000" placeholder="Optional note for your records…" th:text="${message}"></textarea>
+              <div class="help-text">This note is optional and is not used for login.</div>
+            </div>
+          </div>
+
+          <div class="note info">
+            <div class="note-ico">✉</div>
+            <div>
+              <h4>Employee Invitation</h4>
+              <p>After the employee account is created, Capacit<i>X</i> will send an invitation email to the employee. The email will contain a secure link for creating their password.</p>
+            </div>
+          </div>
+          <div class="note sec-ok">
+            <div class="note-ico">🔒</div>
+            <div>
+              <h4>Password Security</h4>
+              <p>The administrator does not set or receive the employee's password. The employee creates their own password through the invitation link, and the password is securely encrypted before being stored.</p>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <a th:href="@{/admin/employees}" class="btn btn-cancel">Cancel</a>
+            <button type="submit" class="btn btn-submit" id="submitBtn"><span>✉</span><span>Create &amp; Send Invitation</span></button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ============ LIVE PREVIEW ============ -->
+    
+  </div>
+</section>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var $ = function(s,c){return (c||document).querySelector(s)};
+  var $$ = function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s))};
+
+  var form=$('#employeeForm'), btn=$('#submitBtn');
+  var nameI=$('#name'), emailI=$('#email'), idI=$('#employeeId'), phoneI=$('#phone'), note=$('#message');
+  var dirty=false, submitting=false;
+  form.noValidate = true; /* custom inline messages; native validation stays as the no-JS fallback */
+
+  var EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  var PHONE = /^[+()\d\s\-.]{7,20}$/;
+  var TYPOS = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gamil.com':'gmail.com','gmail.co':'gmail.com','gmail.con':'gmail.com',
+               'yaho.com':'yahoo.com','yahooo.com':'yahoo.com','hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','outlok.com':'outlook.com'};
+
+  function mark(field, bad){ var g=$('[data-field="'+field+'"]'); if(g){ g.classList.toggle('invalid',bad); } }
+  function good(field, ok){ var g=$('[data-field="'+field+'"]'); if(g){ g.classList.toggle('valid',ok); } }
+  function setText(id, val, fallback){
+    var el=$(id), empty=!val; el.textContent = empty ? fallback : val; el.classList.toggle('empty',empty);
+  }
+  function emailOk(){ return EMAIL.test(emailI.value.trim()); }
+  function phoneOk(){ var v=phoneI.value.trim(); return !v || (PHONE.test(v) && (v.replace(/\D/g,'').length>=7)); }
+
+  function counter(){
+    var n=note.value.length, c=$('#noteCount'); c.textContent=n+' / 1000'; c.className='counter'+(n>=1000?' max':n>=900?' warn':'');
+  }
+  function suggest(){
+    var v=emailI.value.trim().toLowerCase(), at=v.lastIndexOf('@'), box=$('#suggest');
+    if(at>0){
+      var dom=v.slice(at+1);
+      if(TYPOS[dom]){
+        var fix=v.slice(0,at+1)+TYPOS[dom];
+        box.innerHTML=''; box.appendChild(document.createTextNode('Did you mean '));
+        var b=document.createElement('button'); b.type='button'; b.textContent=fix;
+        b.addEventListener('click',function(){ emailI.value=fix; box.classList.remove('show'); refresh(); emailI.focus(); });
+        box.appendChild(b); box.appendChild(document.createTextNode('?'));
+        box.classList.add('show'); return;
+      }
+    }
+    box.classList.remove('show');
+  }
+
+  function refresh(){
+    var nm=nameI.value.trim(), em=emailI.value.trim(), id=idI.value.trim();
+    var done=(nm?1:0)+(emailOk()?1:0)+(id?1:0);
+    $('#stepsFill').style.width=(done/3*100)+'%';
+    $('#stepsText').textContent = done===3 ? 'All required fields completed ✓' : done+' of 3 required fields';
+    $('#steps').classList.toggle('done',done===3);
+
+    good('name',!!nm); good('email',emailOk()); good('employeeId',!!id);
+    setText('#pName',nm,'Name not entered');
+    setText('#pMail',em,'Email not entered');
+    var av=$('#pAv'), ch = nm ? nm.charAt(0).toUpperCase() : '?';
+    if(av.textContent!==ch){ av.textContent=ch; av.classList.remove('bump'); void av.offsetWidth; av.classList.add('bump'); }
+    setText('#sId',id,'—');
+    var dep=$('#department'); setText('#sDept', dep.value ? dep.options[dep.selectedIndex].text : '', '—');
+    setText('#sDes',$('#designation').value.trim(),'—');
+    setText('#sPhone',phoneI.value.trim(),'—');
+    $('#mName').textContent = nm ? nm.split(/\s+/)[0] : 'there';
+  }
+
+  function validate(){
+    var first=null;
+    var checks=[['name',!nameI.value.trim(),nameI],['email',!emailOk(),emailI],['employeeId',!idI.value.trim(),idI],['phone',!phoneOk(),phoneI]];
+    checks.forEach(function(c){ mark(c[0],c[1]); if(c[1]&&!first) first=c[2]; });
+    var ev=emailI.value.trim();
+    $('#emailErr').textContent = ev ? 'Please enter a valid email address.' : 'Please enter the employee\'s email address.';
+    return first;
+  }
+
+  [nameI,emailI,idI,phoneI,$('#designation'),$('#department'),note].forEach(function(el){
+    el.addEventListener('input',function(){ dirty=true; if(el===nameI) mark('name',false); if(el===emailI){ mark('email',false); suggest(); } if(el===idI) mark('employeeId',false); if(el===phoneI) mark('phone',false); if(el===note) counter(); refresh(); });
+    el.addEventListener('change',function(){ dirty=true; refresh(); });
+  });
+  emailI.addEventListener('blur',function(){ var v=emailI.value.trim(); if(v && !emailOk()){ mark('email',true); $('#emailErr').textContent='Please enter a valid email address.'; } });
+  phoneI.addEventListener('blur',function(){ if(!phoneOk()) mark('phone',true); });
+
+  form.addEventListener('submit',function(e){
+    if(submitting){ e.preventDefault(); return; }
+    var bad=validate();
+    if(bad){
+      e.preventDefault();
+      var g=bad.closest('.form-group'); if(g) g.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(function(){ bad.focus({preventScroll:true}); },250);
+      say('Please fix the highlighted fields.');
+      return;
+    }
+    nameI.value=nameI.value.trim();
+    emailI.value=emailI.value.trim().toLowerCase();
+    idI.value=idI.value.trim();
+    submitting=true; btn.disabled=true;
+    btn.innerHTML='<span class="spinner"></span><span>Sending invitation…</span>';
+  });
+
+  window.addEventListener('beforeunload',function(e){ if(dirty && !submitting){ e.preventDefault(); e.returnValue=''; } });
+
+  /* Mobile sidebar (same behaviour as the other admin pages) */
+  var sb=$('#sidebar'), sc=$('#scrim'), bg=$('#burger');
+  function toggle(o){ sb.classList.toggle('open',o); sc.classList.toggle('show',o); bg.setAttribute('aria-expanded',o); document.body.style.overflow=o?'hidden':''; }
+  bg.addEventListener('click',function(){toggle(!sb.classList.contains('open'))});
+  sc.addEventListener('click',function(){toggle(false)});
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') toggle(false); });
+  $$('.nav-link',sb).forEach(function(a){ a.addEventListener('click',function(){ if(window.innerWidth<=850) toggle(false); }); });
+  window.addEventListener('resize',function(){ if(window.innerWidth>850) toggle(false); });
+
+  /* Toast */
+  var toast=$('#toast'), tt;
+  function say(m){ toast.textContent=m; toast.classList.add('show'); clearTimeout(tt); tt=setTimeout(function(){toast.classList.remove('show')},2800); }
+
+  /* Logout guard */
+  var lf=$('#logoutForm');
+  lf.addEventListener('submit',function(){ dirty=false; var b=$('button',lf); b.disabled=true; b.lastElementChild.textContent='Signing out…'; });
+
+  /* init (also covers values restored by the server after an error) */
+  counter(); suggest(); refresh();
+})();
+</script>
+</body>
+</html>
