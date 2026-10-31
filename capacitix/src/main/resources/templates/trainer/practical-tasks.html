@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Manage practical tasks and monitor employee competency development in Capacitix">
+<meta name="theme-color" content="#635bff">
+<title>Practical Tasks | Capacitix</title>
+<style>
+:root{
+  --primary:#635bff;--primary-dark:#4f46e5;--teal:#14b8a6;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --pink:#ec4899;--sky:#0ea5e9;--orange:#f97316;
+  --ink:#101828;--muted:#667085;--line:#eaecf0;--bg:#f4f7fb;--sidebar:#0b1220;
+  --shadow:0 12px 35px rgba(16,24,40,.08);--shadow-sm:0 5px 18px rgba(16,24,40,.055);
+  --ease:cubic-bezier(.2,.8,.2,1);--side:272px;--side-compact:82px;--header-h:78px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 85% 5%,rgba(99,91,255,.12),transparent 25rem),
+             radial-gradient(circle at 12% 75%,rgba(20,184,166,.09),transparent 24rem),
+             radial-gradient(circle at 60% 100%,rgba(236,72,153,.06),transparent 22rem),var(--bg)}
+a{text-decoration:none;color:inherit}
+button,input,select{font:inherit}button{border:0}
+:focus-visible{outline:3px solid #b9b4ff;outline-offset:2px}
+.skip{position:absolute;left:-999px;top:8px;z-index:2000;padding:8px 14px;background:#fff;border-radius:10px}
+.skip:focus{left:8px}
+
+/* SIDEBAR */
+.sidebar{position:fixed;inset:0 auto 0 0;width:var(--side);height:100vh;z-index:1100;display:flex;flex-direction:column;overflow:hidden;color:#fff;
+  background:radial-gradient(circle at 80% 10%,rgba(99,91,255,.25),transparent 13rem),
+             radial-gradient(circle at 0% 90%,rgba(20,184,166,.14),transparent 12rem),linear-gradient(180deg,var(--sidebar),#0e1728);
+  box-shadow:10px 0 40px rgba(15,23,42,.13);transition:transform .35s var(--ease),width .35s var(--ease);animation:slideIn .6s var(--ease) both}
+.brand{flex:none;display:flex;align-items:center;gap:11px;padding:22px 24px 14px}
+.brand-mark{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:13px;font-weight:900;font-size:20px;
+  background:linear-gradient(135deg,var(--primary),var(--teal));box-shadow:0 12px 30px rgba(99,91,255,.4);animation:glow 3s ease-in-out infinite}
+.brand-name{font-size:22px;font-weight:850;letter-spacing:-.7px}.brand-name span{color:#9c96ff}
+.nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding:0 14px 12px;scrollbar-width:thin;scrollbar-color:#3b4560 transparent}
+.menu-label{padding:15px 12px 8px;color:#7f8ba3;font-size:11px;font-weight:700;letter-spacing:.6px}
+.menu{list-style:none}.menu li{margin:4px 0}
+.menu a{position:relative;min-height:46px;display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid transparent;border-radius:13px;color:#b8c1d1;font-size:13px;font-weight:600;transition:all .25s var(--ease);overflow:hidden}
+.menu a:hover{color:#fff;background:rgba(255,255,255,.07);transform:translateX(4px)}
+.menu a.active{color:#fff;background:linear-gradient(100deg,rgba(99,91,255,.38),rgba(20,184,166,.14));border-color:rgba(255,255,255,.07);box-shadow:0 0 22px rgba(99,91,255,.22)}
+.menu a.active::before{content:"";position:absolute;left:0;top:25%;bottom:25%;width:3px;border-radius:0 4px 4px 0;background:linear-gradient(var(--primary),var(--teal))}
+.icon{width:23px;height:23px;flex:0 0 23px;display:grid;place-items:center;color:#8d99ad;font-size:16px;transition:transform .25s var(--ease)}
+.menu a:hover .icon{transform:scale(1.2) rotate(-6deg)}
+.menu a:hover .icon,.menu a.active .icon{color:#fff}
+.sidebar-bottom{flex:none;padding:10px 14px 16px;border-top:1px solid rgba(255,255,255,.07);background:var(--sidebar)}
+.logout form{margin:0}
+.logout button{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px 12px;cursor:pointer;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035);color:#c5cbd6;font-size:12px;font-weight:700;transition:all .25s ease}
+.logout button:hover{background:rgba(239,68,68,.14);color:#fff;border-color:rgba(239,68,68,.3)}
+.overlay{position:fixed;inset:0;z-index:1050;background:rgba(15,23,42,.45);opacity:0;visibility:hidden;transition:.25s}
+.overlay.show{opacity:1;visibility:visible}
+
+/* MAIN + HEADER */
+.main{margin-left:var(--side);height:100vh;overflow-y:auto;overflow-x:hidden;transition:margin .35s var(--ease);scrollbar-width:thin;scrollbar-color:#c5cbd8 transparent}
+.header{position:sticky;top:0;z-index:900;min-height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 36px;background:rgba(255,255,255,.86);border-bottom:1px solid var(--line);backdrop-filter:blur(18px)}
+.header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:linear-gradient(90deg,var(--primary),var(--teal),var(--pink),var(--primary));background-size:200% 100%;animation:flow 6s linear infinite;opacity:.8}
+.header-left{display:flex;align-items:center;gap:12px;min-width:0}
+.mobile-menu{display:none;width:42px;height:42px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}
+.header-title{font-size:21px;font-weight:850;letter-spacing:-.5px}
+.header-subtitle{margin-top:3px;color:var(--muted);font-size:12px}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-btn{position:relative;width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:all .25s var(--ease)}
+.header-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:#cbc7ff}
+.badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;display:grid;place-items:center;border:2px solid #fff;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;font-weight:800;animation:pulse 2s infinite}
+.profile{display:flex;align-items:center;gap:10px}
+.avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;color:#fff;font-size:13px;font-weight:850;background:linear-gradient(135deg,var(--primary),var(--pink));box-shadow:0 8px 20px rgba(99,91,255,.3)}
+.name{font-size:12px;font-weight:800}.role-name{margin-top:2px;color:var(--muted);font-size:11px}
+
+/* CONTENT + HERO */
+.content{width:min(1450px,100%);margin:auto;padding:28px 36px 55px}
+.hero{position:relative;overflow:hidden;margin-bottom:22px;padding:30px 32px;border-radius:26px;color:#fff;
+  background:linear-gradient(120deg,#4f46e5,#7c3aed 35%,#0ea5e9 70%,#14b8a6);background-size:240% 240%;animation:flow 14s ease infinite,fadeUp .6s var(--ease) both;box-shadow:0 22px 50px rgba(79,70,229,.28)}
+.hero::before,.hero::after{content:"";position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none}
+.hero::before{width:260px;height:260px;right:-60px;top:-90px;background:rgba(255,255,255,.14);animation:float 9s ease-in-out infinite}
+.hero::after{width:150px;height:150px;right:22%;bottom:-70px;background:rgba(236,72,153,.35);animation:float 11s ease-in-out infinite reverse}
+.hero>*{position:relative;z-index:1}
+.hero h1{font-size:28px;font-weight:850;letter-spacing:-.7px}
+.hero p{max-width:640px;margin-top:8px;color:rgba(255,255,255,.88);font-size:13px;line-height:1.65}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:18px}
+.flow span{padding:6px 11px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.25);backdrop-filter:blur(6px);font-size:11px;font-weight:700;opacity:0;animation:fadeUp .5s var(--ease) forwards}
+.flow span:nth-child(1){animation-delay:.35s}.flow span:nth-child(3){animation-delay:.45s}.flow span:nth-child(5){animation-delay:.55s}
+.flow span:nth-child(7){animation-delay:.65s}.flow span:nth-child(9){animation-delay:.75s}.flow span:nth-child(11){animation-delay:.85s}
+.flow i{font-style:normal;opacity:.7;font-size:12px}
+.flow .goal{background:#fff;color:#4f46e5}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.stat{--c1:#6366f1;--c2:#8b5cf6;position:relative;overflow:hidden;padding:20px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s;animation:fadeUp .55s var(--ease) both}
+.stat:nth-child(1){animation-delay:.1s}.stat:nth-child(2){animation-delay:.18s}.stat:nth-child(3){animation-delay:.26s}
+.stat::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--c1),var(--c2))}
+.stat::after{content:"";position:absolute;right:-40px;bottom:-50px;width:130px;height:130px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));opacity:.08;transition:transform .5s var(--ease)}
+.stat:hover{transform:translateY(-5px);box-shadow:var(--shadow)}.stat:hover::after{transform:scale(1.4)}
+.stat.s-green{--c1:#10b981;--c2:#14b8a6}.stat.s-pink{--c1:#ec4899;--c2:#f97316}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between}
+.stat-icon{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;color:#fff;font-size:18px;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 10px 22px rgba(99,91,255,.25);transition:transform .4s var(--ease)}
+.stat:hover .stat-icon{transform:rotate(-8deg) scale(1.1)}
+.number{font-size:32px;font-weight:850;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.label{margin-top:4px;color:var(--ink);font-size:12px;font-weight:700}
+.trend{margin-top:13px;color:var(--muted);font-size:11px;font-weight:600}
+
+/* CARD */
+.card{margin-bottom:20px;padding:24px;border:1px solid var(--line);border-radius:24px;background:#fff;box-shadow:var(--shadow-sm);animation:fadeUp .6s .3s var(--ease) both}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:15px}
+.card-head h2{font-size:17px;font-weight:850}
+.card-sub{margin-top:4px;color:var(--muted);font-size:12px}
+
+/* TOOLBAR */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 18px;align-items:center}
+.search{flex:1 1 250px;padding:12px 14px 12px 38px;border:1px solid var(--line);border-radius:13px;font-size:12px;
+  background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='M11 11l4 4'/%3E%3C/svg%3E") no-repeat 13px center;transition:all .25s}
+.search:focus{outline:0;background-color:#fff;border-color:#b9b4ff;box-shadow:0 0 0 4px rgba(99,91,255,.12)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;transition:all .25s var(--ease)}
+.chip:hover{transform:translateY(-2px);border-color:#cbc7ff;color:var(--primary-dark)}
+.chip em{font-style:normal;min-width:18px;padding:1px 6px;border-radius:99px;background:#f2f4f7;color:#475467;font-size:10px;text-align:center}
+.chip.on{background:linear-gradient(135deg,#6366f1,#7c3aed);border-color:transparent;color:#fff;box-shadow:0 8px 18px rgba(99,91,255,.3)}
+.chip.on em{background:rgba(255,255,255,.25);color:#fff}
+
+/* TASK GRID */
+.task-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.task-item{--accent:#98a2b3;--tint:#f2f4f7;position:relative;overflow:hidden;display:flex;flex-direction:column;min-width:0;padding:22px 20px 18px;border:1px solid var(--line);border-radius:20px;
+  background:linear-gradient(160deg,#fff 40%,var(--tint));transition:transform .3s var(--ease),border-color .3s,box-shadow .3s;animation:fadeUp .5s var(--ease) both}
+.task-item::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--accent);transform-origin:left;animation:grow .8s .2s var(--ease) both}
+.task-item:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:0 18px 34px rgba(16,24,40,.12)}
+.task-item.is-hidden{display:none}
+.task-item[data-status="pending"]{--accent:#f59e0b;--tint:#fffbeb}
+.task-item[data-status="in-progress"]{--accent:#f97316;--tint:#fff7ed}
+.task-item[data-status="submitted"]{--accent:#0ea5e9;--tint:#f0f9ff}
+.task-item[data-status="needs-improvement"]{--accent:#ec4899;--tint:#fdf2f8}
+.task-item[data-status="completed"]{--accent:#10b981;--tint:#ecfdf5}
+.task-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.task-icon{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:var(--accent);color:#fff;font-size:17px;box-shadow:0 10px 20px rgba(16,24,40,.14);transition:transform .4s var(--ease)}
+.task-item:hover .task-icon{transform:rotate(12deg) scale(1.1)}
+.task-name{margin-bottom:7px;font-size:15px;font-weight:800;letter-spacing:-.2px;word-break:break-word}
+.task-text{flex:1;margin-bottom:14px;color:var(--muted);font-size:12px;line-height:1.6;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.task-employee{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding:9px 10px;border-radius:12px;background:rgba(255,255,255,.8);border:1px solid var(--line);color:#475467;font-size:11px;font-weight:600}
+.employee-avatar{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(135deg,#6366f1,#ec4899);color:#fff;font-size:11px;font-weight:800}
+.learning-path,.training-module{display:flex;align-items:center;gap:6px;width:fit-content;max-width:100%;margin-bottom:8px;padding:5px 10px;border-radius:999px;font-size:10px;font-weight:700}
+.learning-path{background:#f5f3ff;color:#6d28d9}.training-module{background:#ecfdf5;color:#047857}
+.task-meta{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+.meta-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:10px;font-weight:700}
+.skill-pill{background:#eef2ff;color:#4f46e5}.ai-pill{background:linear-gradient(135deg,#ecfdf5,#e0f2fe);color:#0f766e}
+.review-pill{background:#fff7ed;color:#c2410c;animation:pulse-soft 2s infinite}
+
+/* STATUS */
+.task-status{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;white-space:nowrap}
+.task-status::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.status-draft{background:#f2f4f7;color:#475467}
+.status-pending{background:#fef3c7;color:#92400e}
+.status-in-progress{background:#ffedd5;color:#c2410c}
+.status-submitted{background:#dbeafe;color:#1d4ed8}.status-submitted::before{animation:pulse-dot 1.4s infinite}
+.status-needs-improvement{background:#fce7f3;color:#be185d}
+.status-completed,.status-active{background:#d1fae5;color:#047857}
+
+/* PROGRESS */
+.progress-wrap{margin-top:4px}
+.progress-top{display:flex;justify-content:space-between;margin-bottom:6px;color:var(--muted);font-size:10px;font-weight:700}
+.progress-top strong{color:var(--ink)}
+.progress-bar{width:100%;height:8px;overflow:hidden;border-radius:999px;background:rgba(16,24,40,.07)}
+.progress-value{position:relative;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--primary),var(--accent));transform-origin:left;animation:grow 1.1s .35s var(--ease) both;overflow:hidden}
+.progress-value::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-100%);animation:shine 2.6s 1.5s infinite}
+
+/* FOOTER */
+.task-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:15px;padding-top:14px;border-top:1px dashed #dfe3ea}
+.task-info{color:#98a2b3;font-size:11px;font-weight:600}
+.task-actions{display:flex;align-items:center;gap:6px}
+.task-view,.review-button{display:inline-flex;align-items:center;justify-content:center;padding:8px 13px;border-radius:11px;font-size:11px;font-weight:700;transition:all .25s var(--ease)}
+.task-view{border:1px solid var(--line);background:#fff;color:#344054}
+.task-view:hover{background:var(--ink);border-color:var(--ink);color:#fff;transform:translateX(2px)}
+.review-button{background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;box-shadow:0 8px 18px rgba(99,91,255,.3)}
+.review-button:hover{transform:translateY(-2px);box-shadow:0 12px 24px rgba(99,91,255,.4)}
+
+/* EMPTY */
+.empty{padding:38px 14px;text-align:center;color:var(--muted)}
+.empty .empty-icon{width:60px;height:60px;margin:0 auto 14px;display:grid;place-items:center;border-radius:18px;background:linear-gradient(135deg,#eef2ff,#fdf2f8);color:#5b55ed;font-size:24px;animation:float 4s ease-in-out infinite}
+.empty strong{display:block;margin-bottom:5px;color:var(--ink);font-size:14px}
+.empty p{max-width:390px;margin:0 auto 14px;font-size:12px;line-height:1.5}
+.empty a{display:inline-block;padding:10px 16px;border-radius:11px;background:linear-gradient(135deg,#6366f1,#7c3aed);color:#fff;font-size:12px;font-weight:700;box-shadow:0 8px 18px rgba(99,91,255,.3);transition:transform .25s}
+.empty a:hover{transform:translateY(-2px)}
+#noMatch{display:none}
+
+/* NOTIFICATIONS */
+.notification-panel{position:fixed;right:25px;top:72px;width:min(350px,calc(100vw - 30px));z-index:1200;padding:15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.97);box-shadow:0 20px 55px rgba(16,24,40,.16);max-height:70vh;overflow-y:auto;opacity:0;visibility:hidden;transform:translateY(-10px) scale(.98);transition:all .25s var(--ease)}
+.notification-panel.show{opacity:1;visibility:visible;transform:none}
+.notification-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.notification-head strong{font-size:13px}
+.notification-head button{background:none;cursor:pointer;color:var(--muted)}
+.notice{display:flex;gap:10px;padding:11px 8px;border-radius:10px;transition:background .2s}
+.notice:hover{background:#f5f7ff}
+.notice-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--pink));flex:0 0 8px}
+.notice p{font-size:11px;line-height:1.45;color:var(--muted)}.notice strong{color:var(--ink)}
+
+/* RESPONSIVE */
+@media (max-width:1200px){:root{--side:245px}.content{padding:26px 25px 45px}.header{padding:14px 25px}.task-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:900px){:root{--side:var(--side-compact)}
+  .brand{justify-content:center;padding:22px 0 14px}
+  .brand-name,.menu-label,.menu a span:not(.icon),.logout button span:not(.icon){display:none}
+  .menu a{justify-content:center;padding:11px 8px}.icon{width:100%}.header{padding:13px 20px}}
+@media (max-width:650px){:root{--side:0px}
+  .sidebar{width:265px;transform:translateX(-105%);animation:none}.sidebar.open{transform:none}
+  .brand{justify-content:flex-start;padding:22px 24px 14px}.brand-name,.menu-label{display:block}
+  .menu a span:not(.icon),.logout button span:not(.icon){display:inline}
+  .menu a{justify-content:flex-start;padding:10px 12px;gap:12px}.icon{width:23px}
+  .mobile-menu{display:grid;place-items:center}
+  .header{min-height:70px;padding:12px 16px}.header-title{font-size:18px}
+  .header-subtitle,.name,.role-name{display:none}
+  .content{padding:18px 15px 35px}.hero{padding:24px 20px}.hero h1{font-size:23px}
+  .stats,.task-grid{grid-template-columns:1fr}.card{padding:18px}
+  .notification-panel{right:15px;top:66px}
+  .task-foot{align-items:flex-start;flex-direction:column}.task-actions{width:100%}.task-view,.review-button{flex:1}}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes flow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+@keyframes shine{to{transform:translateX(100%)}}
+@keyframes glow{0%,100%{box-shadow:0 12px 30px rgba(99,91,255,.35)}50%{box-shadow:0 12px 40px rgba(20,184,166,.55)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.5)}70%{box-shadow:0 0 0 8px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+@keyframes pulse-soft{0%,100%{opacity:1}50%{opacity:.65}}
+@keyframes pulse-dot{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<a class="skip" href="#content">Skip to content</a>
+<div class="overlay" id="overlay"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+        <div class="brand-mark">C</div>
+        <div class="brand-name">Capacit<span>ix</span></div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Trainer menu">
+        <div class="menu-label">Training</div>
+        <ul class="menu">
+            <li><a th:href="@{/trainer/dashboard}" href="/trainer/dashboard"><span class="icon">⌂</span><span>Dashboard</span></a></li>
+            <li><a th:href="@{/trainer/employees}" href="/trainer/employees"><span class="icon">♙</span><span>My Trainees</span></a></li>
+            <li><a th:href="@{/trainer/skill-gaps}" href="/trainer/skill-gaps"><span class="icon">△</span><span>Skill Gaps</span></a></li>
+            <li><a th:href="@{/trainer/learning-resources}" href="/trainer/learning-resources"><span class="icon">▣</span><span>Learning Resources</span></a></li>
+            <li><a th:href="@{/trainer/assessments}" href="/trainer/assessments"><span class="icon">✓</span><span>Assessments</span></a></li>
+             </ul>
+
+        <div class="menu-label">Analytics</div>
+        <ul class="menu">
+             <li><a class="active" th:href="@{/trainer/practical-tasks}" href="/trainer/practical-tasks" aria-current="page"><span class="icon">◆</span><span>Practical Tasks</span></a></li>
+      
+            <li><a th:href="@{/trainer/progress}" href="/trainer/progress"><span class="icon">↗</span><span>Trainee Progress</span></a></li>
+            <li><a th:href="@{/trainer/reports}" href="/trainer/reports"><span class="icon">▤</span><span>Reports</span></a></li>
+        </ul>
+
+        <div class="menu-label">Account</div>
+        <ul class="menu">
+            <li><a th:href="@{/trainer/profile}" href="/trainer/profile"><span class="icon">●</span><span>My Profile</span></a></li>
+            <li><a th:href="@{/trainer/settings}" href="/trainer/settings"><span class="icon">⚙</span><span>Settings</span></a></li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="logout">
+            <form th:action="@{/logout}" action="/logout" method="post">
+                <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit"><span class="icon">↪</span><span>Logout</span></button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main" id="main">
+
+    <header class="header">
+        <div class="header-left">
+            <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Open menu">☰</button>
+            <div>
+                <div class="header-title">Practical Tasks</div>
+                <div class="header-subtitle">Manage hands-on competency tasks for assigned Students</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="header-btn" id="notificationBtn" type="button" aria-label="Notifications">
+                🔔
+                <span class="badge"
+                      th:if="${notifications != null and !notifications.isEmpty()}"
+                      th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">0</span>
+            </button>
+
+            <div class="profile">
+                <div class="avatar" th:text="${userInitial != null ? userInitial : 'T'}">T</div>
+                <div>
+                    <div class="name" th:text="${userName != null ? userName : 'Trainer'}">Trainer</div>
+                    <div class="role-name">Trainer</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="content" id="content">
+
+        <!-- HERO -->
+        <div class="hero">
+            <h1>Practical Tasks</h1>
+            <p>Assign and monitor practical work that helps Students apply the skills they are learning through their personalized learning path.</p>
+            <div class="flow" aria-label="Workflow">
+                <span>Skill Gap</span><i>›</i>
+                <span>Learning Path</span><i>›</i>
+                <span>Training</span><i>›</i>
+                <span>Practical Task</span><i>›</i>
+                <span>Submission</span><i>›</i>
+                <span class="goal">Trainer Review</span>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" data-count th:text="${totalTasks != null ? totalTasks : 0}">0</div>
+                        <div class="label">Total Tasks</div>
+                    </div>
+                    <div class="stat-icon">◆</div>
+                </div>
+                <div class="trend">Practical tasks for your assigned Students</div>
+            </div>
+
+            <div class="stat s-pink">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" data-count th:text="${activeTasks != null ? activeTasks : 0}">0</div>
+                        <div class="label">Active Tasks</div>
+                    </div>
+                    <div class="stat-icon">✓</div>
+                </div>
+                <div class="trend">Tasks currently assigned or being practiced</div>
+            </div>
+
+            <div class="stat s-green">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" data-count th:text="${completedTasks != null ? completedTasks : 0}">0</div>
+                        <div class="label">Completed</div>
+                    </div>
+                    <div class="stat-icon">▤</div>
+                </div>
+                <div class="trend">Tasks approved by the trainer</div>
+            </div>
+        </div>
+
+        <!-- TASK LIBRARY -->
+        <div class="card">
+            <div class="card-head">
+                <div>
+                    <h2>Practical Task Library</h2>
+                    <div class="card-sub">Review Student practical work and monitor competency development.</div>
+                </div>
+            </div>
+
+            <div th:if="${tasks != null and !tasks.isEmpty()}">
+
+                <div class="toolbar">
+                    <input class="search" id="taskSearch" type="search"
+                           placeholder="Search task, employee or skill..." autocomplete="off">
+
+                    <div class="chips" id="filterChips">
+                        <button type="button" class="chip on" data-filter="all">All <em>0</em></button>
+                        <button type="button" class="chip" data-filter="pending">Pending <em>0</em></button>
+                        <button type="button" class="chip" data-filter="in-progress">In Progress <em>0</em></button>
+                        <button type="button" class="chip" data-filter="submitted">Awaiting Review <em>0</em></button>
+                        <button type="button" class="chip" data-filter="needs-improvement">Needs Improvement <em>0</em></button>
+                        <button type="button" class="chip" data-filter="completed">Completed <em>0</em></button>
+                    </div>
+                </div>
+
+                <div class="task-grid" id="taskGrid">
+
+                    <article class="task-item"
+                             th:each="task, iter : ${tasks}"
+                             th:data-status="${task.status != null ? #strings.toLowerCase(task.status.toString()).replace('_','-') : 'pending'}"
+                             th:data-title="${task.title != null ? #strings.toLowerCase(task.title) : ''}"
+                             th:data-skill="${task.skillName != null ? #strings.toLowerCase(task.skillName) : ''}"
+                             th:data-employee="${task.employee != null and task.employee.fullName != null ? #strings.toLowerCase(task.employee.fullName) : ''}"
+                             th:style="'animation-delay:' + ${iter.index * 0.06} + 's'">
+
+                        <div class="task-top">
+                            <div class="task-icon">◆</div>
+
+                            <span class="task-status"
+                                  th:classappend="${'status-' + (task.status != null ? #strings.toLowerCase(task.status.toString()).replace('_','-') : 'pending')}"
+                                  th:text="${task.status != null ? #strings.replace(task.status.toString(), '_', ' ') : 'PENDING'}">PENDING</span>
+                        </div>
+
+                        <div class="task-name"
+                             th:text="${task.title != null ? task.title : 'Practical Task'}">Practical Task</div>
+
+                        <div class="task-text"
+                             th:text="${task.description != null and !#strings.isEmpty(task.description) ? task.description : 'Practical task designed to improve employee competency.'}">
+                            Practical task description.
+                        </div>
+
+                        <div class="task-employee" th:if="${task.employee != null}">
+                            <div class="employee-avatar"
+                                 th:text="${task.employee.fullName != null and !#strings.isEmpty(task.employee.fullName) ? #strings.substring(task.employee.fullName,0,1).toUpperCase() : 'E'}">E</div>
+                            <span>Assigned to:
+                                <strong th:text="${task.employee.fullName != null ? task.employee.fullName : 'Employee'}">Student</strong>
+                            </span>
+                        </div>
+
+                        <div class="learning-path"
+                             th:if="${task.learningPathItem != null and task.learningPathItem.learningPath != null}">
+                            <span>↗</span>
+                            <span th:text="${task.learningPathItem.learningPath.title != null ? task.learningPathItem.learningPath.title : 'Personalized Learning Path'}">Personalized Learning Path</span>
+                        </div>
+
+                        <div class="training-module" th:if="${task.trainingModule != null}">
+                            <span>▣</span>
+                            <span th:text="${task.trainingModule.title != null ? task.trainingModule.title : 'Training Module'}">Training Module</span>
+                        </div>
+
+                        <div class="task-meta">
+                            <span class="meta-pill skill-pill" th:if="${task.skillName != null and !#strings.isEmpty(task.skillName)}">
+                                ◆ <span th:text="${task.skillName}">Java</span>
+                            </span>
+                            <span class="meta-pill ai-pill" th:if="${task.aiGenerated != null and task.aiGenerated}">✦ AI Generated</span>
+                            <span class="meta-pill" th:if="${task.difficulty != null}">
+                                ◈ <span th:text="${task.difficulty}">Medium</span>
+                            </span>
+                            <span class="meta-pill" th:if="${task.estimatedMinutes != null}">
+                                ⏱ <span th:text="${task.estimatedMinutes + ' min'}">30 min</span>
+                            </span>
+                            <span class="meta-pill review-pill" th:if="${task.status != null and task.status.toString() == 'SUBMITTED'}">⚑ Awaiting Review</span>
+                        </div>
+
+                        <div class="progress-wrap">
+                            <div class="progress-top">
+                                <span>Student Progress</span>
+                                <strong th:text="${task.progressPercentage != null ? task.progressPercentage + '%' : '0%'}">0%</strong>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-value"
+                                     th:style="'width:' + ${task.progressPercentage != null ? task.progressPercentage : 0} + '%'"></div>
+                            </div>
+                        </div>
+
+                        <div class="task-foot">
+                            <span class="task-info"
+                                  th:text="${task.createdAt != null ? 'Created ' + #temporals.format(task.createdAt, 'dd MMM yyyy') : 'Practical competency'}">Practical competency</span>
+
+                            <div class="task-actions">
+                                <a class="review-button"
+                                   th:if="${task.status != null and task.status.toString() == 'SUBMITTED'}"
+                                   th:href="@{/trainer/practical-tasks/{taskId}(taskId=${task.id})}">Review Submission</a>
+
+                                <a class="task-view"
+                                   th:href="@{/trainer/practical-tasks/{taskId}(taskId=${task.id})}">View Task →</a>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <div class="empty" id="noMatch">
+                    <div class="empty-icon">⌕</div>
+                    <strong>No tasks match your search</strong>
+                    <p>Try another task title, Student name, skill name, or status.</p>
+                </div>
+            </div>
+
+            <div class="empty" th:if="${tasks == null or tasks.isEmpty()}">
+                <div class="empty-icon">◆</div>
+                <strong>No practical tasks available</strong>
+                <p>No practical tasks are currently available for the Students assigned to this trainer.</p>
+                <a th:href="@{/trainer/skill-gaps}" href="/trainer/skill-gaps">View Students Skill Gaps</a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- NOTIFICATIONS -->
+<div class="notification-panel" id="notificationPanel">
+    <div class="notification-head">
+        <strong>Notifications</strong>
+        <button id="closeNotifications" type="button" aria-label="Close notifications">✕</button>
+    </div>
+
+    <div class="notice" th:each="n : ${notifications}">
+        <span class="notice-dot"></span>
+        <p>
+            <strong th:text="${n.title}">Notification</strong><br>
+            <span th:text="${n.message}">Notification message</span>
+        </p>
+    </div>
+
+    <div class="empty" th:if="${notifications == null or notifications.isEmpty()}">
+        <strong>You're all caught up</strong>
+        <p>New activity related to your Students will appear here.</p>
+    </div>
+</div>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+/* Sidebar */
+const sidebar = $('#sidebar'), overlay = $('#overlay'), mobileMenu = $('#mobileMenu');
+function setSidebar(open) {
+    if (!sidebar || !overlay) return;
+    sidebar.classList.toggle('open', open);
+    overlay.classList.toggle('show', open);
+}
+mobileMenu && mobileMenu.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
+
+/* Notifications */
+const nBtn = $('#notificationBtn'), nPanel = $('#notificationPanel'), closeN = $('#closeNotifications');
+function setPanel(open) { nPanel && nPanel.classList.toggle('show', open); }
+nBtn && nBtn.addEventListener('click', e => { e.stopPropagation(); setPanel(!nPanel.classList.contains('show')); });
+closeN && closeN.addEventListener('click', () => setPanel(false));
+overlay && overlay.addEventListener('click', () => { setSidebar(false); setPanel(false); });
+document.addEventListener('click', e => {
+    if (nPanel && !nPanel.contains(e.target) && !nBtn.contains(e.target)) setPanel(false);
+});
+
+/* Count-up for stat numbers */
+(function () {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $$('[data-count]').forEach(el => {
+        const target = parseInt(el.textContent, 10);
+        if (isNaN(target) || reduce || target === 0) return;
+        const start = performance.now(), dur = 900;
+        (function tick(now) {
+            const t = Math.min((now - start) / dur, 1);
+            el.textContent = Math.round(target * (1 - Math.pow(1 - t, 3)));
+            if (t < 1) requestAnimationFrame(tick);
+        })(start);
+    });
+})();
+
+/* Task search + filter */
+const grid = $('#taskGrid'), noMatch = $('#noMatch'),
+      searchInput = $('#taskSearch'), filterChips = $('#filterChips');
+
+if (grid && searchInput && filterChips) {
+    const items = $$('.task-item', grid);
+    let activeFilter = 'all';
+    const norm = s => (s || '').toLowerCase().replaceAll('_', '-').trim();
+
+    /* chip counts */
+    $$('.chip', filterChips).forEach(chip => {
+        const f = norm(chip.dataset.filter);
+        const n = f === 'all' ? items.length : items.filter(i => norm(i.dataset.status) === f).length;
+        const badge = $('em', chip);
+        if (badge) badge.textContent = n;
+    });
+
+    function applyFilters() {
+        const q = searchInput.value.trim().toLowerCase();
+        let visible = 0;
+        items.forEach(item => {
+            const statusOk = activeFilter === 'all' || norm(item.dataset.status) === activeFilter;
+            const searchOk = !q
+                || (item.dataset.title || '').includes(q)
+                || (item.dataset.skill || '').includes(q)
+                || (item.dataset.employee || '').includes(q);
+            const show = statusOk && searchOk;
+            item.classList.toggle('is-hidden', !show);
+            if (show) visible++;
+        });
+        if (noMatch) noMatch.style.display = visible === 0 ? 'block' : 'none';
+    }
+
+    filterChips.addEventListener('click', e => {
+        const chip = e.target.closest('.chip');
+        if (!chip) return;
+        $$('.chip', filterChips).forEach(b => b.classList.remove('on'));
+        chip.classList.add('on');
+        activeFilter = norm(chip.dataset.filter);
+        applyFilters();
+    });
+    searchInput.addEventListener('input', applyFilters);
+    applyFilters();
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { setPanel(false); setSidebar(false); }
+});
+</script>
+</body>
+</html>

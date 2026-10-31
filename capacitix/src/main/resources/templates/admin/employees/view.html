@@ -1,0 +1,1465 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Student | Capacitix</title>
+
+    <style>
+
+        /* ========== 1. DESIGN TOKENS ========== */
+
+        :root {
+            --bg: #f4f6fb;
+            --text: #172033;
+            --muted: #667085;
+            --light: #98a2b3;
+            --line: #e6e9f0;
+            --brand: #4f46e5;
+            --teal: #14b8a6;
+            --radius: 16px;
+            --shadow: 0 12px 30px rgba(15, 23, 42, .08);
+            --ease: cubic-bezier(.2, .8, .2, 1);
+            --side: 265px;
+        }
+
+        /* ========== 2. GLOBAL ========== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: "Inter", "Segoe UI", system-ui, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        .skip {
+            position: absolute;
+            left: -999px;
+            top: 8px;
+            background: #fff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            z-index: 3000;
+        }
+
+        .skip:focus {
+            left: 8px;
+        }
+
+        .page-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            width: 0;
+            background: linear-gradient(90deg, var(--brand), var(--teal));
+            z-index: 4000;
+            transition: width .5s var(--ease), opacity .4s;
+        }
+
+        /* ========== 3. SIDEBAR ========== */
+
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+            width: var(--side);
+            height: 100vh;
+            background: linear-gradient(
+                180deg,
+                #0f172a,
+                #111827 60%,
+                #0b1220
+            );
+            color: #fff;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform .3s ease;
+            animation: slideIn .6s var(--ease) both;
+        }
+
+        .brand {
+            flex: none;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 22px 26px 16px;
+        }
+
+        .brand-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 13px;
+            background: linear-gradient(135deg, #6366f1, #14b8a6);
+            display: grid;
+            place-items: center;
+            font-weight: 800;
+            font-size: 20px;
+            box-shadow: 0 8px 25px rgba(99, 102, 241, .35);
+            transition: transform .4s var(--ease);
+        }
+
+        .brand:hover .brand-icon {
+            transform: rotate(-8deg) scale(1.06);
+        }
+
+        .brand-text {
+            font-size: 22px;
+            font-weight: 750;
+            letter-spacing: -.5px;
+        }
+
+        /* ========== 4. NAVIGATION ========== */
+
+        .nav {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            scroll-behavior: smooth;
+            padding: 0 12px 12px;
+            scrollbar-width: thin;
+            scrollbar-color: #3b4560 transparent;
+        }
+
+        .nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .nav::-webkit-scrollbar-thumb {
+            background: #3b4560;
+            border-radius: 20px;
+        }
+
+        .nav::-webkit-scrollbar-thumb:hover {
+            background: #5b6785;
+        }
+
+        .nav-title {
+            color: #667085;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin: 16px 12px 8px;
+        }
+
+        .nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 12px;
+            margin: 3px 0;
+            border-radius: 10px;
+            color: #aab4c3;
+            font-size: 14px;
+            transition: background .25s, color .25s, transform .25s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #fff;
+            transform: translateX(4px);
+        }
+
+        .nav-link:hover .nav-icon {
+            transform: scale(1.2) translateX(2px);
+            color: #5eead4;
+        }
+
+        .nav-link:active {
+            transform: translateX(2px) scale(.98);
+        }
+
+        .nav-link.active {
+            background: linear-gradient(
+                90deg,
+                rgba(99, 91, 255, .3),
+                rgba(20, 184, 166, .1)
+            );
+            color: #fff;
+            box-shadow:
+                inset 3px 0 #6366f1,
+                0 0 22px rgba(99, 102, 241, .2);
+        }
+
+        .nav-link.active::after {
+            content: "";
+            position: absolute;
+            right: 12px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #14b8a6;
+            box-shadow: 0 0 10px #14b8a6;
+        }
+
+        .nav-icon {
+            width: 22px;
+            min-width: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: transform .25s, color .25s;
+        }
+
+        .sidebar-bottom {
+            flex: none;
+            padding: 10px 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .07);
+            background: #0b1220;
+        }
+
+        .logout-form {
+            width: 100%;
+            margin: 0;
+        }
+
+        .logout-button {
+            width: 100%;
+            border: 0;
+            background: transparent;
+            color: #aab4c3;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: left;
+            transition: .25s;
+        }
+
+        .logout-button:hover {
+            background: rgba(239, 68, 68, .14);
+            color: #fca5a5;
+            transform: translateX(3px);
+        }
+
+        .logout-button:active {
+            transform: scale(.98);
+        }
+
+        .scrim {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, .5);
+            z-index: 900;
+            animation: fade .25s ease;
+        }
+
+        /* ========== 5. MAIN ========== */
+
+        .main {
+            margin-left: var(--side);
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #c5cbd8 transparent;
+        }
+
+        .main::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .main::-webkit-scrollbar-thumb {
+            background: #c5cbd8;
+            border-radius: 20px;
+        }
+
+        /* ========== 6. TOPBAR ========== */
+
+        .topbar {
+            height: 74px;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            background: rgba(255, 255, 255, .92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line);
+            animation: dropIn .6s var(--ease) both;
+        }
+
+        .topbar-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .burger {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--line);
+            background: #fff;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: .2s;
+        }
+
+        .burger:hover {
+            border-color: #c7d2fe;
+            background: #f5f3ff;
+        }
+
+        .page-heading h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -.3px;
+        }
+
+        .page-heading p {
+            color: var(--muted);
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .admin-info {
+            text-align: right;
+        }
+
+        .admin-info strong {
+            display: block;
+            font-size: 13px;
+            font-weight: 650;
+        }
+
+        .admin-info span {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #14b8a6);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            transition: .25s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.08);
+        }
+
+        /* ========== 7. MAIN CONTENT ========== */
+
+        .content {
+            min-height: calc(100vh - 74px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px;
+        }
+
+        .st {
+            animation: rise .6s var(--ease) both;
+            animation-delay: calc(var(--i, 0) * 90ms);
+        }
+
+        /* ========== 8. EMPLOYEE CARD ========== */
+
+        .employee-card {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            padding: 0 30px 30px;
+            text-align: center;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(16, 24, 40, .03);
+            transition:
+                transform .25s var(--ease),
+                box-shadow .25s;
+        }
+
+        .employee-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .employee-card::before {
+            content: "";
+            display: block;
+            height: 92px;
+            margin: 0 -30px;
+            background:
+                radial-gradient(
+                    circle at 10% 0,
+                    rgba(99, 102, 241, .6),
+                    transparent 55%
+                ),
+                linear-gradient(
+                    135deg,
+                    #1e1b4b,
+                    #312e81 55%,
+                    #0f766e
+                );
+        }
+
+        .employee-avatar {
+            width: 84px;
+            height: 84px;
+            margin: -42px auto 14px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #6366f1, #14b8a6);
+            color: #fff;
+            display: grid;
+            place-items: center;
+            font-size: 30px;
+            font-weight: 700;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 24px rgba(79, 70, 229, .28);
+            position: relative;
+            transition: transform .3s var(--ease);
+        }
+
+        .employee-card:hover .employee-avatar {
+            transform: scale(1.06) rotate(-4deg);
+        }
+
+        .employee-card h2 {
+            font-size: 22px;
+            letter-spacing: -.3px;
+            margin-bottom: 6px;
+        }
+
+        .designation {
+            color: var(--muted);
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        .info-list {
+            border-top: 1px solid var(--line);
+            text-align: left;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            padding: 14px 4px;
+            border-bottom: 1px solid #f1f5f9;
+            border-radius: 8px;
+            transition: background .2s;
+        }
+
+        .info-row:hover {
+            background: #fafbff;
+        }
+
+        .info-row:last-child {
+            border-bottom: 0;
+        }
+
+        .info-label {
+            color: var(--light);
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .info-value {
+            color: #374151;
+            font-size: 13px;
+            font-weight: 650;
+            text-align: right;
+            word-break: break-word;
+        }
+
+        /* ========== TRAINER DISPLAY ========== */
+
+        .trainer-info {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .trainer-name {
+            color: #374151;
+        }
+
+        .trainer-id {
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .not-assigned {
+            color: #98a2b3;
+            font-weight: 500;
+        }
+
+        /* ========== STATUS ========== */
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .status-active {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        .status-active::before {
+            animation: pulse 1.6s infinite;
+        }
+
+        .status-disabled {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        /* ========== BUTTONS ========== */
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            height: 42px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 0;
+            transition: .2s;
+        }
+
+        .btn:active {
+            transform: scale(.97);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            box-shadow: 0 6px 14px rgba(79, 70, 229, .25);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 70, 229, .32);
+        }
+
+        .btn-light {
+            background: #fff;
+            color: #344054;
+            border: 1px solid #d0d5dd;
+        }
+
+        .btn-light:hover {
+            border-color: #c7d2fe;
+            color: var(--brand);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(79, 70, 229, .1);
+        }
+
+        /* ========== ANIMATIONS ========== */
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(16px) scale(.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes dropIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .4;
+            }
+        }
+
+        /* ========== RESPONSIVE ========== */
+
+        @media (max-width: 800px) {
+
+            .sidebar {
+                transform: translateX(-100%);
+                animation: none;
+            }
+
+            .sidebar.open {
+                transform: none;
+                box-shadow: 0 0 40px rgba(0, 0, 0, .4);
+            }
+
+            .scrim.show {
+                display: block;
+            }
+
+            .main {
+                margin-left: 0;
+            }
+
+            .burger {
+                display: block;
+            }
+
+            .content {
+                padding: 20px 18px;
+            }
+
+            .topbar {
+                padding: 0 18px;
+            }
+
+            .admin-info {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+
+            .page-heading p {
+                display: none;
+            }
+
+            .employee-card {
+                padding: 0 18px 24px;
+            }
+
+            .employee-card::before {
+                margin: 0 -18px;
+            }
+
+            .info-row {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .info-value {
+                text-align: left;
+            }
+
+            .card-actions {
+                flex-direction: column-reverse;
+            }
+        }
+
+        /* ========== ACCESSIBILITY ========== */
+
+        :focus-visible {
+            outline: 3px solid #a5b4fc;
+            outline-offset: 2px;
+            border-radius: 8px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<a class="skip" href="#content">Skip to content</a>
+
+<div class="page-progress"
+     id="pageProgress"
+     aria-hidden="true">
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside class="sidebar"
+       id="sidebar"
+       aria-label="Main navigation">
+
+    <div class="brand">
+
+        <div class="brand-icon">
+            C
+        </div>
+
+        <div class="brand-text">
+            Capacitix
+        </div>
+
+    </div>
+
+
+    <nav class="nav"
+         id="nav"
+         aria-label="Admin menu">
+
+        <div class="nav-title">
+            Overview
+        </div>
+
+        <a th:href="@{/admin/dashboard}"
+           class="nav-link">
+
+            <span class="nav-icon">⌂</span>
+            <span>Dashboard</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            Workforce Management
+        </div>
+
+        <a th:href="@{/admin/employees}"
+           class="nav-link active"
+           aria-current="page">
+
+            <span class="nav-icon">♙</span>
+            <span>Students</span>
+
+        </a>
+
+        <a th:href="@{/admin/trainers}"
+           class="nav-link">
+
+            <span class="nav-icon">♟</span>
+            <span>Trainers</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            Competency Intelligence
+        </div>
+
+        <a th:href="@{/admin/competencies}"
+           class="nav-link">
+
+            <span class="nav-icon">◈</span>
+            <span>Competencies</span>
+
+        </a>
+
+        <a th:href="@{/admin/skill-heatmap}"
+           class="nav-link">
+
+            <span class="nav-icon">▦</span>
+            <span>Skill Heatmap</span>
+
+        </a>
+
+        <a th:href="@{/admin/skill-gaps}"
+           class="nav-link">
+
+            <span class="nav-icon">△</span>
+            <span>Skill Gaps</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            Learning &amp; Assessment
+        </div>
+
+        <a th:href="@{/admin/assessments}"
+           class="nav-link">
+
+            <span class="nav-icon">✓</span>
+            <span>Assessments</span>
+
+        </a>
+
+        <a th:href="@{/admin/reports}"
+           class="nav-link">
+
+            <span class="nav-icon">▤</span>
+            <span>Reports</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            System
+        </div>
+
+        <a th:href="@{/admin/settings}"
+           class="nav-link">
+
+            <span class="nav-icon">⚙</span>
+            <span>Settings</span>
+
+        </a>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <form id="logoutForm"
+              th:action="@{/logout}"
+              method="post"
+              class="logout-form">
+
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <button type="submit"
+                    class="logout-button">
+
+                <span class="nav-icon">↪</span>
+
+                <span>
+                    Logout
+                </span>
+
+            </button>
+
+        </form>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+
+<main class="main"
+      id="main">
+
+
+    <!-- TOPBAR -->
+
+    <header class="topbar">
+
+        <div class="topbar-main">
+
+            <button class="burger"
+                    id="burger"
+                    type="button"
+                    aria-label="Open menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+
+                ☰
+
+            </button>
+
+
+            <div class="page-heading">
+
+                <h1>
+                    Student
+                </h1>
+
+                <p>
+                    Student profile overview
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="topbar-right">
+
+            <div class="admin-info">
+
+                <strong>
+                    Administrator
+                </strong>
+
+                <span>
+                    Organization Administrator
+                </span>
+
+            </div>
+
+            <div class="avatar">
+                A
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENT
+    ====================================================== -->
+
+    <section class="content"
+             id="content">
+
+
+        <div class="employee-card st"
+             style="--i:1">
+
+
+            <!-- AVATAR -->
+
+            <div class="employee-avatar"
+                 th:text="${employee.fullName != null
+                    and !#strings.isEmpty(employee.fullName)
+                    ? #strings.substring(employee.fullName, 0, 1).toUpperCase()
+                    : 'E'}">
+
+                E
+
+            </div>
+
+
+            <!-- NAME -->
+
+            <h2 th:text="${employee.fullName}">
+                Student Name
+            </h2>
+
+
+            <!-- DESIGNATION -->
+
+            <div class="designation"
+                 th:text="${employee.designation != null
+                    ? employee.designation
+                    : 'Employee'}">
+
+                Student
+
+            </div>
+
+
+            <!-- =================================================
+                 INFORMATION
+            ================================================== -->
+
+            <div class="info-list">
+
+
+                <!-- EMPLOYEE ID -->
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Student ID
+                    </span>
+
+                    <span class="info-value"
+                          th:text="${employee.employeeId != null
+                            ? employee.employeeId
+                            : 'Not assigned'}">
+
+                        EMP001
+
+                    </span>
+
+                </div>
+
+
+                <!-- EMAIL -->
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Email
+                    </span>
+
+                    <span class="info-value"
+                          th:text="${employee.email}">
+
+                        employee@example.com
+
+                    </span>
+
+                </div>
+
+
+                <!-- PHONE -->
+
+                <div class="info-row"
+                     th:if="${employee.phoneNumber != null
+                        and !#strings.isEmpty(employee.phoneNumber)}">
+
+                    <span class="info-label">
+                        Phone
+                    </span>
+
+                    <span class="info-value"
+                          th:text="${employee.phoneNumber}">
+
+                        Phone Number
+
+                    </span>
+
+                </div>
+
+
+                <!-- DEPARTMENT -->
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Department
+                    </span>
+
+                    <span class="info-value"
+                          th:text="${employee.department != null
+                            ? employee.department
+                            : 'Not assigned'}">
+
+                        Computer Science
+
+                    </span>
+
+                </div>
+
+
+                <!-- =================================================
+                     TRAINER
+
+                     IMPORTANT:
+                     User entity has:
+
+                     private User trainer;
+
+                     It does NOT have:
+
+                     assignedTrainerId
+
+                     Therefore we use employee.trainer here.
+                ================================================== -->
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Trainer
+                    </span>
+
+
+                    <!-- TRAINER ASSIGNED -->
+
+                    <span class="info-value"
+                          th:if="${employee.trainer != null}">
+
+                        <span class="trainer-info">
+
+                            <span class="trainer-name"
+                                  th:text="${employee.trainer.fullName}">
+                                Trainer Name
+                            </span>
+
+                            <span class="trainer-id"
+                                  th:if="${employee.trainer.trainerId != null}"
+                                  th:text="'(' + ${employee.trainer.trainerId} + ')'">
+                                (TRN0001)
+                            </span>
+
+                        </span>
+
+                    </span>
+
+
+                    <!-- NO TRAINER -->
+
+                    <span class="info-value not-assigned"
+                          th:if="${employee.trainer == null}">
+
+                        Not assigned
+
+                    </span>
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="info-row">
+
+                    <span class="info-label">
+                        Status
+                    </span>
+
+
+                    <span th:if="${employee.enabled}"
+                          class="status status-active">
+
+                        Active
+
+                    </span>
+
+
+                    <span th:unless="${employee.enabled}"
+                          class="status status-disabled">
+
+                        Disabled
+
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 ACTIONS
+            ================================================== -->
+
+            <div class="card-actions">
+
+                <a th:href="@{/admin/employees}"
+                   class="btn btn-light">
+
+                    Back
+
+                </a>
+
+
+                <a th:href="@{/admin/employees/{id}/edit(id=${employee.id})}"
+                   class="btn btn-primary">
+
+                    Edit Student
+
+                </a>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+(function () {
+
+    "use strict";
+
+
+    var $ = function (s, c) {
+        return (c || document).querySelector(s);
+    };
+
+
+    var $$ = function (s, c) {
+        return Array.prototype.slice.call(
+            (c || document).querySelectorAll(s)
+        );
+    };
+
+
+    /* =====================================================
+       Loading progress indicator
+    ====================================================== */
+
+    var prog = $("#pageProgress");
+
+    if (prog) {
+
+        prog.style.opacity = 1;
+        prog.style.width = "70%";
+
+        setTimeout(function () {
+
+            prog.style.width = "100%";
+
+            setTimeout(function () {
+
+                prog.style.opacity = 0;
+
+                setTimeout(function () {
+                    prog.style.width = "0";
+                }, 400);
+
+            }, 350);
+
+        }, 300);
+
+    }
+
+
+    /* =====================================================
+       Mobile menu
+    ====================================================== */
+
+    var sidebar = $("#sidebar");
+    var scrim = $("#scrim");
+    var burger = $("#burger");
+
+
+    function toggleMenu(open) {
+
+        if (!sidebar || !scrim || !burger) {
+            return;
+        }
+
+        sidebar.classList.toggle("open", open);
+
+        scrim.classList.toggle("show", open);
+
+        burger.setAttribute(
+            "aria-expanded",
+            String(open)
+        );
+
+    }
+
+
+    if (burger) {
+
+        burger.addEventListener(
+            "click",
+            function () {
+
+                toggleMenu(
+                    !sidebar.classList.contains("open")
+                );
+
+            }
+        );
+
+    }
+
+
+    if (scrim) {
+
+        scrim.addEventListener(
+            "click",
+            function () {
+
+                toggleMenu(false);
+
+            }
+        );
+
+    }
+
+
+    $$(".nav-link").forEach(function (a) {
+
+        a.addEventListener(
+            "click",
+            function () {
+
+                toggleMenu(false);
+
+            }
+        );
+
+    });
+
+
+    /* =====================================================
+       Keep active nav item visible
+    ====================================================== */
+
+    var act = $(".nav-link.active");
+    var nav = $("#nav");
+
+
+    if (act && nav) {
+
+        nav.scrollTop =
+            Math.max(
+                0,
+                act.offsetTop
+                - nav.clientHeight / 2
+                + act.offsetHeight / 2
+            );
+
+    }
+
+
+    /* =====================================================
+       Escape closes mobile sidebar
+    ====================================================== */
+
+    document.addEventListener(
+        "keydown",
+        function (e) {
+
+            if (
+                e.key === "Escape"
+                && sidebar
+                && sidebar.classList.contains("open")
+            ) {
+
+                toggleMenu(false);
+
+            }
+
+        }
+    );
+
+
+    /* =====================================================
+       Prevent double logout
+    ====================================================== */
+
+    var lf = $("#logoutForm");
+
+
+    if (lf) {
+
+        lf.addEventListener(
+            "submit",
+            function () {
+
+                var b = $(".logout-button", lf);
+
+                if (b) {
+
+                    b.disabled = true;
+
+                    if (b.lastElementChild) {
+
+                        b.lastElementChild.textContent =
+                            "Signing out…";
+
+                    }
+
+                }
+
+            }
+        );
+
+    }
+
+})();
+
+</script>
+
+</body>
+
+</html>
+

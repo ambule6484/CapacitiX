@@ -1,0 +1,3959 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+```
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="description"
+      content="Review your assessment answers, correct answers and competency performance in Capacitix">
+
+<meta name="theme-color" content="#635bff">
+
+<title>Assessment Review | Capacitix</title>
+
+<style>
+
+    /* =========================================================
+       1. DESIGN SYSTEM
+    ========================================================= */
+
+    :root {
+
+        --primary: #635bff;
+        --primary-dark: #4f46e5;
+        --primary-light: #818cf8;
+
+        --teal: #14b8a6;
+        --cyan: #06b6d4;
+
+        --success: #10b981;
+        --success-dark: #047857;
+
+        --danger: #ef4444;
+        --danger-dark: #b91c1c;
+
+        --warning: #f59e0b;
+        --orange: #f97316;
+
+        --bg: #f4f7ff;
+        --surface: #ffffff;
+        --surface-soft: #f8faff;
+
+        --text: #172033;
+        --text-secondary: #475467;
+        --muted: #667085;
+
+        --line: #e4e8f1;
+
+        --radius-sm: 10px;
+        --radius-md: 16px;
+        --radius-lg: 22px;
+        --radius-xl: 28px;
+
+        --shadow-sm:
+            0 4px 16px rgba(15, 23, 42, .05);
+
+        --shadow-md:
+            0 12px 32px rgba(15, 23, 42, .08);
+
+        --shadow-lg:
+            0 24px 60px rgba(15, 23, 42, .12);
+
+        --sidebar-width: 265px;
+        --header-height: 76px;
+
+        --ease: cubic-bezier(.22, .8, .2, 1);
+    }
+
+
+    /* =========================================================
+       2. RESET
+    ========================================================= */
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+
+        font-family:
+            Inter,
+            "Segoe UI",
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            Arial,
+            sans-serif;
+
+        color: var(--text);
+
+        background:
+
+            radial-gradient(
+                circle at 85% 5%,
+                rgba(99, 91, 255, .13),
+                transparent 28rem
+            ),
+
+            radial-gradient(
+                circle at 5% 85%,
+                rgba(20, 184, 166, .10),
+                transparent 25rem
+            ),
+
+            linear-gradient(
+                135deg,
+                #f8faff 0%,
+                #f2f5ff 50%,
+                #f7fbff 100%
+            );
+
+        -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    button {
+        font: inherit;
+    }
+
+    :focus-visible {
+        outline: 3px solid rgba(99, 91, 255, .35);
+        outline-offset: 3px;
+    }
+
+
+    /* =========================================================
+       3. BACKGROUND ORBS
+    ========================================================= */
+
+    .bg-orb {
+        position: fixed;
+        z-index: -1;
+        border-radius: 50%;
+        pointer-events: none;
+        filter: blur(2px);
+    }
+
+    .orb-one {
+
+        width: 330px;
+        height: 330px;
+
+        top: 10%;
+        right: 4%;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(99, 91, 255, .10),
+                transparent 70%
+            );
+
+        animation: orbFloat 10s ease-in-out infinite;
+    }
+
+    .orb-two {
+
+        width: 280px;
+        height: 280px;
+
+        bottom: 5%;
+        left: 10%;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(20, 184, 166, .09),
+                transparent 70%
+            );
+
+        animation: orbFloat 13s ease-in-out infinite reverse;
+    }
+
+    .orb-three {
+
+        width: 220px;
+        height: 220px;
+
+        top: 45%;
+        right: 25%;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(236, 72, 153, .055),
+                transparent 70%
+            );
+
+        animation: orbFloat 16s ease-in-out infinite;
+    }
+
+    @keyframes orbFloat {
+
+        0%,
+        100% {
+            transform: translate3d(0, 0, 0) scale(1);
+        }
+
+        50% {
+            transform: translate3d(-18px, 20px, 0) scale(1.08);
+        }
+    }
+
+
+    /* =========================================================
+       4. SIDEBAR
+    ========================================================= */
+
+    .sidebar {
+
+        position: fixed;
+
+        inset: 0 auto 0 0;
+
+        width: var(--sidebar-width);
+        height: 100vh;
+
+        display: flex;
+        flex-direction: column;
+
+        color: #fff;
+
+        z-index: 1100;
+
+        overflow: hidden;
+
+        background:
+
+            radial-gradient(
+                circle at 0% 0%,
+                rgba(99, 102, 241, .28),
+                transparent 30%
+            ),
+
+            radial-gradient(
+                circle at 100% 80%,
+                rgba(20, 184, 166, .15),
+                transparent 30%
+            ),
+
+            linear-gradient(
+                180deg,
+                #080d1d 0%,
+                #10182b 50%,
+                #090f1f 100%
+            );
+
+        border-right:
+            1px solid rgba(255, 255, 255, .07);
+
+        box-shadow:
+            18px 0 50px rgba(2, 6, 23, .16);
+
+        animation:
+            sidebarEnter .65s var(--ease) both;
+    }
+
+    @keyframes sidebarEnter {
+
+        from {
+            opacity: 0;
+            transform: translateX(-25px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+
+    /* =========================================================
+       5. BRAND
+    ========================================================= */
+
+    .brand {
+
+        position: relative;
+        z-index: 2;
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding: 22px 21px 18px;
+    }
+
+    .brand-mark {
+
+        position: relative;
+
+        width: 44px;
+        height: 44px;
+
+        flex: 0 0 44px;
+
+        display: grid;
+        place-items: center;
+
+        border-radius: 14px;
+
+        overflow: hidden;
+
+        background:
+            linear-gradient(
+                135deg,
+                #818cf8,
+                #635bff 48%,
+                #14b8a6
+            );
+
+        color: #fff;
+
+        font-size: 20px;
+        font-weight: 900;
+
+        box-shadow:
+            0 10px 28px rgba(99, 91, 255, .35),
+            inset 0 1px 0 rgba(255, 255, 255, .35);
+
+        animation:
+            logoFloat 4s ease-in-out infinite;
+    }
+
+    .brand-mark::after {
+
+        content: "";
+
+        position: absolute;
+
+        inset: -100%;
+
+        background:
+            linear-gradient(
+                120deg,
+                transparent 35%,
+                rgba(255, 255, 255, .5),
+                transparent 65%
+            );
+
+        animation:
+            logoShine 4.5s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-4px);
+        }
+    }
+
+    @keyframes logoShine {
+
+        0%,
+        35% {
+            transform: translateX(-100%) rotate(15deg);
+        }
+
+        65%,
+        100% {
+            transform: translateX(100%) rotate(15deg);
+        }
+    }
+
+    .brand-text {
+
+        font-size: 22px;
+        font-weight: 800;
+
+        letter-spacing: -.7px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #fff,
+                #dbeafe,
+                #99f6e4,
+                #fff
+            );
+
+        background-size: 250% auto;
+
+        -webkit-background-clip: text;
+        background-clip: text;
+
+        -webkit-text-fill-color: transparent;
+
+        animation:
+            brandGradient 6s linear infinite;
+    }
+
+    @keyframes brandGradient {
+
+        from {
+            background-position: 0 center;
+        }
+
+        to {
+            background-position: 250% center;
+        }
+    }
+
+
+    /* =========================================================
+       6. SIDEBAR NAV
+    ========================================================= */
+
+    .sidebar nav {
+
+        flex: 1;
+
+        min-height: 0;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        padding: 4px 13px 15px;
+
+        scrollbar-width: thin;
+
+        scrollbar-color:
+            rgba(255, 255, 255, .15)
+            transparent;
+    }
+
+    .sidebar nav::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .sidebar nav::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .15);
+        border-radius: 20px;
+    }
+
+    .menu-label {
+
+        display: flex;
+        align-items: center;
+
+        gap: 8px;
+
+        margin:
+            17px 12px 8px;
+
+        color: #667085;
+
+        font-size: 9px;
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 1.6px;
+    }
+
+    .menu-label::before {
+
+        content: "";
+
+        width: 17px;
+        height: 1px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #818cf8,
+                transparent
+            );
+    }
+
+    .menu {
+        list-style: none;
+    }
+
+    .menu li {
+        margin: 3px 0;
+    }
+
+    .menu a {
+
+        position: relative;
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding: 9px 12px;
+
+        min-height: 48px;
+
+        border-radius: 13px;
+
+        border: 1px solid transparent;
+
+        color: #9ca8ba;
+
+        font-size: 13.5px;
+        font-weight: 550;
+
+        overflow: hidden;
+
+        transition:
+            transform .25s var(--ease),
+            color .25s ease,
+            background .25s ease,
+            border-color .25s ease,
+            box-shadow .25s ease;
+    }
+
+    .menu a::before {
+
+        content: "";
+
+        position: absolute;
+
+        inset: 0;
+
+        background:
+            linear-gradient(
+                100deg,
+                transparent,
+                rgba(255,255,255,.08),
+                transparent
+            );
+
+        transform:
+            translateX(-120%)
+            skewX(-20deg);
+
+        transition:
+            transform .55s ease;
+    }
+
+    .menu a:hover::before {
+        transform:
+            translateX(120%)
+            skewX(-20deg);
+    }
+
+    .menu a:hover {
+
+        color: #fff;
+
+        transform:
+            translateX(4px);
+
+        background:
+            linear-gradient(
+                100deg,
+                rgba(99,102,241,.18),
+                rgba(20,184,166,.07)
+            );
+
+        border-color:
+            rgba(255,255,255,.07);
+
+        box-shadow:
+            0 8px 25px rgba(0,0,0,.12);
+    }
+
+    .menu a.active {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                100deg,
+                rgba(99,102,241,.36),
+                rgba(79,70,229,.20),
+                rgba(20,184,166,.12)
+            );
+
+        border-color:
+            rgba(129,140,248,.22);
+
+        box-shadow:
+            inset 0 0 0 1px rgba(255,255,255,.025),
+            0 10px 25px rgba(79,70,229,.15);
+    }
+
+    .menu a.active::after {
+
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+        top: 50%;
+
+        width: 3px;
+        height: 70%;
+
+        border-radius:
+            0 6px 6px 0;
+
+        background:
+            linear-gradient(
+                180deg,
+                #818cf8,
+                #2dd4bf
+            );
+
+        box-shadow:
+            0 0 14px rgba(45,212,191,.7);
+
+        transform:
+            translateY(-50%);
+    }
+
+    .icon {
+
+        position: relative;
+
+        width: 32px;
+        height: 32px;
+
+        flex: 0 0 32px;
+
+        display: grid;
+        place-items: center;
+
+        border-radius: 10px;
+
+        background:
+            rgba(255,255,255,.045);
+
+        border:
+            1px solid rgba(255,255,255,.045);
+
+        color: #8e9aac;
+
+        font-size: 15px;
+
+        transition:
+            transform .25s var(--ease),
+            color .25s ease,
+            background .25s ease;
+    }
+
+    .menu a:hover .icon {
+
+        color: #fff;
+
+        transform:
+            scale(1.08)
+            rotate(-3deg);
+
+        background:
+            linear-gradient(
+                135deg,
+                rgba(99,102,241,.30),
+                rgba(20,184,166,.16)
+            );
+    }
+
+    .menu a.active .icon {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                135deg,
+                rgba(99,102,241,.48),
+                rgba(20,184,166,.22)
+            );
+
+        box-shadow:
+            0 5px 16px rgba(79,70,229,.22);
+    }
+
+
+    /* =========================================================
+       7. LOGOUT
+    ========================================================= */
+
+    .logout {
+
+        flex: none;
+
+        padding:
+            11px 13px 17px;
+
+        border-top:
+            1px solid rgba(255,255,255,.07);
+
+        background:
+            rgba(5,10,22,.55);
+    }
+
+    .logout button {
+
+        width: 100%;
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+
+        padding: 10px 12px;
+
+        border:
+            1px solid rgba(255,255,255,.08);
+
+        border-radius: 13px;
+
+        background:
+            rgba(255,255,255,.035);
+
+        color: #b4bfd0;
+
+        cursor: pointer;
+
+        text-align: left;
+
+        transition:
+            .25s ease;
+    }
+
+    .logout button:hover {
+
+        color: #fca5a5;
+
+        background:
+            linear-gradient(
+                90deg,
+                rgba(239,68,68,.17),
+                rgba(239,68,68,.05)
+            );
+
+        border-color:
+            rgba(239,68,68,.24);
+
+        transform:
+            translateX(4px);
+    }
+
+
+    /* =========================================================
+       8. MAIN
+    ========================================================= */
+
+    .main {
+
+        margin-left: var(--sidebar-width);
+
+        height: 100vh;
+
+        overflow-y: auto;
+        overflow-x: hidden;
+
+        scroll-behavior: smooth;
+
+        scrollbar-width: thin;
+
+        scrollbar-color:
+            #cbd5e1
+            transparent;
+    }
+
+    .main::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .main::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 20px;
+    }
+
+
+    /* =========================================================
+       9. HEADER
+    ========================================================= */
+
+    .header {
+
+        position: sticky;
+
+        top: 0;
+
+        z-index: 500;
+
+        min-height: var(--header-height);
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 20px;
+
+        padding:
+            12px 34px;
+
+        background:
+            rgba(255,255,255,.78);
+
+        backdrop-filter:
+            blur(20px);
+
+        -webkit-backdrop-filter:
+            blur(20px);
+
+        border-bottom:
+            1px solid rgba(226,232,240,.85);
+
+        box-shadow:
+            0 8px 28px rgba(15,23,42,.045);
+
+        animation:
+            headerDrop .65s var(--ease);
+    }
+
+    @keyframes headerDrop {
+
+        from {
+            opacity: 0;
+            transform: translateY(-18px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .header-left {
+
+        display: flex;
+        align-items: center;
+
+        gap: 14px;
+
+        min-width: 0;
+    }
+
+    .burger {
+
+        display: none;
+
+        width: 40px;
+        height: 40px;
+
+        place-items: center;
+
+        border:
+            1px solid var(--line);
+
+        border-radius: 11px;
+
+        background: #fff;
+
+        cursor: pointer;
+    }
+
+    .header-title {
+
+        font-size: 20px;
+        font-weight: 800;
+
+        letter-spacing: -.4px;
+    }
+
+    .header-subtitle {
+
+        margin-top: 3px;
+
+        color: var(--muted);
+
+        font-size: 12px;
+    }
+
+    .profile {
+
+        display: flex;
+        align-items: center;
+
+        gap: 12px;
+    }
+
+    .profile-info {
+        text-align: right;
+    }
+
+    .profile-name {
+
+        font-size: 13px;
+        font-weight: 750;
+    }
+
+    .profile-role {
+
+        margin-top: 2px;
+
+        color: var(--muted);
+
+        font-size: 11px;
+    }
+
+    .avatar {
+
+        width: 43px;
+        height: 43px;
+
+        display: grid;
+        place-items: center;
+
+        border-radius: 50%;
+
+        color: #fff;
+
+        font-size: 14px;
+        font-weight: 800;
+
+        background:
+            linear-gradient(
+                135deg,
+                #6366f1,
+                #8b5cf6,
+                #14b8a6
+            );
+
+        box-shadow:
+            0 8px 22px rgba(79,70,229,.25);
+
+        transition:
+            transform .25s ease;
+    }
+
+    .avatar:hover {
+        transform: scale(1.07) rotate(3deg);
+    }
+
+
+    /* =========================================================
+       10. CONTENT
+    ========================================================= */
+
+    .container {
+
+        width:
+            min(1120px, 100%);
+
+        margin: 0 auto;
+
+        padding:
+            28px 32px 70px;
+    }
+
+
+    /* =========================================================
+       11. REVEAL
+    ========================================================= */
+
+    .reveal {
+
+        opacity: 0;
+
+        transform:
+            translateY(22px)
+            scale(.985);
+
+        transition:
+            opacity .65s var(--ease),
+            transform .65s var(--ease);
+    }
+
+    .reveal.in {
+
+        opacity: 1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+
+    /* =========================================================
+       12. BACK BUTTON
+    ========================================================= */
+
+    .back-link {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 8px;
+
+        margin-bottom: 18px;
+
+        padding:
+            9px 14px;
+
+        border:
+            1px solid var(--line);
+
+        border-radius: 12px;
+
+        background:
+            rgba(255,255,255,.85);
+
+        color: var(--primary-dark);
+
+        font-size: 12px;
+        font-weight: 750;
+
+        box-shadow:
+            var(--shadow-sm);
+
+        transition:
+            .25s var(--ease);
+    }
+
+    .back-link:hover {
+
+        transform:
+            translateX(-4px);
+
+        border-color:
+            #c7d2fe;
+
+        background:
+            #f5f3ff;
+
+        box-shadow:
+            0 8px 20px rgba(79,70,229,.10);
+    }
+
+
+    /* =========================================================
+       13. HERO / ASSESSMENT HEADER
+    ========================================================= */
+
+    .page-header {
+
+        position: relative;
+
+        overflow: hidden;
+
+        margin-bottom: 24px;
+
+        padding: 30px;
+
+        border:
+            1px solid rgba(255,255,255,.8);
+
+        border-radius:
+            var(--radius-xl);
+
+        background:
+
+            radial-gradient(
+                circle at 90% 10%,
+                rgba(99,91,255,.14),
+                transparent 22rem
+            ),
+
+            radial-gradient(
+                circle at 0% 100%,
+                rgba(20,184,166,.08),
+                transparent 20rem
+            ),
+
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,.98),
+                rgba(248,249,255,.94)
+            );
+
+        box-shadow:
+            var(--shadow-lg);
+
+        isolation: isolate;
+    }
+
+    .page-header::before {
+
+        content: "";
+
+        position: absolute;
+
+        top: 0;
+        left: 0;
+        right: 0;
+
+        height: 5px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #635bff,
+                #8b5cf6,
+                #06b6d4,
+                #14b8a6
+            );
+
+        background-size: 250% 100%;
+
+        animation:
+            gradientMove 5s linear infinite;
+    }
+
+    @keyframes gradientMove {
+
+        from {
+            background-position: 0% 50%;
+        }
+
+        to {
+            background-position: 250% 50%;
+        }
+    }
+
+    .page-header::after {
+
+        content: "";
+
+        position: absolute;
+
+        width: 240px;
+        height: 240px;
+
+        right: -80px;
+        top: -110px;
+
+        border-radius: 50%;
+
+        background:
+            radial-gradient(
+                circle,
+                rgba(99,91,255,.14),
+                transparent 70%
+            );
+
+        animation:
+            heroOrb 8s ease-in-out infinite;
+    }
+
+    @keyframes heroOrb {
+
+        0%,
+        100% {
+            transform: translate(0,0);
+        }
+
+        50% {
+            transform: translate(-20px,18px);
+        }
+    }
+
+    .hero-content {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex;
+
+        align-items: flex-start;
+
+        justify-content: space-between;
+
+        gap: 30px;
+    }
+
+    .hero-main {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .hero-eyebrow {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        margin-bottom: 10px;
+
+        padding:
+            6px 10px;
+
+        border-radius: 999px;
+
+        background:
+            linear-gradient(
+                135deg,
+                #eef2ff,
+                #ecfeff
+            );
+
+        color:
+            #4f46e5;
+
+        font-size: 10px;
+        font-weight: 850;
+
+        text-transform: uppercase;
+
+        letter-spacing: .8px;
+    }
+
+    .hero-eyebrow::before {
+
+        content: "";
+
+        width: 7px;
+        height: 7px;
+
+        border-radius: 50%;
+
+        background:
+            #14b8a6;
+
+        box-shadow:
+            0 0 10px rgba(20,184,166,.7);
+
+        animation:
+            pulseDot 1.8s infinite;
+    }
+
+    @keyframes pulseDot {
+
+        0%,
+        100% {
+            transform: scale(.8);
+            opacity: .6;
+        }
+
+        50% {
+            transform: scale(1.2);
+            opacity: 1;
+        }
+    }
+
+    .page-header h1 {
+
+        margin-bottom: 9px;
+
+        font-size: 30px;
+
+        line-height: 1.2;
+
+        letter-spacing: -.9px;
+
+        background:
+            linear-gradient(
+                100deg,
+                #172033,
+                #4f46e5,
+                #0f766e
+            );
+
+        -webkit-background-clip: text;
+        background-clip: text;
+
+        -webkit-text-fill-color: transparent;
+    }
+
+    .description {
+
+        max-width: 760px;
+
+        color: var(--muted);
+
+        font-size: 14px;
+
+        line-height: 1.7;
+    }
+
+
+    /* =========================================================
+       14. SCORE PANEL
+    ========================================================= */
+
+    .score-card {
+
+        position: relative;
+
+        width: 185px;
+
+        flex: 0 0 185px;
+
+        padding: 18px;
+
+        border-radius: 20px;
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(99,91,255,.10),
+                rgba(20,184,166,.08)
+            );
+
+        border:
+            1px solid rgba(99,91,255,.14);
+
+        text-align: center;
+
+        box-shadow:
+            0 12px 28px rgba(79,70,229,.08);
+    }
+
+    .score-label {
+
+        color: var(--muted);
+
+        font-size: 10px;
+        font-weight: 800;
+
+        text-transform: uppercase;
+
+        letter-spacing: 1px;
+    }
+
+    .score-number {
+
+        margin-top: 5px;
+
+        font-size: 29px;
+
+        font-weight: 900;
+
+        background:
+            linear-gradient(
+                135deg,
+                #4f46e5,
+                #8b5cf6,
+                #14b8a6
+            );
+
+        -webkit-background-clip: text;
+        background-clip: text;
+
+        -webkit-text-fill-color: transparent;
+    }
+
+    .score-track {
+
+        height: 7px;
+
+        margin-top: 11px;
+
+        overflow: hidden;
+
+        border-radius: 999px;
+
+        background:
+            #e5e7eb;
+    }
+
+    .score-fill {
+
+        width: 78%;
+
+        height: 100%;
+
+        border-radius: inherit;
+
+        background:
+            linear-gradient(
+                90deg,
+                #635bff,
+                #8b5cf6,
+                #14b8a6
+            );
+
+        box-shadow:
+            0 0 12px rgba(99,91,255,.35);
+
+        animation:
+            scoreGrow 1.5s var(--ease);
+    }
+
+    @keyframes scoreGrow {
+
+        from {
+            width: 0;
+        }
+
+        to {
+            width: 78%;
+        }
+    }
+
+    .score-status {
+
+        margin-top: 8px;
+
+        color: #047857;
+
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+
+    /* =========================================================
+       15. META BADGES
+    ========================================================= */
+
+    .meta {
+
+        position: relative;
+
+        z-index: 2;
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 8px;
+
+        margin-top: 20px;
+    }
+
+    .badge {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        padding:
+            7px 12px;
+
+        border:
+            1px solid #e5e7eb;
+
+        border-radius: 999px;
+
+        background:
+            rgba(255,255,255,.8);
+
+        color:
+            #475467;
+
+        font-size: 11px;
+        font-weight: 750;
+
+        box-shadow:
+            0 3px 10px rgba(15,23,42,.03);
+    }
+
+    .badge.completed {
+
+        color:
+            #047857;
+
+        background:
+            #ecfdf5;
+
+        border-color:
+            #bbf7d0;
+    }
+
+    .badge.ai {
+
+        color:
+            #4f46e5;
+
+        background:
+            linear-gradient(
+                135deg,
+                #eef2ff,
+                #f5f3ff
+            );
+
+        border-color:
+            #c7d2fe;
+
+        box-shadow:
+            0 5px 18px rgba(99,91,255,.10);
+    }
+
+
+    /* =========================================================
+       16. TOOLBAR
+    ========================================================= */
+
+    .toolbar {
+
+        display: flex;
+
+        align-items: center;
+
+        justify-content: space-between;
+
+        gap: 16px;
+
+        margin-bottom: 16px;
+
+        padding:
+            14px 16px;
+
+        border:
+            1px solid rgba(255,255,255,.85);
+
+        border-radius: 17px;
+
+        background:
+            rgba(255,255,255,.75);
+
+        backdrop-filter:
+            blur(12px);
+
+        box-shadow:
+            var(--shadow-sm);
+    }
+
+    .toolbar-title {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 9px;
+
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    .toolbar-title::before {
+
+        content: "";
+
+        width: 8px;
+        height: 8px;
+
+        border-radius: 50%;
+
+        background:
+            linear-gradient(
+                135deg,
+                #635bff,
+                #14b8a6
+            );
+
+        box-shadow:
+            0 0 10px rgba(99,91,255,.4);
+    }
+
+    .chips {
+
+        display: flex;
+
+        flex-wrap: wrap;
+
+        gap: 7px;
+    }
+
+    .chip {
+
+        border:
+            1px solid var(--line);
+
+        border-radius: 999px;
+
+        padding:
+            7px 12px;
+
+        background:
+            #fff;
+
+        color:
+            var(--muted);
+
+        font-size: 11px;
+        font-weight: 750;
+
+        cursor: pointer;
+
+        transition:
+            .22s var(--ease);
+    }
+
+    .chip:hover {
+
+        color:
+            var(--primary-dark);
+
+        border-color:
+            #c7d2fe;
+
+        transform:
+            translateY(-2px);
+    }
+
+    .chip.on {
+
+        color: #fff;
+
+        border-color:
+            transparent;
+
+        background:
+            linear-gradient(
+                135deg,
+                #635bff,
+                #7c3aed
+            );
+
+        box-shadow:
+            0 6px 16px rgba(99,91,255,.25);
+    }
+
+    .chip b {
+
+        margin-left: 4px;
+
+        opacity: .8;
+    }
+
+
+    /* =========================================================
+       17. QUESTION LIST
+    ========================================================= */
+
+    .question-list {
+
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 18px;
+    }
+
+    .question-card {
+
+        position: relative;
+
+        overflow: hidden;
+
+        padding: 24px;
+
+        border:
+            1px solid rgba(226,232,240,.9);
+
+        border-radius:
+            var(--radius-lg);
+
+        background:
+            rgba(255,255,255,.93);
+
+        box-shadow:
+            var(--shadow-sm);
+
+        transition:
+            transform .35s var(--ease),
+            box-shadow .35s ease,
+            border-color .35s ease;
+    }
+
+    .question-card::before {
+
+        content: "";
+
+        position: absolute;
+
+        left: 0;
+        top: 0;
+        bottom: 0;
+
+        width: 5px;
+
+        background:
+            #d1d5db;
+    }
+
+    .question-card[data-status="correct"]::before {
+
+        background:
+            linear-gradient(
+                180deg,
+                #10b981,
+                #14b8a6,
+                #06b6d4
+            );
+    }
+
+    .question-card[data-status="wrong"]::before {
+
+        background:
+            linear-gradient(
+                180deg,
+                #ef4444,
+                #f97316
+            );
+    }
+
+    .question-card:hover {
+
+        transform:
+            translateY(-4px);
+
+        border-color:
+            rgba(99,91,255,.18);
+
+        box-shadow:
+            var(--shadow-md);
+    }
+
+    .question-card[hidden] {
+        display: none;
+    }
+
+
+    /* =========================================================
+       18. QUESTION HEADER
+    ========================================================= */
+
+    .question-header {
+
+        display: flex;
+
+        align-items: flex-start;
+
+        justify-content: space-between;
+
+        gap: 18px;
+
+        margin-bottom: 18px;
+    }
+
+    .question-number {
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 6px;
+
+        margin-bottom: 7px;
+
+        color:
+            var(--primary);
+
+        font-size: 10px;
+        font-weight: 850;
+
+        text-transform: uppercase;
+
+        letter-spacing: .8px;
+    }
+
+    .question-number::before {
+
+        content: "";
+
+        width: 20px;
+        height: 2px;
+
+        border-radius: 999px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #635bff,
+                #14b8a6
+            );
+    }
+
+    .question-text {
+
+        font-size: 16px;
+
+        font-weight: 760;
+
+        line-height: 1.65;
+
+        color: #172033;
+    }
+
+    .competency {
+
+        flex: none;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        gap: 5px;
+
+        padding:
+            7px 11px;
+
+        border:
+            1px solid #99f6e4;
+
+        border-radius: 999px;
+
+        background:
+            linear-gradient(
+                135deg,
+                #ecfdf5,
+                #ecfeff
+            );
+
+        color:
+            #0f766e;
+
+        font-size: 10px;
+        font-weight: 800;
+
+        white-space: nowrap;
+
+        box-shadow:
+            0 4px 12px rgba(20,184,166,.08);
+    }
+
+    .competency::before {
+        content: "◆";
+        font-size: 7px;
+    }
+
+
+    /* =========================================================
+       19. ANSWERS
+    ========================================================= */
+
+    .answer-grid {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+
+        gap: 11px;
+    }
+
+    .answer-option {
+
+        position: relative;
+
+        display: flex;
+
+        align-items: flex-start;
+
+        gap: 12px;
+
+        padding:
+            14px;
+
+        border:
+            1px solid #e4e8ef;
+
+        border-radius: 15px;
+
+        background:
+            linear-gradient(
+                145deg,
+                #fff,
+                #fafbfe
+            );
+
+        transition:
+            transform .25s var(--ease),
+            box-shadow .25s ease,
+            border-color .25s ease,
+            background .25s ease;
+    }
+
+    .answer-option:hover {
+
+        transform:
+            translateY(-3px);
+
+        box-shadow:
+            0 10px 24px rgba(15,23,42,.07);
+    }
+
+    .option-label {
+
+        width: 28px;
+        height: 28px;
+
+        flex: 0 0 28px;
+
+        display: grid;
+
+        place-items: center;
+
+        border-radius: 9px;
+
+        background:
+            #eef2f7;
+
+        color:
+            #64748b;
+
+        font-size: 11px;
+        font-weight: 850;
+
+        transition:
+            .25s ease;
+    }
+
+    .option-body {
+
+        min-width: 0;
+
+        flex: 1;
+    }
+
+    .option-text {
+
+        color:
+            #334155;
+
+        font-size: 13px;
+
+        line-height: 1.6;
+
+        word-break: break-word;
+    }
+
+
+    /* =========================================================
+       20. CORRECT / WRONG ANSWERS
+    ========================================================= */
+
+    .answer-option.correct {
+
+        border-color:
+            #6ee7b7;
+
+        background:
+            linear-gradient(
+                145deg,
+                #f0fdf4,
+                #ecfdf5
+            );
+    }
+
+    .answer-option.correct .option-label {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                135deg,
+                #10b981,
+                #14b8a6
+            );
+
+        box-shadow:
+            0 5px 12px rgba(16,185,129,.22);
+    }
+
+    .answer-option.correct .option-body::after {
+
+        content:
+            "✓ Correct answer";
+
+        display: block;
+
+        margin-top: 7px;
+
+        color:
+            #047857;
+
+        font-size: 9px;
+        font-weight: 850;
+
+        text-transform: uppercase;
+
+        letter-spacing: .5px;
+    }
+
+    .answer-option.selected-correct {
+
+        border-color:
+            #34d399;
+
+        background:
+            linear-gradient(
+                145deg,
+                #ecfdf5,
+                #dffaf1
+            );
+
+        box-shadow:
+            0 0 0 3px rgba(16,185,129,.08);
+    }
+
+    .answer-option.selected-correct .option-label {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                135deg,
+                #059669,
+                #10b981
+            );
+    }
+
+    .answer-option.selected-correct .option-body::after {
+
+        content:
+            "✓ Your answer · Correct";
+
+        display: block;
+
+        margin-top: 7px;
+
+        color:
+            #047857;
+
+        font-size: 9px;
+        font-weight: 850;
+
+        text-transform: uppercase;
+
+        letter-spacing: .5px;
+    }
+
+    .answer-option.selected-wrong {
+
+        border-color:
+            #fca5a5;
+
+        background:
+            linear-gradient(
+                145deg,
+                #fff7f7,
+                #fef2f2
+            );
+
+        box-shadow:
+            0 0 0 3px rgba(239,68,68,.06);
+    }
+
+    .answer-option.selected-wrong .option-label {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                135deg,
+                #ef4444,
+                #f97316
+            );
+    }
+
+    .answer-option.selected-wrong .option-body::after {
+
+        content:
+            "✕ Your answer";
+
+        display: block;
+
+        margin-top: 7px;
+
+        color:
+            #b91c1c;
+
+        font-size: 9px;
+        font-weight: 850;
+
+        text-transform: uppercase;
+
+        letter-spacing: .5px;
+    }
+
+
+    /* =========================================================
+       21. RESULT MESSAGE
+    ========================================================= */
+
+    .answer-result {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 11px;
+
+        margin-top: 17px;
+
+        padding:
+            13px 15px;
+
+        border-radius:
+            13px;
+
+        font-size: 12px;
+        font-weight: 750;
+    }
+
+    .correct-result {
+
+        color:
+            #047857;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ecfdf5,
+                #f0fdfa
+            );
+
+        border:
+            1px solid #bbf7d0;
+    }
+
+    .wrong-result {
+
+        color:
+            #b91c1c;
+
+        background:
+            linear-gradient(
+                90deg,
+                #fef2f2,
+                #fff7ed
+            );
+
+        border:
+            1px solid #fecaca;
+    }
+
+    .result-icon {
+
+        width: 27px;
+        height: 27px;
+
+        flex: 0 0 27px;
+
+        display: grid;
+
+        place-items: center;
+
+        border-radius: 50%;
+
+        background:
+            #fff;
+
+        font-weight: 900;
+
+        box-shadow:
+            0 4px 10px rgba(15,23,42,.08);
+    }
+
+
+    /* =========================================================
+       22. EXPLANATION
+    ========================================================= */
+
+    .explanation {
+
+        position: relative;
+
+        margin-top: 13px;
+
+        padding:
+            14px 16px;
+
+        border:
+            1px solid #e3e6ff;
+
+        border-left:
+            3px solid #635bff;
+
+        border-radius:
+            0 13px 13px 0;
+
+        background:
+            linear-gradient(
+                100deg,
+                #f5f3ff,
+                #fafbff
+            );
+    }
+
+    .explanation-title {
+
+        display: flex;
+
+        align-items: center;
+
+        gap: 7px;
+
+        margin-bottom: 5px;
+
+        color:
+            #3730a3;
+
+        font-size: 11px;
+        font-weight: 850;
+    }
+
+    .explanation-title::before {
+
+        content: "✦";
+
+        color:
+            #635bff;
+
+        font-size: 12px;
+    }
+
+    .explanation-text {
+
+        color:
+            var(--muted);
+
+        font-size: 12px;
+
+        line-height: 1.65;
+    }
+
+
+    /* =========================================================
+       23. EMPTY STATE
+    ========================================================= */
+
+    .empty {
+
+        padding:
+            50px 25px;
+
+        border:
+            1px dashed #cbd5e1;
+
+        border-radius:
+            var(--radius-lg);
+
+        background:
+            linear-gradient(
+                145deg,
+                rgba(255,255,255,.95),
+                rgba(248,250,255,.95)
+            );
+
+        text-align: center;
+
+        color:
+            var(--muted);
+
+        font-size: 13px;
+
+        box-shadow:
+            var(--shadow-sm);
+    }
+
+    .empty::before {
+
+        content: "◈";
+
+        display: block;
+
+        margin-bottom: 10px;
+
+        color:
+            #818cf8;
+
+        font-size: 32px;
+
+        animation:
+            emptyFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes emptyFloat {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    #noMatch {
+        display: none;
+    }
+
+
+    /* =========================================================
+       24. ACTION BUTTONS
+    ========================================================= */
+
+    .actions {
+
+        display: flex;
+
+        justify-content: center;
+
+        gap: 12px;
+
+        margin-top: 32px;
+    }
+
+    .btn {
+
+        position: relative;
+
+        display: inline-flex;
+
+        align-items: center;
+
+        justify-content: center;
+
+        gap: 7px;
+
+        min-width: 165px;
+
+        padding:
+            12px 20px;
+
+        border-radius:
+            13px;
+
+        font-size: 12px;
+        font-weight: 800;
+
+        transition:
+            transform .25s var(--ease),
+            box-shadow .25s ease,
+            background .25s ease;
+    }
+
+    .btn-primary {
+
+        color: #fff;
+
+        background:
+            linear-gradient(
+                135deg,
+                #4f46e5,
+                #6366f1,
+                #7c3aed
+            );
+
+        background-size:
+            200% 200%;
+
+        box-shadow:
+            0 8px 20px rgba(79,70,229,.24);
+
+        animation:
+            buttonGradient 5s ease infinite;
+    }
+
+    @keyframes buttonGradient {
+
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    .btn-primary:hover {
+
+        transform:
+            translateY(-3px);
+
+        box-shadow:
+            0 13px 28px rgba(79,70,229,.30);
+    }
+
+    .btn-secondary {
+
+        color:
+            #374151;
+
+        background:
+            rgba(255,255,255,.9);
+
+        border:
+            1px solid #dfe3eb;
+
+        box-shadow:
+            0 5px 14px rgba(15,23,42,.04);
+    }
+
+    .btn-secondary:hover {
+
+        transform:
+            translateY(-3px);
+
+        border-color:
+            #c7d2fe;
+
+        color:
+            #4338ca;
+
+        background:
+            #f5f3ff;
+
+        box-shadow:
+            0 10px 22px rgba(79,70,229,.10);
+    }
+
+    .btn:active {
+        transform: scale(.98);
+    }
+
+
+    /* =========================================================
+       25. MOBILE DRAWER
+    ========================================================= */
+
+    .scrim {
+
+        position: fixed;
+
+        inset: 0;
+
+        z-index: 1050;
+
+        background:
+            rgba(15,23,42,.55);
+
+        backdrop-filter:
+            blur(3px);
+
+        opacity: 0;
+
+        visibility: hidden;
+
+        transition:
+            opacity .25s ease,
+            visibility .25s;
+    }
+
+    .scrim.show {
+
+        opacity: 1;
+
+        visibility: visible;
+    }
+
+
+    /* =========================================================
+       26. RESPONSIVE
+    ========================================================= */
+
+    @media (max-width: 1100px) {
+
+        .container {
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+
+        .header {
+            padding-left: 24px;
+            padding-right: 24px;
+        }
+    }
+
+
+    @media (max-width: 850px) {
+
+        :root {
+            --sidebar-width: 0px;
+        }
+
+        .sidebar {
+
+            width: 275px;
+
+            transform:
+                translateX(-105%);
+
+            animation: none;
+
+            box-shadow:
+                18px 0 50px rgba(2,6,23,.30);
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+        }
+
+        .burger {
+
+            display: grid;
+        }
+
+        .hero-content {
+            flex-direction: column;
+        }
+
+        .score-card {
+
+            width: 100%;
+
+            flex: none;
+        }
+
+        .main {
+            margin-left: 0;
+        }
+    }
+
+
+    @media (max-width: 700px) {
+
+        .header-subtitle,
+        .profile-info {
+            display: none;
+        }
+
+        .header-title {
+            font-size: 18px;
+        }
+
+        .container {
+
+            padding:
+                20px 16px 50px;
+        }
+
+        .page-header {
+
+            padding:
+                23px 20px;
+
+            border-radius:
+                20px;
+        }
+
+        .page-header h1 {
+            font-size: 24px;
+        }
+
+        .description {
+            font-size: 13px;
+        }
+
+        .toolbar {
+
+            align-items: flex-start;
+
+            flex-direction: column;
+        }
+
+        .chips {
+            width: 100%;
+        }
+
+        .chip {
+            flex: 1;
+            text-align: center;
+        }
+
+        .question-card {
+
+            padding:
+                20px 17px;
+        }
+
+        .question-header {
+
+            flex-direction: column;
+        }
+
+        .competency {
+            align-self: flex-start;
+        }
+
+        .answer-grid {
+
+            grid-template-columns:
+                1fr;
+        }
+
+        .actions {
+
+            flex-direction: column;
+        }
+
+        .btn {
+
+            width: 100%;
+        }
+    }
+
+
+    @media (max-width: 450px) {
+
+        .header {
+            padding:
+                10px 15px;
+        }
+
+        .profile .avatar {
+
+            width: 39px;
+            height: 39px;
+        }
+
+        .page-header h1 {
+            font-size: 22px;
+        }
+
+        .question-text {
+            font-size: 15px;
+        }
+
+        .answer-option {
+            padding: 12px;
+        }
+    }
+
+
+    /* =========================================================
+       27. REDUCED MOTION
+    ========================================================= */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+
+            animation: none !important;
+
+            transition: none !important;
+
+            scroll-behavior: auto !important;
+        }
+
+        .reveal {
+
+            opacity: 1;
+
+            transform: none;
+        }
+    }
+
+</style>
+```
+
+</head>
+
+<body>
+
+<!-- Decorative background -->
+
+<div class="bg-orb orb-one"></div>
+<div class="bg-orb orb-two"></div>
+<div class="bg-orb orb-three"></div>
+
+<a class="skip" href="#content">
+    Skip to content
+</a>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside class="sidebar"
+       id="sidebar"
+       aria-label="Main navigation">
+
+```
+<div class="brand">
+
+    <div class="brand-mark">
+        <span>C</span>
+    </div>
+
+    <div class="brand-text">
+        Capacitix
+    </div>
+
+</div>
+
+
+<nav aria-label="Employee menu">
+
+    <div class="menu-label">
+        My Development
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/employee/dashboard">
+
+                <span class="icon">⌂</span>
+
+                <span>
+                    Dashboard
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/competencies">
+
+                <span class="icon">◈</span>
+
+                <span>
+                    My Competencies
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/assessments"
+               class="active"
+               aria-current="page">
+
+                <span class="icon">✓</span>
+
+                <span>
+                    Assessments
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/skill-gaps">
+
+                <span class="icon">△</span>
+
+                <span>
+                    Skill Gaps
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/learning-path">
+
+                <span class="icon">▣</span>
+
+                <span>
+                    My Learning Path
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/training">
+
+                <span class="icon">▶</span>
+
+                <span>
+                    Training
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/practical-tasks">
+
+                <span class="icon">◆</span>
+
+                <span>
+                    Practical Tasks
+                </span>
+
+            </a>
+        </li>
+
+    </ul>
+
+
+    <div class="menu-label">
+        Progress
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/employee/progress">
+
+                <span class="icon">↗</span>
+
+                <span>
+                    My Progress
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/certificates">
+
+                <span class="icon">▤</span>
+
+                <span>
+                    Certificates
+                </span>
+
+            </a>
+        </li>
+
+    </ul>
+
+
+    <div class="menu-label">
+        Account
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/employee/profile">
+
+                <span class="icon">●</span>
+
+                <span>
+                    My Profile
+                </span>
+
+            </a>
+        </li>
+
+
+        <li>
+            <a href="/employee/settings">
+
+                <span class="icon">⚙</span>
+
+                <span>
+                    Settings
+                </span>
+
+            </a>
+        </li>
+
+    </ul>
+
+</nav>
+
+
+<!-- LOGOUT -->
+
+<form class="logout"
+      th:action="@{/logout}"
+      method="post">
+
+    <button type="submit">
+
+        <span class="icon">
+            ↪
+        </span>
+
+        <span>
+            Logout
+        </span>
+
+    </button>
+
+</form>
+```
+
+</aside>
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+
+<div class="main"
+     id="main">
+
+```
+<!-- HEADER -->
+
+<header class="header">
+
+    <div class="header-left">
+
+        <button class="burger"
+                id="burger"
+                type="button"
+                aria-label="Open menu"
+                aria-controls="sidebar"
+                aria-expanded="false">
+
+            ☰
+
+        </button>
+
+
+        <div>
+
+            <div class="header-title">
+                Assessment Review
+            </div>
+
+            <div class="header-subtitle">
+                Review your answers and understand your competency performance
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- PROFILE -->
+
+    <div class="profile">
+
+        <div class="profile-info">
+
+            <div class="profile-name"
+                 th:text="${employee != null and employee.fullName != null
+                    ? employee.fullName
+                    : 'Employee'}">
+
+                Student
+
+            </div>
+
+            <div class="profile-role">
+                Student
+            </div>
+
+        </div>
+
+
+        <div class="avatar"
+             th:text="${employee != null
+                and employee.fullName != null
+                and !employee.fullName.isEmpty()
+                ? #strings.substring(employee.fullName, 0, 1).toUpperCase()
+                : 'E'}">
+
+            E
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     CONTENT
+====================================================== -->
+
+<main class="container"
+      id="content">
+
+
+    <!-- BACK -->
+
+    <a th:href="@{/employee/assessments/{id}/result(id=${assignment.id})}"
+       class="back-link">
+
+        ←
+        Back to Result
+
+    </a>
+
+
+    <!-- =====================================================
+         HERO
+    ====================================================== -->
+
+    <section class="page-header reveal">
+
+
+        <div class="hero-content">
+
+
+            <div class="hero-main">
+
+
+                <div class="hero-eyebrow">
+
+                    Assessment Review
+
+                </div>
+
+
+                <h1 th:text="${assignment.assessment != null
+                    ? assignment.assessment.name
+                    : 'Assessment Review'}">
+
+                    Assessment Review
+
+                </h1>
+
+
+                <p class="description"
+                   th:text="${assignment.assessment != null
+                        and assignment.assessment.description != null
+                        and !assignment.assessment.description.isEmpty()
+                        ? assignment.assessment.description
+                        : 'Review your submitted answers and assessment performance.'}">
+
+                    Review your submitted answers and assessment performance.
+
+                </p>
+
+
+                <!-- META -->
+
+                <div class="meta">
+
+
+                    <span class="badge ai"
+                          th:if="${assignment.assessment != null
+                            and assignment.assessment.aiGenerated}">
+
+                        ✦
+                        AI Generated
+
+                    </span>
+
+
+                    <span class="badge"
+                          th:if="${assignment.assessment != null}"
+                          th:text="${assignment.assessment.type}">
+
+                        SKILL
+
+                    </span>
+
+
+                    <span class="badge completed">
+
+                        ✓
+                        Completed
+
+                    </span>
+
+
+                    <span class="badge"
+                          th:text="${assignment.score + ' / '
+                            + assignment.maxScore + ' Marks'}">
+
+                        8 / 10 Marks
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- SCORE -->
+
+            <div class="score-card">
+
+                <div class="score-label">
+                    Assessment Score
+                </div>
+
+
+                <div class="score-number"
+                     th:text="${assignment.score + ' / ' + assignment.maxScore}">
+
+                    8 / 10
+
+                </div>
+
+
+                <div class="score-track">
+
+                    <div class="score-fill"
+                         th:style="'width:' +
+                         (${assignment.maxScore != null and assignment.maxScore > 0}
+                         ? (${assignment.score * 100 / assignment.maxScore}) : 0)
+                         + '%;'">
+
+                    </div>
+
+                </div>
+
+
+                <div class="score-status">
+                    Assessment Completed
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         FILTER BAR
+    ====================================================== -->
+
+    <div class="toolbar"
+         th:if="${responses != null and !responses.isEmpty()}">
+
+
+        <div class="toolbar-title">
+            Your Answers
+        </div>
+
+
+        <div class="chips"
+             role="group"
+             aria-label="Filter questions">
+
+
+            <button type="button"
+                    class="chip on"
+                    data-filter="all">
+
+                All
+                <b id="cAll"></b>
+
+            </button>
+
+
+            <button type="button"
+                    class="chip"
+                    data-filter="correct">
+
+                ✓ Correct
+                <b id="cCorrect"></b>
+
+            </button>
+
+
+            <button type="button"
+                    class="chip"
+                    data-filter="wrong">
+
+                ✕ Incorrect
+                <b id="cWrong"></b>
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         QUESTION LIST
+    ====================================================== -->
+
+    <section class="question-list"
+             th:if="${responses != null and !responses.isEmpty()}">
+
+
+        <article class="question-card reveal"
+                 th:each="response, stat : ${responses}"
+                 th:attr="data-status=${response.correct ? 'correct' : 'wrong'}">
+
+
+            <!-- QUESTION HEADER -->
+
+            <div class="question-header">
+
+
+                <div>
+
+                    <div class="question-number"
+                         th:text="'Question ' + ${stat.count}">
+
+                        Question 1
+
+                    </div>
+
+
+                    <div class="question-text"
+                         th:text="${response.question.questionText}">
+
+                        Question text
+
+                    </div>
+
+                </div>
+
+
+                <!-- COMPETENCY -->
+
+                <div class="competency"
+                     th:if="${response.question.competency != null}"
+                     th:text="${response.question.competency.name}">
+
+                    Java
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 ANSWERS
+            ================================================== -->
+
+            <div class="answer-grid">
+
+
+                <!-- OPTION A -->
+
+                <div class="answer-option"
+                     th:classappend="${response.question.correctAnswer == 'A'
+                        ? (response.selectedAnswer == 'A'
+                            ? ' selected-correct'
+                            : ' correct')
+                        : (response.selectedAnswer == 'A'
+                            ? ' selected-wrong'
+                            : '')}">
+
+                    <div class="option-label">
+                        A
+                    </div>
+
+                    <div class="option-body">
+
+                        <div class="option-text"
+                             th:text="${response.question.optionA}">
+
+                            Option A
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- OPTION B -->
+
+                <div class="answer-option"
+                     th:classappend="${response.question.correctAnswer == 'B'
+                        ? (response.selectedAnswer == 'B'
+                            ? ' selected-correct'
+                            : ' correct')
+                        : (response.selectedAnswer == 'B'
+                            ? ' selected-wrong'
+                            : '')}">
+
+                    <div class="option-label">
+                        B
+                    </div>
+
+                    <div class="option-body">
+
+                        <div class="option-text"
+                             th:text="${response.question.optionB}">
+
+                            Option B
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- OPTION C -->
+
+                <div class="answer-option"
+                     th:classappend="${response.question.correctAnswer == 'C'
+                        ? (response.selectedAnswer == 'C'
+                            ? ' selected-correct'
+                            : ' correct')
+                        : (response.selectedAnswer == 'C'
+                            ? ' selected-wrong'
+                            : '')}">
+
+                    <div class="option-label">
+                        C
+                    </div>
+
+                    <div class="option-body">
+
+                        <div class="option-text"
+                             th:text="${response.question.optionC}">
+
+                            Option C
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- OPTION D -->
+
+                <div class="answer-option"
+                     th:classappend="${response.question.correctAnswer == 'D'
+                        ? (response.selectedAnswer == 'D'
+                            ? ' selected-correct'
+                            : ' correct')
+                        : (response.selectedAnswer == 'D'
+                            ? ' selected-wrong'
+                            : '')}">
+
+                    <div class="option-label">
+                        D
+                    </div>
+
+                    <div class="option-body">
+
+                        <div class="option-text"
+                             th:text="${response.question.optionD}">
+
+                            Option D
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 CORRECT RESULT
+            ================================================== -->
+
+            <div class="answer-result correct-result"
+                 th:if="${response.correct}">
+
+                <div class="result-icon">
+                    ✓
+                </div>
+
+                <span>
+
+                    Correct answer
+
+                    <span th:if="${response.marksAwarded != null}"
+                          th:text="' — ' + ${response.marksAwarded} + ' mark(s) awarded'">
+
+                        — 1 mark awarded
+
+                    </span>
+
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 WRONG RESULT
+            ================================================== -->
+
+            <div class="answer-result wrong-result"
+                 th:unless="${response.correct}">
+
+                <div class="result-icon">
+                    ✕
+                </div>
+
+                <span>
+
+                    Incorrect answer.
+
+                    Correct answer:
+
+                    <strong th:text="${response.question.correctAnswer}">
+                        A
+                    </strong>
+
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 SELECTED ANSWER
+            ================================================== -->
+
+            <div class="explanation">
+
+
+                <div class="explanation-title">
+                    Your Answer
+                </div>
+
+
+                <div class="explanation-text"
+                     th:if="${response.selectedAnswer != null
+                        and !response.selectedAnswer.isBlank()}"
+                     th:text="${response.selectedAnswer}">
+
+                    A
+
+                </div>
+
+
+                <div class="explanation-text"
+                     th:if="${response.selectedAnswer == null
+                        or response.selectedAnswer.isBlank()}">
+
+                    Not answered
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 EXPLANATION
+            ================================================== -->
+
+            <div class="explanation"
+                 th:if="${response.question.explanation != null
+                    and !response.question.explanation.isBlank()}">
+
+
+                <div class="explanation-title">
+                    Explanation
+                </div>
+
+
+                <div class="explanation-text"
+                     th:text="${response.question.explanation}">
+
+                    Explanation of the correct answer.
+
+                </div>
+
+            </div>
+
+        </article>
+
+    </section>
+
+
+    <!-- FILTER EMPTY -->
+
+    <div class="empty"
+         id="noMatch">
+
+        No questions match this filter.
+
+    </div>
+
+
+    <!-- REAL EMPTY STATE -->
+
+    <div class="empty"
+         th:if="${responses == null or responses.isEmpty()}">
+
+        No submitted responses are available for this assessment.
+
+    </div>
+
+
+    <!-- =====================================================
+         ACTIONS
+    ====================================================== -->
+
+    <div class="actions">
+
+
+        <a th:href="@{/employee/assessments/{id}/result(id=${assignment.id})}"
+           class="btn btn-primary">
+
+            ←
+            Back to Result
+
+        </a>
+
+
+        <a href="/employee/assessments"
+           class="btn btn-secondary">
+
+            View My Assessments
+            →
+
+        </a>
+
+    </div>
+
+
+</main>
+```
+
+</div>
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script>
+
+(function () {
+
+    "use strict";
+
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    const $ = function (selector, context) {
+
+        return (context || document).querySelector(selector);
+
+    };
+
+
+    const $$ = function (selector, context) {
+
+        return Array.prototype.slice.call(
+            (context || document).querySelectorAll(selector)
+        );
+
+    };
+
+
+    const mainEl = $("#main");
+
+
+    /* =========================================================
+       REVEAL ANIMATIONS
+    ========================================================= */
+
+    const revealItems = $$(".reveal");
+
+
+    function reveal(element) {
+
+        element.classList.add("in");
+
+    }
+
+
+    if ("IntersectionObserver" in window) {
+
+        const observer = new IntersectionObserver(
+
+            function (entries) {
+
+                entries.forEach(function (entry) {
+
+                    if (entry.isIntersecting) {
+
+                        reveal(entry.target);
+
+                        observer.unobserve(entry.target);
+
+                    }
+
+                });
+
+            },
+
+            {
+                root: mainEl,
+                threshold: 0.06
+            }
+
+        );
+
+
+        revealItems.forEach(function (item) {
+
+            observer.observe(item);
+
+        });
+
+    } else {
+
+        revealItems.forEach(reveal);
+
+    }
+
+
+    /* Safety fallback */
+
+    setTimeout(function () {
+
+        revealItems.forEach(reveal);
+
+    }, 2500);
+
+
+    /* =========================================================
+       QUESTION FILTER
+    ========================================================= */
+
+    const cards = $$(".question-card");
+
+    const chips = $$(".chip");
+
+    const noMatch = $("#noMatch");
+
+
+    if (cards.length) {
+
+
+        const counts = {
+
+            all: cards.length,
+
+            correct:
+                cards.filter(function (card) {
+
+                    return card.dataset.status === "correct";
+
+                }).length,
+
+            wrong:
+                cards.filter(function (card) {
+
+                    return card.dataset.status === "wrong";
+
+                }).length
+
+        };
+
+
+        const allCount = $("#cAll");
+
+        const correctCount = $("#cCorrect");
+
+        const wrongCount = $("#cWrong");
+
+
+        if (allCount) {
+            allCount.textContent = counts.all;
+        }
+
+        if (correctCount) {
+            correctCount.textContent = counts.correct;
+        }
+
+        if (wrongCount) {
+            wrongCount.textContent = counts.wrong;
+        }
+
+
+        chips.forEach(function (chip) {
+
+
+            chip.addEventListener("click", function () {
+
+
+                chips.forEach(function (item) {
+
+                    item.classList.remove("on");
+
+                });
+
+
+                chip.classList.add("on");
+
+
+                const filter =
+                    chip.dataset.filter;
+
+
+                let visible = 0;
+
+
+                cards.forEach(function (card) {
+
+
+                    const show =
+
+                        filter === "all" ||
+
+                        card.dataset.status === filter;
+
+
+                    card.hidden = !show;
+
+
+                    if (show) {
+
+                        card.classList.add("in");
+
+                        visible++;
+
+                    }
+
+                });
+
+
+                if (noMatch) {
+
+                    noMatch.style.display =
+                        visible ? "none" : "block";
+
+                }
+
+            });
+
+        });
+
+    }
+
+
+    /* =========================================================
+       MOBILE SIDEBAR
+    ========================================================= */
+
+    const sidebar = $("#sidebar");
+
+    const scrim = $("#scrim");
+
+    const burger = $("#burger");
+
+
+    function toggleSidebar(open) {
+
+
+        sidebar.classList.toggle(
+            "open",
+            open
+        );
+
+
+        scrim.classList.toggle(
+            "show",
+            open
+        );
+
+
+        document.body.classList.toggle(
+            "no-scroll",
+            open
+        );
+
+
+        if (burger) {
+
+            burger.setAttribute(
+                "aria-expanded",
+                open
+            );
+
+        }
+
+    }
+
+
+    if (burger) {
+
+        burger.addEventListener(
+            "click",
+            function () {
+
+                toggleSidebar(
+                    !sidebar.classList.contains("open")
+                );
+
+            }
+        );
+
+    }
+
+
+    if (scrim) {
+
+        scrim.addEventListener(
+            "click",
+            function () {
+
+                toggleSidebar(false);
+
+            }
+        );
+
+    }
+
+
+    $$(".sidebar nav a").forEach(
+        function (link) {
+
+            link.addEventListener(
+                "click",
+                function () {
+
+                    if (window.innerWidth <= 850) {
+
+                        toggleSidebar(false);
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    window.addEventListener(
+        "resize",
+        function () {
+
+            if (window.innerWidth > 850) {
+
+                toggleSidebar(false);
+
+            }
+
+        }
+    );
+
+
+    document.addEventListener(
+        "keydown",
+        function (event) {
+
+            if (event.key === "Escape") {
+
+                toggleSidebar(false);
+
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       KEEP ACTIVE NAV VISIBLE
+    ========================================================= */
+
+    (function () {
+
+
+        const active =
+            $(".menu a.active");
+
+
+        const nav =
+            $(".sidebar nav");
+
+
+        if (active && nav) {
+
+            nav.scrollTop = Math.max(
+
+                0,
+
+                active.offsetTop
+                -
+                nav.clientHeight / 2
+                +
+                active.offsetHeight / 2
+
+            );
+
+        }
+
+    })();
+
+
+    /* =========================================================
+       LOGOUT PROTECTION
+    ========================================================= */
+
+    const logoutForm =
+        $(".logout");
+
+
+    if (logoutForm) {
+
+
+        logoutForm.addEventListener(
+            "submit",
+            function () {
+
+
+                const button =
+                    $("button", logoutForm);
+
+
+                setTimeout(
+                    function () {
+
+
+                        button.disabled =
+                            true;
+
+
+                        const text =
+                            button.lastElementChild;
+
+
+                        if (text) {
+
+                            text.textContent =
+                                "Signing out…";
+
+                        }
+
+                    },
+                    0
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       CARD STAGGER
+    ========================================================= */
+
+    cards.forEach(function (card, index) {
+
+        card.style.transitionDelay =
+            Math.min(index * 70, 500) + "ms";
+
+    });
+
+
+})();
+
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Invitation Error | Capacitix</title>
+
+    <meta name="description"
+          content="Capacitix trainer invitation error">
+
+    <style>
+
+        :root {
+            --primary: #635bff;
+            --primary-dark: #4f46e5;
+            --teal: #14b8a6;
+            --bg: #f4f7fb;
+            --ink: #101828;
+            --muted: #667085;
+            --line: #e7eaf0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 12% 8%, rgba(99, 91, 255, .12), transparent 38%),
+                radial-gradient(circle at 90% 92%, rgba(20, 184, 166, .12), transparent 38%),
+                var(--bg);
+            color: var(--ink);
+        }
+
+        :focus-visible {
+            outline: 3px solid rgba(99, 91, 255, .45);
+            outline-offset: 2px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 22px;
+            padding: 40px 35px;
+            text-align: center;
+            border: 1px solid var(--line);
+            box-shadow: 0 16px 44px rgba(16, 24, 40, .09);
+            opacity: 0;
+            animation: fadeUp .6s ease forwards;
+        }
+
+        .logo {
+            width: 58px;
+            height: 58px;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--teal));
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 800;
+            box-shadow: 0 8px 22px rgba(99, 91, 255, .3);
+        }
+
+        .error-icon {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            font-size: 34px;
+            font-weight: 700;
+            animation: popIn .5s ease .25s both;
+        }
+
+        h1 {
+            font-size: 25px;
+            font-weight: 800;
+            color: var(--ink);
+            margin-bottom: 12px;
+        }
+
+        .description {
+            color: var(--muted);
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 22px;
+        }
+
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            color: #b91c1c;
+            font-size: 13px;
+            line-height: 1.6;
+            word-break: break-word;
+        }
+
+        .help-box {
+            background: #f8fafc;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .help-title {
+            color: #374151;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .help-text {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 150px;
+            height: 46px;
+            padding: 0 22px;
+            border-radius: 12px;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            transition: transform .2s ease, box-shadow .2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(79, 70, 229, .28);
+        }
+
+        .btn:active {
+            transform: scale(.97);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 22px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(.8); }
+            to { opacity: 1; transform: none; }
+        }
+
+        @media (max-width: 520px) {
+
+            body {
+                padding: 15px;
+            }
+
+            .card {
+                padding: 32px 22px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+            }
+
+            .card {
+                opacity: 1;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<main class="container">
+
+    <div class="card">
+
+        <!-- Capacitix Logo -->
+        <div class="logo" aria-hidden="true">
+            C
+        </div>
+
+
+        <!-- Error Icon -->
+        <div class="error-icon" aria-hidden="true">
+            !
+        </div>
+
+
+        <!-- Heading -->
+        <h1>
+            Invitation Not Available
+        </h1>
+
+
+        <!-- Description -->
+        <p class="description">
+            We could not verify this trainer invitation.
+            The invitation may no longer be valid.
+        </p>
+
+
+        <!-- Dynamic Error -->
+        <div class="error-box"
+             role="alert"
+             th:if="${error}"
+             th:text="${error}">
+
+            This invitation is invalid or has expired.
+
+        </div>
+
+
+        <!-- Help Information -->
+        <div class="help-box">
+
+            <div class="help-title">
+                What can you do?
+            </div>
+
+            <div class="help-text">
+
+                Please contact the Capacitix administrator
+                who sent you the invitation and request a
+                new invitation link.
+
+                <br><br>
+
+                If you have already created your account,
+                you can use the login page to access Capacitix.
+
+            </div>
+
+        </div>
+
+
+        <!-- Login Button -->
+        <a th:href="@{/login}"
+           href="/login"
+           class="btn">
+
+            Go to Login
+
+        </a>
+
+    </div>
+
+
+    <!-- Footer -->
+    <div class="footer">
+
+        © Capacitix. All rights reserved.
+
+    </div>
+
+</main>
+
+</body>
+
+</html>

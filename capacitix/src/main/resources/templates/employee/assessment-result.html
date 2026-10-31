@@ -1,0 +1,3433 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Assessment Result | Capacitix">
+
+    <meta name="theme-color"
+          content="#635bff">
+
+    <title>Assessment Result | Capacitix</title>
+
+    <style>
+
+        /* =========================================================
+           DESIGN SYSTEM
+        ========================================================= */
+
+        :root {
+
+            --primary: #635bff;
+            --primary-dark: #5146e5;
+            --primary-soft: #eef0ff;
+
+            --violet: #8b5cf6;
+            --cyan: #06b6d4;
+            --teal: #14b8a6;
+
+            --success: #10b981;
+            --success-dark: #047857;
+            --success-soft: #ecfdf5;
+
+            --warning: #f59e0b;
+            --warning-dark: #b45309;
+            --warning-soft: #fffbeb;
+
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --danger-soft: #fef2f2;
+
+            --blue: #3b82f6;
+            --blue-soft: #eff6ff;
+
+            --orange: #f97316;
+            --orange-soft: #fff7ed;
+
+            --ink: #172033;
+            --ink-soft: #374151;
+
+            --muted: #6b7280;
+            --muted-light: #8b95a7;
+
+            --border: #e7eaf2;
+            --border-strong: #d9deea;
+
+            --surface: #ffffff;
+            --surface-soft: #f8f9fd;
+
+            --background: #f4f6fb;
+
+            --shadow-sm:
+                0 4px 16px rgba(25, 35, 60, 0.05);
+
+            --shadow-md:
+                0 12px 32px rgba(25, 35, 60, 0.08);
+
+            --shadow-lg:
+                0 22px 55px rgba(25, 35, 60, 0.12);
+
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 22px;
+            --radius-xl: 28px;
+
+            --ease:
+                cubic-bezier(.22, 1, .36, 1);
+        }
+
+
+        /* =========================================================
+           RESET
+        ========================================================= */
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+
+        body {
+
+            font-family:
+                Inter,
+                ui-sans-serif,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at 10% 0%,
+                    rgba(99, 91, 255, .09),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 90% 10%,
+                    rgba(6, 182, 212, .08),
+                    transparent 25%
+                ),
+                var(--background);
+
+            color: var(--ink);
+
+            min-height: 100vh;
+
+            overflow-x: hidden;
+        }
+
+
+        a {
+            color: inherit;
+        }
+
+
+        button,
+        a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+
+        /* =========================================================
+           AMBIENT BACKGROUND
+        ========================================================= */
+
+        body::before {
+
+            content: "";
+
+            position: fixed;
+
+            width: 360px;
+            height: 360px;
+
+            top: 80px;
+            left: -170px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(99, 91, 255, .13),
+                    transparent 68%
+                );
+
+            pointer-events: none;
+
+            animation:
+                ambientFloat 9s ease-in-out infinite;
+
+            z-index: -1;
+        }
+
+
+        body::after {
+
+            content: "";
+
+            position: fixed;
+
+            width: 330px;
+            height: 330px;
+
+            right: -150px;
+            bottom: 30px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(20, 184, 166, .12),
+                    transparent 68%
+                );
+
+            pointer-events: none;
+
+            animation:
+                ambientFloatReverse 11s ease-in-out infinite;
+
+            z-index: -1;
+        }
+
+
+        @keyframes ambientFloat {
+
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate3d(25px, 35px, 0) scale(1.08);
+            }
+        }
+
+
+        @keyframes ambientFloatReverse {
+
+            0%,
+            100% {
+                transform: translate3d(0, 0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate3d(-25px, -30px, 0) scale(1.07);
+            }
+        }
+
+
+        /* =========================================================
+           PAGE REVEAL
+        ========================================================= */
+
+        .page {
+
+            opacity: 0;
+
+            transform: translateY(14px);
+
+            animation:
+                pageReveal .65s var(--ease) forwards;
+        }
+
+
+        @keyframes pageReveal {
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+
+        .header {
+
+            height: 74px;
+
+            position: sticky;
+            top: 0;
+
+            z-index: 100;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding:
+                0 clamp(18px, 4vw, 44px);
+
+            background:
+                rgba(255, 255, 255, .86);
+
+            border-bottom:
+                1px solid rgba(220, 225, 237, .85);
+
+            backdrop-filter:
+                blur(18px);
+
+            -webkit-backdrop-filter:
+                blur(18px);
+
+            box-shadow:
+                0 5px 22px rgba(20, 30, 55, .035);
+        }
+
+
+        .header::after {
+
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            bottom: -1px;
+
+            height: 2px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--violet),
+                    var(--cyan),
+                    var(--teal),
+                    var(--primary)
+                );
+
+            background-size: 250% 100%;
+
+            animation:
+                gradientMove 6s linear infinite;
+        }
+
+
+        @keyframes gradientMove {
+
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 250% 50%;
+            }
+        }
+
+
+        /* =========================================================
+           BRAND
+        ========================================================= */
+
+        .brand {
+
+            display: flex;
+            align-items: center;
+
+            gap: 12px;
+
+            text-decoration: none;
+        }
+
+
+        .logo {
+
+            position: relative;
+
+            width: 43px;
+            height: 43px;
+
+            border-radius: 13px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #ffffff;
+
+            font-size: 18px;
+            font-weight: 900;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--violet) 52%,
+                    var(--cyan)
+                );
+
+            box-shadow:
+                0 9px 24px rgba(99, 91, 255, .28);
+
+            overflow: hidden;
+
+            animation:
+                logoFloat 4s ease-in-out infinite;
+        }
+
+
+        .logo::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 75px;
+            height: 15px;
+
+            left: -45px;
+
+            top: 14px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255,255,255,.65),
+                    transparent
+                );
+
+            transform: rotate(-35deg);
+
+            animation:
+                logoShine 4s ease-in-out infinite;
+        }
+
+
+        @keyframes logoFloat {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-2px);
+            }
+        }
+
+
+        @keyframes logoShine {
+
+            0%,
+            35% {
+                left: -60px;
+            }
+
+            65%,
+            100% {
+                left: 75px;
+            }
+        }
+
+
+        .brand-text {
+
+            font-size: 21px;
+
+            font-weight: 850;
+
+            letter-spacing: -.5px;
+
+            color: var(--ink);
+        }
+
+
+        .brand-text span {
+            color: var(--primary);
+        }
+
+
+        /* =========================================================
+           PROFILE
+        ========================================================= */
+
+        .profile {
+
+            display: flex;
+            align-items: center;
+
+            gap: 12px;
+        }
+
+
+        .profile-info {
+            text-align: right;
+        }
+
+
+        .profile-name {
+
+            font-size: 14px;
+
+            font-weight: 750;
+
+            color: var(--ink);
+        }
+
+
+        .profile-role {
+
+            margin-top: 2px;
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            font-weight: 600;
+        }
+
+
+        .avatar {
+
+            position: relative;
+
+            width: 43px;
+            height: 43px;
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #ffffff;
+
+            font-size: 14px;
+            font-weight: 850;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--violet)
+                );
+
+            box-shadow:
+                0 7px 20px rgba(99, 91, 255, .22);
+
+            border: 3px solid #ffffff;
+        }
+
+
+        .avatar::after {
+
+            content: "";
+
+            position: absolute;
+
+            width: 9px;
+            height: 9px;
+
+            right: -1px;
+            bottom: 1px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+
+            border: 2px solid #ffffff;
+        }
+
+
+        /* =========================================================
+           MAIN CONTAINER
+        ========================================================= */
+
+        .container {
+
+            width:
+                min(
+                    1220px,
+                    calc(100% - 40px)
+                );
+
+            margin:
+                32px auto 60px;
+        }
+
+
+        /* =========================================================
+           BACK LINK
+        ========================================================= */
+
+        .back-link {
+
+            display: inline-flex;
+            align-items: center;
+
+            gap: 8px;
+
+            margin-bottom: 20px;
+
+            padding: 9px 13px;
+
+            color: var(--primary);
+
+            text-decoration: none;
+
+            font-size: 13px;
+            font-weight: 750;
+
+            border-radius: 10px;
+
+            transition:
+                background .25s ease,
+                transform .25s var(--ease);
+        }
+
+
+        .back-link:hover {
+
+            background: var(--primary-soft);
+
+            transform:
+                translateX(-3px);
+        }
+
+
+        .back-icon {
+
+            width: 18px;
+            height: 18px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 6px;
+
+            background: var(--primary-soft);
+        }
+
+
+        /* =========================================================
+           RESULT HERO
+        ========================================================= */
+
+        .result-card {
+
+            position: relative;
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                310px;
+
+            gap: 32px;
+
+            padding: 34px;
+
+            border-radius: var(--radius-xl);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(255,255,255,.98),
+                    rgba(249,250,255,.96)
+                );
+
+            border:
+                1px solid rgba(224, 228, 241, .95);
+
+            box-shadow: var(--shadow-lg);
+
+            overflow: hidden;
+
+            animation:
+                heroReveal .7s var(--ease) both;
+        }
+
+
+        .result-card::before {
+
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
+            right: 0;
+
+            height: 4px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--violet),
+                    var(--cyan),
+                    var(--teal)
+                );
+
+            background-size: 220% 100%;
+
+            animation:
+                gradientMove 5s linear infinite;
+        }
+
+
+        .result-card::after {
+
+            content: "";
+
+            position: absolute;
+
+            width: 280px;
+            height: 280px;
+
+            right: 150px;
+            top: -180px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(99,91,255,.10),
+                    transparent 68%
+                );
+
+            pointer-events: none;
+        }
+
+
+        @keyframes heroReveal {
+
+            from {
+                opacity: 0;
+                transform: translateY(22px) scale(.985);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+
+        .result-content {
+
+            position: relative;
+
+            z-index: 2;
+
+            padding-top: 4px;
+        }
+
+
+        .result-kicker {
+
+            display: inline-flex;
+            align-items: center;
+
+            gap: 7px;
+
+            margin-bottom: 13px;
+
+            padding: 6px 10px;
+
+            border-radius: 999px;
+
+            color: var(--primary);
+
+            background: var(--primary-soft);
+
+            font-size: 10px;
+            font-weight: 850;
+
+            letter-spacing: .65px;
+
+            text-transform: uppercase;
+        }
+
+
+        .kicker-dot {
+
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background: var(--success);
+
+            box-shadow:
+                0 0 0 4px rgba(16,185,129,.10);
+
+            animation:
+                pulseDot 2s ease-in-out infinite;
+        }
+
+
+        @keyframes pulseDot {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(.72);
+                opacity: .65;
+            }
+        }
+
+
+        .result-content h1 {
+
+            max-width: 760px;
+
+            font-size:
+                clamp(27px, 3vw, 38px);
+
+            line-height: 1.13;
+
+            letter-spacing: -.9px;
+
+            color: var(--ink);
+
+            margin-bottom: 12px;
+        }
+
+
+        .description {
+
+            max-width: 760px;
+
+            color: var(--muted);
+
+            font-size: 14px;
+
+            line-height: 1.75;
+        }
+
+
+        /* =========================================================
+           META BADGES
+        ========================================================= */
+
+        .meta {
+
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 9px;
+
+            margin-top: 22px;
+        }
+
+
+        .badge {
+
+            position: relative;
+
+            display: inline-flex;
+            align-items: center;
+
+            gap: 6px;
+
+            padding: 8px 12px;
+
+            border-radius: 999px;
+
+            color: #475569;
+
+            background: #f2f4f8;
+
+            border:
+                1px solid #e5e8ef;
+
+            font-size: 11px;
+            font-weight: 750;
+
+            transition:
+                transform .22s var(--ease),
+                box-shadow .22s ease;
+        }
+
+
+        .badge:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 6px 15px rgba(30,40,70,.07);
+        }
+
+
+        .badge.ai {
+
+            color: #5b4ae8;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #eef0ff,
+                    #f4edff
+                );
+
+            border-color: #dedbff;
+        }
+
+
+        .badge.ai::before {
+            content: "✦";
+            font-size: 11px;
+        }
+
+
+        .badge.completed {
+
+            color: var(--success-dark);
+
+            background: var(--success-soft);
+
+            border-color: #c9f3df;
+        }
+
+
+        .badge.completed::before {
+            content: "✓";
+            font-size: 11px;
+        }
+
+
+        /* =========================================================
+           SCORE BOX
+        ========================================================= */
+
+        .score-box {
+
+            position: relative;
+
+            z-index: 2;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            min-height: 270px;
+
+            padding: 25px;
+
+            border-radius: 23px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #ffffff,
+                    #f7f8ff
+                );
+
+            border:
+                1px solid #e4e7f3;
+
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,.8),
+                0 14px 30px rgba(60,65,110,.06);
+        }
+
+
+        .score-box::before {
+
+            content: "";
+
+            position: absolute;
+
+            width: 150px;
+            height: 150px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(99,91,255,.08),
+                    transparent 68%
+                );
+
+            animation:
+                scoreGlow 3.5s ease-in-out infinite;
+        }
+
+
+        @keyframes scoreGlow {
+
+            0%,
+            100% {
+                transform: scale(.92);
+                opacity: .65;
+            }
+
+            50% {
+                transform: scale(1.12);
+                opacity: 1;
+            }
+        }
+
+
+        /* =========================================================
+           SCORE CIRCLE
+        ========================================================= */
+
+        .score-circle {
+
+            --score: 0;
+
+            position: relative;
+
+            width: 172px;
+            height: 172px;
+
+            margin-bottom: 17px;
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            background:
+                conic-gradient(
+                    from -90deg,
+                    var(--primary) 0deg,
+                    var(--violet) calc(var(--score) * 2.4deg),
+                    var(--cyan) calc(var(--score) * 3.6deg),
+                    #e8ebf5 calc(var(--score) * 3.6deg),
+                    #e8ebf5 360deg
+                );
+
+            box-shadow:
+                0 14px 32px rgba(99,91,255,.18);
+
+            transform: scale(.88);
+
+            animation:
+                scorePop .9s .25s var(--ease) forwards;
+        }
+
+
+        @keyframes scorePop {
+
+            to {
+                transform: scale(1);
+            }
+        }
+
+
+        .score-circle::before {
+
+            content: "";
+
+            position: absolute;
+
+            inset: -5px;
+
+            border-radius: 50%;
+
+            border:
+                1px solid rgba(99,91,255,.12);
+
+            animation:
+                scoreOrbit 3s linear infinite;
+        }
+
+
+        @keyframes scoreOrbit {
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+
+        .score-inner {
+
+            position: relative;
+
+            width: 130px;
+            height: 130px;
+
+            border-radius: 50%;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    #ffffff,
+                    #f8f9ff
+                );
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+
+            box-shadow:
+                inset 0 0 0 1px rgba(226,230,241,.8);
+        }
+
+
+        .score-number {
+
+            font-size: 36px;
+
+            font-weight: 950;
+
+            letter-spacing: -1px;
+
+            color: var(--ink);
+
+            line-height: 1;
+        }
+
+
+        .score-label {
+
+            margin-top: 7px;
+
+            font-size: 11px;
+
+            color: var(--muted);
+
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            letter-spacing: .7px;
+        }
+
+
+        .score-text {
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            font-weight: 650;
+
+            text-align: center;
+        }
+
+
+        /* =========================================================
+           STATISTICS
+        ========================================================= */
+
+        .stats {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(4, minmax(0, 1fr));
+
+            gap: 16px;
+
+            margin-top: 22px;
+        }
+
+
+        .stat-card {
+
+            position: relative;
+
+            padding: 21px;
+
+            border-radius: var(--radius-md);
+
+            background:
+                rgba(255,255,255,.94);
+
+            border:
+                1px solid var(--border);
+
+            box-shadow: var(--shadow-sm);
+
+            overflow: hidden;
+
+            transition:
+                transform .28s var(--ease),
+                box-shadow .28s ease,
+                border-color .28s ease;
+        }
+
+
+        .stat-card::before {
+
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
+
+            width: 100%;
+            height: 3px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--cyan)
+                );
+
+            transform:
+                scaleX(0);
+
+            transform-origin: left;
+
+            transition:
+                transform .35s var(--ease);
+        }
+
+
+        .stat-card:hover {
+
+            transform:
+                translateY(-5px);
+
+            border-color:
+                rgba(99,91,255,.20);
+
+            box-shadow:
+                var(--shadow-md);
+        }
+
+
+        .stat-card:hover::before {
+            transform: scaleX(1);
+        }
+
+
+        .stat-top {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+
+        .stat-title {
+
+            color: var(--muted);
+
+            font-size: 10px;
+
+            font-weight: 800;
+
+            text-transform: uppercase;
+
+            letter-spacing: .75px;
+        }
+
+
+        .stat-icon {
+
+            width: 34px;
+            height: 34px;
+
+            border-radius: 10px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 15px;
+        }
+
+
+        .stat-icon.purple {
+
+            color: var(--primary);
+
+            background: var(--primary-soft);
+        }
+
+
+        .stat-icon.blue {
+
+            color: var(--blue);
+
+            background: var(--blue-soft);
+        }
+
+
+        .stat-icon.green {
+
+            color: var(--success-dark);
+
+            background: var(--success-soft);
+        }
+
+
+        .stat-icon.orange {
+
+            color: var(--orange);
+
+            background: var(--orange-soft);
+        }
+
+
+        .stat-value {
+
+            margin-top: 12px;
+
+            font-size: 29px;
+
+            font-weight: 900;
+
+            letter-spacing: -.7px;
+
+            color: var(--ink);
+        }
+
+
+        .stat-subtitle {
+
+            margin-top: 4px;
+
+            color: var(--muted-light);
+
+            font-size: 11px;
+
+            font-weight: 550;
+        }
+
+
+        /* =========================================================
+           SECTIONS
+        ========================================================= */
+
+        .section {
+
+            margin-top: 34px;
+
+            animation:
+                sectionReveal .65s var(--ease) both;
+        }
+
+
+        .section:nth-of-type(4) {
+            animation-delay: .08s;
+        }
+
+
+        .section:nth-of-type(5) {
+            animation-delay: .14s;
+        }
+
+
+        .section:nth-of-type(6) {
+            animation-delay: .20s;
+        }
+
+
+        @keyframes sectionReveal {
+
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        .section-header {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-end;
+
+            gap: 20px;
+
+            margin-bottom: 16px;
+        }
+
+
+        .section-title {
+
+            display: flex;
+            align-items: center;
+
+            gap: 9px;
+
+            font-size: 20px;
+
+            font-weight: 850;
+
+            letter-spacing: -.35px;
+
+            color: var(--ink);
+        }
+
+
+        .section-title::before {
+
+            content: "";
+
+            width: 4px;
+            height: 20px;
+
+            border-radius: 999px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--primary),
+                    var(--cyan)
+                );
+        }
+
+
+        .section-description {
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.6;
+
+            margin-top: 5px;
+        }
+
+
+        /* =========================================================
+           SKILLS GRID
+        ========================================================= */
+
+        .skills-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 17px;
+        }
+
+
+        .skill-card {
+
+            position: relative;
+
+            padding: 21px;
+
+            border-radius: var(--radius-md);
+
+            background:
+                rgba(255,255,255,.96);
+
+            border:
+                1px solid var(--border);
+
+            box-shadow: var(--shadow-sm);
+
+            overflow: hidden;
+
+            transition:
+                transform .3s var(--ease),
+                box-shadow .3s ease,
+                border-color .3s ease;
+        }
+
+
+        .skill-card::before {
+
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            top: 0;
+            bottom: 0;
+
+            width: 3px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--primary),
+                    var(--cyan)
+                );
+
+            opacity: 0;
+
+            transition: opacity .3s ease;
+        }
+
+
+        .skill-card:hover {
+
+            transform:
+                translateY(-5px);
+
+            box-shadow:
+                var(--shadow-md);
+
+            border-color:
+                rgba(99,91,255,.18);
+        }
+
+
+        .skill-card:hover::before {
+            opacity: 1;
+        }
+
+
+        .skill-top {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            gap: 15px;
+        }
+
+
+        .skill-name {
+
+            font-size: 16px;
+
+            font-weight: 850;
+
+            color: var(--ink);
+
+            letter-spacing: -.2px;
+        }
+
+
+        .skill-level {
+
+            display: inline-flex;
+
+            margin-top: 6px;
+
+            padding: 5px 8px;
+
+            border-radius: 7px;
+
+            background: var(--surface-soft);
+
+            color: var(--muted);
+
+            font-size: 9px;
+
+            font-weight: 800;
+
+            text-transform: uppercase;
+
+            letter-spacing: .5px;
+        }
+
+
+        .percentage {
+
+            min-width: 56px;
+
+            text-align: right;
+
+            font-size: 22px;
+
+            font-weight: 900;
+
+            color: var(--primary);
+        }
+
+
+        /* =========================================================
+           PROGRESS
+        ========================================================= */
+
+        .progress-track {
+
+            width: 100%;
+
+            height: 10px;
+
+            margin-top: 18px;
+
+            border-radius: 999px;
+
+            background:
+                #edf0f6;
+
+            overflow: hidden;
+
+            box-shadow:
+                inset 0 1px 2px rgba(30,40,70,.05);
+        }
+
+
+        .progress-fill {
+
+            position: relative;
+
+            height: 100%;
+
+            width: 0;
+
+            border-radius: inherit;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--violet),
+                    var(--cyan)
+                );
+
+            background-size: 180% 100%;
+
+            box-shadow:
+                0 3px 10px rgba(99,91,255,.22);
+
+            animation:
+                progressGradient 3s linear infinite,
+                progressGrow 1.15s .25s var(--ease) forwards;
+
+            transform-origin: left;
+        }
+
+
+        @keyframes progressGradient {
+
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 180% 50%;
+            }
+        }
+
+
+        @keyframes progressGrow {
+
+            from {
+                transform: scaleX(0);
+            }
+
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+
+        .progress-fill::after {
+
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            bottom: 0;
+
+            width: 65px;
+
+            left: -70px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255,255,255,.55),
+                    transparent
+                );
+
+            animation:
+                progressShine 2.7s ease-in-out infinite;
+        }
+
+
+        @keyframes progressShine {
+
+            0%,
+            45% {
+                left: -70px;
+            }
+
+            80%,
+            100% {
+                left: 110%;
+            }
+        }
+
+
+        .skill-footer {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 10px;
+
+            margin-top: 11px;
+
+            color: var(--muted);
+
+            font-size: 11px;
+        }
+
+
+        .skill-footer strong {
+            color: var(--ink-soft);
+        }
+
+
+        /* =========================================================
+           SKILL LEVEL COLORS
+        ========================================================= */
+
+        .level.strong {
+
+            background: var(--success-soft);
+
+            color: var(--success-dark);
+        }
+
+
+        .level.developing {
+
+            background: var(--blue-soft);
+
+            color: #2563eb;
+        }
+
+
+        .level.improvement {
+
+            background: var(--orange-soft);
+
+            color: #c2410c;
+        }
+
+
+        .level.gap {
+
+            background: var(--danger-soft);
+
+            color: var(--danger-dark);
+        }
+
+
+        /* =========================================================
+           SKILL GAPS
+        ========================================================= */
+
+        .gap-list {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 14px;
+        }
+
+
+        .gap-card {
+
+            position: relative;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            gap: 18px;
+
+            padding: 19px 20px;
+
+            border-radius: var(--radius-md);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #ffffff,
+                    #fffafb
+                );
+
+            border:
+                1px solid #f0dfe2;
+
+            box-shadow: var(--shadow-sm);
+
+            overflow: hidden;
+
+            transition:
+                transform .28s var(--ease),
+                box-shadow .28s ease,
+                border-color .28s ease;
+        }
+
+
+        .gap-card::before {
+
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            left: 0;
+            bottom: 0;
+
+            width: 4px;
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--danger),
+                    var(--orange)
+                );
+        }
+
+
+        .gap-card:hover {
+
+            transform:
+                translateY(-4px);
+
+            border-color:
+                #f3cdd3;
+
+            box-shadow:
+                0 13px 30px rgba(239,68,68,.09);
+        }
+
+
+        .gap-name {
+
+            font-size: 15px;
+
+            font-weight: 850;
+
+            color: var(--ink);
+        }
+
+
+        .gap-score {
+
+            color: var(--muted);
+
+            font-size: 11px;
+
+            margin-top: 5px;
+        }
+
+
+        .gap-score strong {
+            color: var(--danger-dark);
+        }
+
+
+        .gap-tag {
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            white-space: nowrap;
+
+            padding: 7px 10px;
+
+            border-radius: 8px;
+
+            background:
+                var(--danger-soft);
+
+            color:
+                var(--danger-dark);
+
+            border:
+                1px solid #fecaca;
+
+            font-size: 9px;
+
+            font-weight: 850;
+
+            letter-spacing: .5px;
+
+            animation:
+                gapPulse 2.8s ease-in-out infinite;
+        }
+
+
+        @keyframes gapPulse {
+
+            0%,
+            100% {
+                box-shadow:
+                    0 0 0 0 rgba(239,68,68,0);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 0 5px rgba(239,68,68,.06);
+            }
+        }
+
+
+        /* =========================================================
+           RECOMMENDATIONS
+        ========================================================= */
+
+        .recommendations {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+
+            gap: 14px;
+        }
+
+
+        .recommendation {
+
+            position: relative;
+
+            display: flex;
+
+            gap: 14px;
+
+            padding: 20px;
+
+            border-radius: var(--radius-md);
+
+            background:
+                rgba(255,255,255,.97);
+
+            border:
+                1px solid var(--border);
+
+            box-shadow: var(--shadow-sm);
+
+            overflow: hidden;
+
+            transition:
+                transform .3s var(--ease),
+                box-shadow .3s ease,
+                border-color .3s ease;
+        }
+
+
+        .recommendation::after {
+
+            content: "";
+
+            position: absolute;
+
+            right: -45px;
+            top: -45px;
+
+            width: 110px;
+            height: 110px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(99,91,255,.08),
+                    transparent 70%
+                );
+        }
+
+
+        .recommendation:hover {
+
+            transform:
+                translateY(-4px);
+
+            border-color:
+                rgba(99,91,255,.18);
+
+            box-shadow:
+                var(--shadow-md);
+        }
+
+
+        .recommendation-icon {
+
+            position: relative;
+
+            z-index: 1;
+
+            width: 42px;
+            height: 42px;
+
+            min-width: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--violet)
+                );
+
+            box-shadow:
+                0 8px 18px rgba(99,91,255,.20);
+
+            font-size: 15px;
+
+            transition:
+                transform .3s var(--ease);
+        }
+
+
+        .recommendation:hover
+        .recommendation-icon {
+
+            transform:
+                rotate(-5deg)
+                scale(1.06);
+        }
+
+
+        .recommendation-title {
+
+            position: relative;
+            z-index: 1;
+
+            font-size: 14px;
+
+            font-weight: 850;
+
+            color: var(--ink);
+        }
+
+
+        .recommendation-text {
+
+            position: relative;
+            z-index: 1;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.65;
+
+            margin-top: 5px;
+
+            max-width: 600px;
+        }
+
+
+        .priority {
+
+            position: relative;
+            z-index: 1;
+
+            display: inline-flex;
+
+            margin-top: 10px;
+
+            padding: 5px 8px;
+
+            border-radius: 7px;
+
+            font-size: 9px;
+
+            font-weight: 850;
+
+            letter-spacing: .45px;
+        }
+
+
+        .priority.high {
+
+            background: var(--danger-soft);
+
+            color: var(--danger-dark);
+
+            border:
+                1px solid #fecaca;
+        }
+
+
+        .priority.medium {
+
+            background: var(--warning-soft);
+
+            color: var(--warning-dark);
+
+            border:
+                1px solid #fde68a;
+        }
+
+
+        .priority.low {
+
+            background: var(--blue-soft);
+
+            color: #2563eb;
+
+            border:
+                1px solid #bfdbfe;
+        }
+
+
+        /* =========================================================
+           EMPTY STATE
+        ========================================================= */
+
+        .empty {
+
+            position: relative;
+
+            padding: 30px 22px;
+
+            border-radius: var(--radius-md);
+
+            border:
+                1px dashed var(--border-strong);
+
+            background:
+                rgba(255,255,255,.72);
+
+            text-align: center;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            overflow: hidden;
+        }
+
+
+        .empty::before {
+
+            content: "✓";
+
+            display: flex;
+
+            width: 38px;
+            height: 38px;
+
+            margin:
+                0 auto 10px;
+
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 50%;
+
+            background: var(--success-soft);
+
+            color: var(--success-dark);
+
+            font-weight: 900;
+
+            font-size: 16px;
+        }
+
+
+        /* =========================================================
+           ACTIONS
+        ========================================================= */
+
+        .actions {
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 12px;
+
+            margin-top: 38px;
+
+            padding-top: 27px;
+
+            border-top:
+                1px solid var(--border);
+        }
+
+
+        .btn {
+
+            position: relative;
+
+            display: inline-flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            gap: 8px;
+
+            min-height: 44px;
+
+            padding:
+                0 18px;
+
+            border-radius: 11px;
+
+            text-decoration: none;
+
+            font-size: 12px;
+
+            font-weight: 800;
+
+            overflow: hidden;
+
+            transition:
+                transform .25s var(--ease),
+                box-shadow .25s ease,
+                background .25s ease;
+        }
+
+
+        .btn::after {
+
+            content: "";
+
+            position: absolute;
+
+            width: 70px;
+            height: 150%;
+
+            top: -25%;
+
+            left: -90px;
+
+            transform: rotate(20deg);
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255,255,255,.35),
+                    transparent
+                );
+
+            transition:
+                left .55s ease;
+        }
+
+
+        .btn:hover::after {
+            left: 120%;
+        }
+
+
+        .btn:hover {
+
+            transform:
+                translateY(-3px);
+        }
+
+
+        .btn-primary {
+
+            color: #ffffff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--violet)
+                );
+
+            box-shadow:
+                0 9px 22px rgba(99,91,255,.23);
+        }
+
+
+        .btn-primary:hover {
+
+            box-shadow:
+                0 13px 28px rgba(99,91,255,.31);
+        }
+
+
+        .btn-secondary {
+
+            color: var(--ink-soft);
+
+            background: #ffffff;
+
+            border:
+                1px solid var(--border-strong);
+
+            box-shadow:
+                0 5px 14px rgba(30,40,70,.04);
+        }
+
+
+        .btn-secondary:hover {
+
+            color: var(--primary);
+
+            border-color:
+                rgba(99,91,255,.25);
+
+            background:
+                var(--primary-soft);
+        }
+
+
+        /* =========================================================
+           FOOTER
+        ========================================================= */
+
+        .page-footer {
+
+            text-align: center;
+
+            margin-top: 28px;
+
+            color: #9aa3b3;
+
+            font-size: 10px;
+
+            letter-spacing: .2px;
+        }
+
+
+        .page-footer strong {
+            color: var(--primary);
+        }
+
+
+        /* =========================================================
+           RESPONSIVE — TABLET
+        ========================================================= */
+
+        @media (max-width: 1000px) {
+
+            .result-card {
+
+                grid-template-columns:
+                    minmax(0, 1fr)
+                    270px;
+
+                gap: 24px;
+
+                padding: 27px;
+            }
+
+
+            .score-circle {
+
+                width: 155px;
+                height: 155px;
+            }
+
+
+            .score-inner {
+
+                width: 117px;
+                height: 117px;
+            }
+
+
+            .stats {
+
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+
+
+            .skills-grid,
+            .gap-list,
+            .recommendations {
+
+                grid-template-columns:
+                    1fr;
+            }
+        }
+
+
+        /* =========================================================
+           RESPONSIVE — MOBILE
+        ========================================================= */
+
+        @media (max-width: 700px) {
+
+            .header {
+
+                height: 68px;
+
+                padding:
+                    0 15px;
+            }
+
+
+            .brand-text {
+                font-size: 18px;
+            }
+
+
+            .logo {
+
+                width: 39px;
+                height: 39px;
+
+                border-radius: 11px;
+            }
+
+
+            .profile-info {
+                display: none;
+            }
+
+
+            .avatar {
+
+                width: 39px;
+                height: 39px;
+            }
+
+
+            .container {
+
+                width:
+                    min(
+                        calc(100% - 24px),
+                        1220px
+                    );
+
+                margin:
+                    22px auto 42px;
+            }
+
+
+            .result-card {
+
+                display: flex;
+
+                flex-direction: column;
+
+                padding: 22px;
+
+                border-radius: 21px;
+
+                gap: 22px;
+            }
+
+
+            .result-content h1 {
+
+                font-size: 26px;
+
+                letter-spacing: -.6px;
+            }
+
+
+            .description {
+
+                font-size: 13px;
+            }
+
+
+            .meta {
+                margin-top: 17px;
+            }
+
+
+            .score-box {
+
+                min-height: 250px;
+
+                padding: 20px;
+            }
+
+
+            .score-circle {
+
+                width: 155px;
+                height: 155px;
+            }
+
+
+            .stats {
+
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+
+                gap: 11px;
+            }
+
+
+            .stat-card {
+                padding: 16px;
+            }
+
+
+            .stat-value {
+                font-size: 24px;
+            }
+
+
+            .section {
+                margin-top: 28px;
+            }
+
+
+            .section-title {
+                font-size: 18px;
+            }
+
+
+            .gap-card {
+
+                align-items: flex-start;
+
+                flex-direction: column;
+
+                gap: 12px;
+            }
+
+
+            .recommendation {
+
+                padding: 17px;
+            }
+
+
+            .actions {
+
+                flex-direction: column;
+
+                align-items: stretch;
+
+                margin-top: 30px;
+            }
+
+
+            .btn {
+                width: 100%;
+            }
+        }
+
+
+        /* =========================================================
+           VERY SMALL DEVICES
+        ========================================================= */
+
+        @media (max-width: 420px) {
+
+            .stats {
+
+                grid-template-columns: 1fr;
+            }
+
+
+            .skill-top {
+
+                flex-direction: column;
+            }
+
+
+            .percentage {
+
+                text-align: left;
+            }
+
+
+            .skill-footer {
+
+                align-items: flex-start;
+
+                flex-direction: column;
+            }
+
+
+            .brand-text {
+                font-size: 17px;
+            }
+        }
+
+
+        /* =========================================================
+           ACCESSIBILITY
+        ========================================================= */
+
+        a:focus-visible {
+
+            outline:
+                3px solid rgba(99,91,255,.35);
+
+            outline-offset: 3px;
+        }
+
+
+        @media (prefers-reduced-motion: reduce) {
+
+            html {
+                scroll-behavior: auto;
+            }
+
+            *,
+            *::before,
+            *::after {
+
+                animation-duration: .01ms !important;
+
+                animation-iteration-count: 1 !important;
+
+                transition-duration: .01ms !important;
+            }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="page">
+
+
+    <!-- =========================================================
+         HEADER
+    ========================================================= -->
+
+    <header class="header">
+
+        <a href="/employee/dashboard"
+           class="brand"
+           aria-label="Capacitix Employee Dashboard">
+
+            <div class="logo">
+                C
+            </div>
+
+            <div class="brand-text">
+                Capacit<span>iX</span>
+            </div>
+
+        </a>
+
+
+        <div class="profile">
+
+            <div class="profile-info">
+
+                <div class="profile-name"
+                     th:text="${employee != null and employee.fullName != null
+                        ? employee.fullName
+                        : 'Employee'}">
+
+                    Student
+
+                </div>
+
+                <div class="profile-role">
+                    Student
+                </div>
+
+            </div>
+
+
+            <div class="avatar"
+                 th:text="${employee != null
+                    and employee.fullName != null
+                    and !employee.fullName.isEmpty()
+                    ? #strings.substring(employee.fullName, 0, 1).toUpperCase()
+                    : 'E'}">
+
+                E
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =========================================================
+         MAIN
+    ========================================================= -->
+
+    <main class="container">
+
+
+        <!-- =====================================================
+             BACK
+        ===================================================== -->
+
+        <a href="/employee/assessments"
+           class="back-link">
+
+            <span class="back-icon">
+                ←
+            </span>
+
+            Back to Assessments
+
+        </a>
+
+
+        <!-- =====================================================
+             RESULT HERO
+        ===================================================== -->
+
+        <section class="result-card">
+
+
+            <div class="result-content">
+
+                <div class="result-kicker">
+
+                    <span class="kicker-dot"></span>
+
+                    Assessment Completed
+
+                </div>
+
+
+                <h1 th:text="${assignment.assessment != null
+                    ? assignment.assessment.name
+                    : 'Assessment Result'}">
+
+                    Assessment Result
+
+                </h1>
+
+
+                <p class="description"
+                   th:text="${assignment.assessment != null
+                        and assignment.assessment.description != null
+                        and !assignment.assessment.description.isEmpty()
+                        ? assignment.assessment.description
+                        : 'Your assessment has been completed successfully.'}">
+
+                    Your assessment has been completed successfully.
+
+                </p>
+
+
+                <div class="meta">
+
+
+                    <!-- AI GENERATED -->
+
+                    <span class="badge ai"
+                          th:if="${assignment.assessment != null
+                            and assignment.assessment.aiGenerated}">
+
+                        AI Generated
+
+                    </span>
+
+
+                    <!-- TARGET ROLE -->
+
+                    <span class="badge"
+                          th:if="${assignment.assessment != null
+                            and assignment.assessment.targetRole != null
+                            and !assignment.assessment.targetRole.isEmpty()}"
+                          th:text="${assignment.assessment.targetRole}">
+
+                        Target Role
+
+                    </span>
+
+
+                    <!-- ASSESSMENT TYPE -->
+
+                    <span class="badge"
+                          th:if="${assignment.assessment != null}"
+                          th:text="${assignment.assessment.type}">
+
+                        SKILL
+
+                    </span>
+
+
+                    <!-- COMPLETED -->
+
+                    <span class="badge completed">
+
+                        Completed
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 SCORE
+            ================================================= -->
+
+            <div class="score-box">
+
+                <div class="score-circle"
+                     th:style="|--score:${analysis.percentage()}|">
+
+                    <div class="score-inner">
+
+                        <div class="score-number"
+                             th:text="|${analysis.percentage()}%|">
+
+                            0%
+
+                        </div>
+
+                        <div class="score-label">
+                            Overall Score
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="score-text">
+
+                    Assessment completed successfully
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             STATISTICS
+        ===================================================== -->
+
+        <section class="stats">
+
+
+            <!-- SCORE -->
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-title">
+                        Score
+                    </div>
+
+                    <div class="stat-icon purple">
+                        ★
+                    </div>
+
+                </div>
+
+                <div class="stat-value"
+                     th:text="${assignment.score != null
+                        ? assignment.score
+                        : 0}">
+
+                    0
+
+                </div>
+
+                <div class="stat-subtitle">
+                    Marks obtained
+                </div>
+
+            </div>
+
+
+            <!-- MAXIMUM -->
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-title">
+                        Maximum
+                    </div>
+
+                    <div class="stat-icon blue">
+                        ◈
+                    </div>
+
+                </div>
+
+                <div class="stat-value"
+                     th:text="${assignment.maxScore != null
+                        ? assignment.maxScore
+                        : 0}">
+
+                    0
+
+                </div>
+
+                <div class="stat-subtitle">
+                    Total marks
+                </div>
+
+            </div>
+
+
+            <!-- QUESTIONS -->
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-title">
+                        Questions
+                    </div>
+
+                    <div class="stat-icon orange">
+                        ?
+                    </div>
+
+                </div>
+
+                <div class="stat-value"
+                     th:text="${analysis.totalQuestions()}">
+
+                    0
+
+                </div>
+
+                <div class="stat-subtitle">
+                    Questions answered
+                </div>
+
+            </div>
+
+
+            <!-- CORRECT -->
+
+            <div class="stat-card">
+
+                <div class="stat-top">
+
+                    <div class="stat-title">
+                        Correct
+                    </div>
+
+                    <div class="stat-icon green">
+                        ✓
+                    </div>
+
+                </div>
+
+                <div class="stat-value"
+                     th:text="${analysis.correctAnswers()}">
+
+                    0
+
+                </div>
+
+                <div class="stat-subtitle">
+                    Correct answers
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             SKILL PERFORMANCE
+        ===================================================== -->
+
+        <section class="section">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <div class="section-title">
+                        Skill-wise Performance
+                    </div>
+
+                    <div class="section-description">
+                        Your performance for each competency covered in this assessment.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SKILLS -->
+
+            <div class="skills-grid"
+                 th:if="${skills != null and !skills.isEmpty()}">
+
+
+                <div class="skill-card"
+                     th:each="skill : ${skills}">
+
+
+                    <div class="skill-top">
+
+                        <div>
+
+                            <div class="skill-name"
+                                 th:text="${skill.competencyName()}">
+
+                                Java
+
+                            </div>
+
+
+                            <span class="skill-level"
+                                  th:text="${skill.level()}">
+
+                                DEVELOPING
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="percentage"
+                             th:text="|${skill.percentage()}%|">
+
+                            70%
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PROGRESS -->
+
+                    <div class="progress-track">
+
+                        <div class="progress-fill"
+                             th:style="|width:${skill.percentage()}%|">
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- FOOTER -->
+
+                    <div class="skill-footer">
+
+                        <span>
+
+                            Correct:
+
+                            <strong th:text="${skill.correctAnswers()}">
+                                0
+                            </strong>
+
+                            /
+
+                            <strong th:text="${skill.totalQuestions()}">
+                                0
+                            </strong>
+
+                        </span>
+
+
+                        <span
+                            th:text="|${skill.obtainedMarks()}/${skill.maxMarks()} marks|">
+
+                            1/2 marks
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- EMPTY -->
+
+            <div class="empty"
+                 th:if="${skills == null or skills.isEmpty()}">
+
+                No skill-wise performance data is available.
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             SKILL GAPS
+        ===================================================== -->
+
+        <section class="section">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <div class="section-title">
+                        Identified Skill Gaps
+                    </div>
+
+                    <div class="section-description">
+                        Competencies where additional learning or practice is recommended.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- GAP LIST -->
+
+            <div class="gap-list"
+                 th:if="${skillGaps != null and !skillGaps.isEmpty()}">
+
+
+                <div class="gap-card"
+                     th:each="gap : ${skillGaps}">
+
+
+                    <div>
+
+                        <div class="gap-name"
+                             th:text="${gap.competencyName()}">
+
+                            Spring Boot
+
+                        </div>
+
+
+                        <div class="gap-score">
+
+                            Current assessment score:
+
+                            <strong th:text="|${gap.percentage()}%|">
+
+                                40%
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="gap-tag"
+                         th:text="${gap.level()}">
+
+                        HIGH GAP
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- NO GAPS -->
+
+            <div class="empty"
+                 th:if="${skillGaps == null or skillGaps.isEmpty()}">
+
+                No significant skill gaps were identified in this assessment.
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             LEARNING RECOMMENDATIONS
+        ===================================================== -->
+
+        <section class="section">
+
+
+            <div class="section-header">
+
+                <div>
+
+                    <div class="section-title">
+                        Recommended Learning
+                    </div>
+
+                    <div class="section-description">
+                        Suggested actions based on your assessment performance.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- RECOMMENDATIONS -->
+
+            <div class="recommendations"
+                 th:if="${recommendations != null
+                    and !recommendations.isEmpty()}">
+
+
+                <div class="recommendation"
+                     th:each="recommendation : ${recommendations}">
+
+
+                    <div class="recommendation-icon">
+
+                        ✓
+
+                    </div>
+
+
+                    <div>
+
+                        <div class="recommendation-title"
+                             th:text="${recommendation.competencyName()}">
+
+                            Spring Boot
+
+                        </div>
+
+
+                        <div class="recommendation-text"
+                             th:text="${recommendation.recommendation()}">
+
+                            Practice the required skill and complete practical exercises.
+
+                        </div>
+
+
+                        <span class="priority"
+                              th:classappend="${recommendation.priority() == 'HIGH'
+                                    ? ' high'
+                                    : recommendation.priority() == 'MEDIUM'
+                                    ? ' medium'
+                                    : ' low'}"
+                              th:text="|${recommendation.priority()} PRIORITY|">
+
+                            HIGH PRIORITY
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- NO RECOMMENDATIONS -->
+
+            <div class="empty"
+                 th:if="${recommendations == null
+                    or recommendations.isEmpty()}">
+
+                No additional learning recommendations are required at this time.
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             ACTIONS
+        ===================================================== -->
+
+        <div class="actions">
+
+
+            <a href="/employee/assessments"
+               class="btn btn-primary">
+
+                <span>←</span>
+
+                Back to Assessments
+
+            </a>
+
+
+            <a th:href="@{/employee/assessments/{id}/review(id=${assignment.id})}"
+               class="btn btn-secondary">
+
+                <span>◉</span>
+
+                Review Answers
+
+            </a>
+
+        </div>
+
+
+        <!-- =====================================================
+             FOOTER
+        ===================================================== -->
+
+        <div class="page-footer">
+
+            Powered by
+            <strong>Capacitix</strong>
+            • Competency-based learning platform
+
+        </div>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     ANIMATION SCRIPT
+========================================================= -->
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        /*
+         * Small progressive enhancement:
+         * skill progress bars receive a smoother entrance
+         * after the page has loaded.
+         */
+
+        const progressBars =
+            document.querySelectorAll(".progress-fill");
+
+        progressBars.forEach(function (bar, index) {
+
+            const width =
+                bar.style.width || "0%";
+
+            bar.style.width = "0%";
+
+            setTimeout(function () {
+
+                bar.style.width = width;
+
+            }, 180 + (index * 80));
+
+        });
+
+
+        /*
+         * Add a subtle hover tilt to major cards.
+         * Disabled automatically on touch devices.
+         */
+
+        const canHover =
+            window.matchMedia("(hover: hover)").matches;
+
+        if (canHover) {
+
+            const cards =
+                document.querySelectorAll(
+                    ".skill-card, .gap-card, .recommendation"
+                );
+
+            cards.forEach(function (card) {
+
+                card.addEventListener("mousemove", function (event) {
+
+                    const rect =
+                        card.getBoundingClientRect();
+
+                    const x =
+                        event.clientX - rect.left;
+
+                    const y =
+                        event.clientY - rect.top;
+
+                    const centerX =
+                        rect.width / 2;
+
+                    const centerY =
+                        rect.height / 2;
+
+                    const rotateX =
+                        ((y - centerY) / centerY) * -1.2;
+
+                    const rotateY =
+                        ((x - centerX) / centerX) * 1.2;
+
+                    card.style.transform =
+                        "translateY(-5px) " +
+                        "perspective(900px) " +
+                        "rotateX(" + rotateX + "deg) " +
+                        "rotateY(" + rotateY + "deg)";
+                });
+
+
+                card.addEventListener("mouseleave", function () {
+
+                    card.style.transform =
+                        "";
+
+                });
+
+            });
+
+        }
+
+
+        /*
+         * Prevent animation glitches when browser restores
+         * page from history/cache.
+         */
+
+        window.addEventListener("pageshow", function () {
+
+            document.body.classList.add("page-loaded");
+
+        });
+
+    });
+
+</script>
+
+
+</body>
+
+</html>
+
