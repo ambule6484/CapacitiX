@@ -1,0 +1,15 @@
+target/
+*.class
+*.log
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db
+
+src/main/resources/pass

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="View trainee performance and training reports.">
+<meta name="theme-color" content="#635bff">
+<title>Reports | Capacitix</title>
+<style>
+/* ========== 1. DESIGN TOKENS ========== */
+:root{
+  --primary:#635bff;--teal:#14b8a6;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --ink:#101828;--muted:#667085;--line:#eaecf0;--bg:#f4f7fb;--sidebar:#0b1220;
+  --shadow:0 12px 35px rgba(16,24,40,.08);--shadow-sm:0 5px 18px rgba(16,24,40,.055);
+  --ease:cubic-bezier(.2,.8,.2,1);--side:272px;--side-compact:82px;--header-h:78px
+}
+
+/* ========== 2. GLOBAL (no body scroll: sidebar nav and .main scroll independently) ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 85% 5%,rgba(99,91,255,.10),transparent 25rem),radial-gradient(circle at 15% 70%,rgba(20,184,166,.07),transparent 24rem),var(--bg)
+}
+a{text-decoration:none;color:inherit}
+button,input,select{font:inherit}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;padding:8px 14px;border-radius:8px;z-index:3000}
+.skip:focus{left:8px}
+
+/* ========== 3. SIDEBAR ========== */
+.sidebar{
+  position:fixed;inset:0 auto 0 0;width:var(--side);height:100vh;z-index:1100;display:flex;flex-direction:column;overflow:hidden;color:#fff;
+  background:radial-gradient(circle at 80% 10%,rgba(99,91,255,.20),transparent 13rem),linear-gradient(180deg,var(--sidebar),#0e1728);
+  box-shadow:10px 0 40px rgba(15,23,42,.13);transition:transform .35s var(--ease),width .35s var(--ease);animation:slideIn .6s var(--ease) both
+}
+.brand{flex:none;display:flex;align-items:center;gap:11px;padding:22px 24px 14px}
+.brand-mark{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:13px;font-weight:900;font-size:20px;background:linear-gradient(135deg,var(--primary),var(--teal));box-shadow:0 12px 30px rgba(99,91,255,.32);transition:transform .4s var(--ease)}
+.brand:hover .brand-mark{transform:rotate(-8deg) scale(1.06)}
+.brand-name{font-size:22px;font-weight:850;letter-spacing:-.7px}
+.brand-name span{color:#9c96ff}
+
+/* ========== 4. NAVIGATION ========== */
+.nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-behavior:smooth;padding:0 14px 12px;scrollbar-width:thin;scrollbar-color:#3b4560 transparent}
+.nav::-webkit-scrollbar{width:6px}
+.nav::-webkit-scrollbar-thumb{background:#3b4560;border-radius:20px}
+.nav::-webkit-scrollbar-thumb:hover{background:#5b6785}
+.menu-label{padding:15px 12px 8px;color:#7f8ba3;font-size:11px;font-weight:700;letter-spacing:.6px}
+.menu{list-style:none}
+.menu li{margin:4px 0}
+.menu a{position:relative;min-height:46px;display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid transparent;border-radius:13px;color:#b8c1d1;font-size:13px;font-weight:600;transition:all .25s var(--ease);overflow:hidden}
+.menu a::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;transform:scaleY(0);background:linear-gradient(180deg,var(--primary),var(--teal));transition:transform .25s var(--ease)}
+.menu a:hover{color:#fff;background:rgba(255,255,255,.065);transform:translateX(3px)}
+.menu a:active{transform:translateX(1px) scale(.98)}
+.menu a.active{color:#fff;background:linear-gradient(100deg,rgba(99,91,255,.28),rgba(20,184,166,.1));border-color:rgba(255,255,255,.055);box-shadow:0 0 22px rgba(99,91,255,.18)}
+.menu a.active::before{transform:scaleY(.65)}
+.icon{width:23px;height:23px;flex:0 0 23px;display:grid;place-items:center;color:#8d99ad;font-size:16px;transition:transform .25s ease,color .25s ease}
+.menu a:hover .icon,.menu a.active .icon{color:#fff;transform:scale(1.12)}
+.menu a:hover .icon{color:#5eead4}
+.sidebar-bottom{flex:none;padding:10px 14px 16px;border-top:1px solid rgba(255,255,255,.07);background:var(--sidebar)}
+.logout form{margin:0}
+.logout button{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px 12px;cursor:pointer;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035);color:#c5cbd6;font-size:12px;font-weight:700;transition:all .25s ease}
+.logout button:hover{background:rgba(239,68,68,.12);color:#fff;border-color:rgba(239,68,68,.25)}
+.logout button:active{transform:scale(.98)}
+.overlay{position:fixed;inset:0;z-index:1050;background:rgba(15,23,42,.45);opacity:0;visibility:hidden;transition:.25s}
+.overlay.show{opacity:1;visibility:visible}
+
+/* ========== 5. MAIN ========== */
+.main{margin-left:var(--side);height:100vh;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;transition:margin .35s var(--ease);scrollbar-width:thin;scrollbar-color:#c5cbd8 transparent}
+.main::-webkit-scrollbar{width:7px}
+.main::-webkit-scrollbar-thumb{background:#c5cbd8;border-radius:20px}
+.no-scroll .main{overflow:hidden}
+
+/* ========== 6. HEADER ========== */
+.header{position:sticky;top:0;z-index:900;min-height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 36px;background:rgba(255,255,255,.86);border-bottom:1px solid var(--line);backdrop-filter:blur(18px);animation:dropIn .6s var(--ease) both}
+.header-left{display:flex;align-items:center;gap:12px;min-width:0}
+.mobile-menu{display:none;width:42px;height:42px;flex:0 0 42px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font-size:19px;transition:.2s}
+.mobile-menu:hover{border-color:#cbc7ff;background:#f5f3ff}
+.header-title{font-size:21px;font-weight:850;letter-spacing:-.5px}
+.header-subtitle{margin-top:3px;color:var(--muted);font-size:12px}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-btn{position:relative;width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:all .25s ease}
+.header-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.header-btn:active{transform:scale(.96)}
+.badge{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;border:2px solid #fff;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;font-weight:800;animation:pulseBadge 2.4s ease-in-out 3}
+.profile{display:flex;align-items:center;gap:10px}
+.avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;color:#fff;font-size:13px;font-weight:850;background:linear-gradient(135deg,var(--primary),var(--teal));box-shadow:0 8px 20px rgba(99,91,255,.22);transition:transform .25s}
+.avatar:hover{transform:scale(1.07)}
+.name{font-size:12px;font-weight:800}
+.role-name{margin-top:2px;color:var(--muted);font-size:11px}
+
+/* ========== 7. CONTENT / WELCOME BANNER ========== */
+.content{width:min(1450px,100%);margin:auto;padding:30px 36px 55px}
+.welcome{position:relative;padding:28px 30px;margin-bottom:22px;overflow:hidden;border-radius:24px;color:#fff;background:radial-gradient(circle at 90% 20%,rgba(255,255,255,.20),transparent 12rem),linear-gradient(135deg,#5b55ed,#756bf7 45%,#12ad9d);box-shadow:0 18px 45px rgba(79,70,229,.20);display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;animation:fadeUp .6s var(--ease) both}
+.welcome::after{content:"";position:absolute;width:210px;height:210px;right:-70px;bottom:-120px;border:35px solid rgba(255,255,255,.08);border-radius:50%;pointer-events:none}
+.welcome h1{font-size:28px;letter-spacing:-.7px;margin-bottom:7px}
+.welcome p{max-width:620px;color:rgba(255,255,255,.86);font-size:13px;line-height:1.55}
+.welcome-chip{display:inline-flex;align-items:center;gap:7px;margin-bottom:13px;padding:6px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);font-size:11px;font-weight:700}
+.welcome-date{position:relative;z-index:1;padding:12px 16px;border-radius:14px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);font-size:12px;font-weight:700;text-align:right}
+.welcome-date small{display:block;margin-bottom:3px;color:rgba(255,255,255,.75);font-weight:600}
+
+/* ========== 8. STATS ========== */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat{position:relative;overflow:hidden;padding:20px;border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:var(--shadow-sm);transition:transform .3s var(--ease),box-shadow .3s ease;animation:fadeUp .6s var(--ease) both}
+.stat:nth-child(2){animation-delay:.07s}.stat:nth-child(3){animation-delay:.14s}.stat:nth-child(4){animation-delay:.21s}
+.stat:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.stat-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.stat-icon{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-size:17px;transition:transform .25s}
+.stat:hover .stat-icon{transform:scale(1.1) rotate(-6deg)}
+.blue{background:#eef2ff;color:#4f46e5}.green{background:#ecfdf5;color:#059669}.orange{background:#fff7ed;color:#ea580c}.purple{background:#f5f3ff;color:#7c3aed}
+.number{font-size:28px;font-weight:850;letter-spacing:-.8px;font-variant-numeric:tabular-nums}
+.label{margin-top:4px;color:var(--muted);font-size:12px;font-weight:600}
+.trend{margin-top:13px;font-size:11px;font-weight:700;color:var(--muted)}
+.trend.ok{color:#059669}.trend.warn{color:#d97706}
+
+/* ========== 9. CARDS ========== */
+.card{margin-bottom:20px;padding:22px;border:1px solid var(--line);border-radius:22px;background:#fff;box-shadow:var(--shadow-sm);transition:box-shadow .3s ease,transform .3s var(--ease)}
+.card:hover{box-shadow:var(--shadow)}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:12px;flex-wrap:wrap}
+.card-head h2{font-size:16px;font-weight:850;letter-spacing:-.25px}
+.card-sub{margin-top:3px;color:var(--muted);font-size:12px}
+.card-head a{padding:7px 11px;border-radius:9px;color:#5149df;background:#f4f2ff;font-size:11px;font-weight:700;transition:.2s}
+.card-head a:hover{background:#eae7ff;transform:translateY(-1px)}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;margin:4px 0 16px;align-items:center}
+.search{flex:1 1 220px;min-width:0;padding:10px 13px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;font-size:12px;transition:border-color .2s,box-shadow .2s,background .2s,transform .2s}
+.search:focus{outline:0;background:#fff;border-color:#b9b4ff;box-shadow:0 0 0 4px rgba(99,91,255,.10);transform:scale(1.01)}
+
+/* ========== 10. REPORT CARDS ========== */
+.report-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.report{position:relative;display:flex;flex-direction:column;min-height:170px;padding:18px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#fff,#fafbff);transition:all .28s var(--ease)}
+.report[hidden]{display:none}
+.report::after{content:"→";position:absolute;right:14px;top:13px;color:#c3c8d4;font-size:14px;transition:.25s ease}
+.report:hover{transform:translateY(-3px);border-color:#cbc7ff;box-shadow:0 12px 25px rgba(16,24,40,.07)}
+.report:active{transform:translateY(-1px) scale(.99)}
+.report:hover::after{color:var(--primary);transform:translateX(3px)}
+.report-icon{width:40px;height:40px;display:grid;place-items:center;margin-bottom:12px;border-radius:12px;background:#f1efff;color:#5b55ed;font-size:16px;transition:transform .25s}
+.report:hover .report-icon{transform:scale(1.1) rotate(-6deg)}
+.report.teal .report-icon{background:#e9f8f6;color:#0f9488}
+.report.orange .report-icon{background:#fff7ed;color:#ea580c}
+.report strong{font-size:14px;font-weight:800}
+.report p{margin-top:5px;color:var(--muted);font-size:12px;line-height:1.55;flex:1}
+.report-btn{align-self:flex-start;margin-top:14px;padding:7px 12px;border-radius:9px;color:#5149df;background:#f4f2ff;font-size:11px;font-weight:700;transition:.2s}
+.report:hover .report-btn{background:#eae7ff}
+
+/* ========== 11. EMPTY STATE ========== */
+.empty{padding:30px 14px;text-align:center;color:var(--muted)}
+.empty .empty-icon{width:52px;height:52px;margin:0 auto 12px;display:grid;place-items:center;border-radius:16px;background:#f4f2ff;color:#5b55ed;font-size:22px}
+.empty strong{display:block;margin-bottom:5px;color:var(--ink);font-size:13px}
+.empty p{max-width:340px;margin:0 auto 12px;font-size:12px;line-height:1.5}
+#noMatch{display:none}
+
+/* generated reports list */
+.generated{display:flex;align-items:center;gap:12px;padding:13px 8px;border-bottom:1px solid #f0f2f5;border-radius:12px;transition:background .2s ease,transform .2s ease}
+.generated:last-child{border-bottom:0}
+.generated:hover{background:#fafbff;transform:translateX(3px)}
+.generated-icon{width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#eef2ff,#e9f8f6);color:#4f46e5;font-size:14px}
+.generated-info{min-width:0;flex:1}
+.generated-name{font-size:13px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.generated-meta{margin-top:3px;color:var(--muted);font-size:11px}
+.generated a.dl{padding:7px 11px;border-radius:9px;color:#5149df;background:#f4f2ff;font-size:11px;font-weight:700;transition:.2s}
+.generated a.dl:hover{background:#eae7ff}
+
+/* notifications */
+.notification-panel{position:fixed;right:25px;top:72px;width:min(350px,calc(100vw - 30px));z-index:1200;padding:15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);box-shadow:0 20px 55px rgba(16,24,40,.16);max-height:70vh;overflow-y:auto;opacity:0;visibility:hidden;transform:translateY(-10px) scale(.98);transition:all .25s var(--ease)}
+.notification-panel.show{opacity:1;visibility:visible;transform:none}
+.notification-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.notification-head strong{font-size:13px}
+.notification-head button{border:0;background:none;cursor:pointer;color:var(--muted);padding:4px 6px;border-radius:8px}
+.notification-head button:hover{background:#f2f4f7}
+.notice{display:flex;gap:10px;padding:11px 8px;border-radius:11px;transition:.2s}
+.notice:hover{background:#f7f8fc}
+.notice-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:var(--primary);flex:0 0 8px}
+.notice p{font-size:11px;line-height:1.45;color:var(--muted)}
+.notice strong{color:var(--ink)}
+
+/* scroll reveal */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .6s var(--ease),transform .6s var(--ease),box-shadow .3s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ========== 12. ANIMATIONS ========== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+@keyframes pulseBadge{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+
+/* ========== 13. RESPONSIVE (1200 / 900 / 650 / 430) ========== */
+@media(max-width:1200px){
+  :root{--side:245px}
+  .content{padding:26px 25px 45px}.header{padding:14px 25px}
+  .report-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+  :root{--side:var(--side-compact)}
+  .sidebar .brand{justify-content:center;padding:22px 0 14px}
+  .brand-name,.menu-label,.menu a span:not(.icon),.logout button span:not(.icon){display:none}
+  .nav{padding:0 10px 12px}
+  .menu a{justify-content:center;padding:11px 8px;gap:0}
+  .icon{width:100%}
+  .sidebar-bottom{padding:10px}
+  .header{padding:13px 20px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:650px){
+  :root{--side:0px}
+  .sidebar{width:265px;transform:translateX(-105%);animation:none}
+  .sidebar.open{transform:none}
+  .sidebar .brand{justify-content:flex-start;padding:22px 24px 14px}
+  .brand-name,.menu-label{display:block}
+  .menu a span:not(.icon),.logout button span:not(.icon){display:inline}
+  .menu a{justify-content:flex-start;padding:10px 12px;gap:12px}
+  .icon{width:23px}
+  .nav{padding:0 14px 12px}
+  .sidebar-bottom{padding:10px 14px 16px}
+  .mobile-menu{display:grid;place-items:center}
+  .header{min-height:70px;padding:12px 16px}
+  .header-title{font-size:18px}
+  .header-subtitle,.name,.role-name,.welcome-date{display:none}
+  .content{padding:20px 15px 35px}
+  .welcome{padding:23px 20px;border-radius:20px}
+  .welcome h1{font-size:23px}
+  .card{padding:18px;border-radius:18px}
+  .report-grid{grid-template-columns:1fr}
+  .notification-panel{right:15px;top:66px}
+}
+@media(max-width:430px){
+  .stats{grid-template-columns:1fr}
+}
+
+/* ========== 14. ACCESSIBILITY ========== */
+:focus-visible{outline:3px solid rgba(99,91,255,.45);outline-offset:2px;border-radius:10px}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .reveal{opacity:1;transform:none}
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="overlay" id="overlay"></div>
+
+<!-- SIDEBAR: brand / scrollable navigation / pinned logout -->
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+        <div class="brand-mark">C</div>
+        <div class="brand-name">Capacit<span>ix</span></div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Trainer menu">
+        <div class="menu-label">Training</div>
+        <ul class="menu">
+            <li><a href="/trainer/dashboard" title="Dashboard"><span class="icon">⌂</span><span>Dashboard</span></a></li>
+            <li><a href="/trainer/employees" title="My Trainees"><span class="icon">♙</span><span>My Trainees</span></a></li>
+            <li><a href="/trainer/skill-gaps" title="Skill Gaps"><span class="icon">△</span><span>Skill Gaps</span></a></li>
+            <li><a href="/trainer/learning-resources" title="Learning Resources"><span class="icon">▣</span><span>Learning Resources</span></a></li>
+            <li><a href="/trainer/assessments" title="Assessments"><span class="icon">✓</span><span>Assessments</span></a></li>
+            </ul>
+
+        <div class="menu-label">Analytics</div>
+        <ul class="menu">
+                 <li>
+            <a href="/trainer/practical-tasks"
+               title="Practical Tasks">
+
+                <span class="icon">◈</span>
+                <span>Practical Tasks</span>
+
+            </a>
+        </li>
+            <li><a href="/trainer/progress" title="Trainee Progress"><span class="icon">↗</span><span>Trainee Progress</span></a></li>
+            <li><a href="/trainer/reports" class="active" aria-current="page" title="Reports"><span class="icon">▤</span><span>Reports</span></a></li>
+        </ul>
+
+        <div class="menu-label">Account</div>
+        <ul class="menu">
+            <li><a href="/trainer/profile" title="My Profile"><span class="icon">●</span><span>My Profile</span></a></li>
+            <li><a href="/trainer/settings" title="Settings"><span class="icon">⚙</span><span>Settings</span></a></li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="logout">
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" title="Logout"><span class="icon">↪</span><span>Logout</span></button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<main class="main" id="main">
+    <header class="header">
+        <div class="header-left">
+            <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+            <div>
+                <div class="header-title">Reports</div>
+                <div class="header-subtitle">View trainee performance and training reports</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="header-btn" id="notificationBtn" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notificationPanel">
+                🔔<span class="badge" th:if="${notifications != null and !notifications.isEmpty()}" th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">0</span>
+            </button>
+            <div class="profile">
+                <div class="avatar" th:text="${userInitial != null and !userInitial.isBlank() ? userInitial : 'T'}">T</div>
+                <div>
+                    <div class="name" th:text="${userName != null and !userName.isBlank() ? userName : 'Trainer'}">Trainer</div>
+                    <div class="role-name">Trainer</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="content" id="content">
+        <!-- Welcome banner -->
+        <div class="welcome">
+            <div>
+                <div class="welcome-chip">✦ Analytics</div>
+                <h1>Training Reports</h1>
+                <p>Review trainee performance, learning activity and training outcomes in one place.</p>
+            </div>
+            <div class="welcome-date"><small>Today</small><span id="today"></span></div>
+        </div>
+
+        <!-- Stats (values come from the controller; missing values show 0) -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" th:data-count="${totalTrainees != null ? totalTrainees : 0}" th:text="${totalTrainees != null ? totalTrainees : 0}">0</div>
+                        <div class="label">Total Trainees</div>
+                    </div>
+                    <div class="stat-icon blue">♙</div>
+                </div>
+                <div class="trend" th:classappend="${totalTrainees != null and totalTrainees > 0} ? 'ok'"
+                     th:text="${totalTrainees != null and totalTrainees > 0 ? 'Under your guidance' : 'No trainees assigned yet'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" th:data-count="${totalReports != null ? totalReports : 0}" th:text="${totalReports != null ? totalReports : 0}">0</div>
+                        <div class="label">Reports Generated</div>
+                    </div>
+                    <div class="stat-icon purple">▤</div>
+                </div>
+                <div class="trend" th:text="${totalReports != null and totalReports > 0 ? 'Ready to review' : 'Nothing generated yet'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" th:data-count="${completedAssessments != null ? completedAssessments : 0}" th:text="${completedAssessments != null ? completedAssessments : 0}">0</div>
+                        <div class="label">Completed Assessments</div>
+                    </div>
+                    <div class="stat-icon orange">✓</div>
+                </div>
+                <div class="trend" th:text="${completedAssessments != null and completedAssessments > 0 ? 'Results available' : 'No completions yet'}">—</div>
+            </div>
+
+            <div class="stat">
+                <div class="stat-top">
+                    <div>
+                        <div class="number" th:data-count="${averageProgress != null ? averageProgress : 0}" data-suffix="%"
+                             th:text="${(averageProgress != null ? #numbers.formatDecimal(averageProgress, 1, 0) : 0) + '%'}">0%</div>
+                        <div class="label">Average Progress</div>
+                    </div>
+                    <div class="stat-icon green">↗</div>
+                </div>
+                <div class="trend" th:classappend="${averageProgress != null and averageProgress >= 75} ? 'ok' : 'warn'"
+                     th:text="${averageProgress == null ? 'No data yet' : (averageProgress >= 75 ? 'On target' : 'Below 75% target')}">—</div>
+            </div>
+        </div>
+
+        <!-- Available reports -->
+        <div class="card reveal">
+            <div class="card-head">
+                <div>
+                    <h2>Available Reports</h2>
+                    <div class="card-sub">Select a report to review trainee and training information.</div>
+                </div>
+            </div>
+
+            <div class="toolbar">
+                <input class="search" id="reportSearch" type="search" placeholder="Search reports  ( / )" aria-label="Search reports" autocomplete="off">
+            </div>
+
+            <div class="report-grid" id="reportGrid">
+                <a class="report" href="#" data-search="trainee performance learning progress assessment results competency development">
+                    <div class="report-icon">↗</div>
+                    <strong>Trainee Performance</strong>
+                    <p>Review trainee learning progress, assessment results and competency development.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+
+                <a class="report teal" href="#" data-search="assessment report completion scores trainee performance">
+                    <div class="report-icon">✓</div>
+                    <strong>Assessment Report</strong>
+                    <p>Review assessment completion, scores and trainee performance.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+
+                <a class="report orange" href="#" data-search="skill gap report identified areas additional training">
+                    <div class="report-icon">△</div>
+                    <strong>Skill Gap Report</strong>
+                    <p>View identified skill gaps and areas that require additional training.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+
+                <a class="report" href="#" data-search="learning activity resources completed training activity">
+                    <div class="report-icon">▣</div>
+                    <strong>Learning Activity</strong>
+                    <p>Review learning resources completed and training activity of trainees.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+
+                <a class="report teal" href="#" data-search="practical task report submissions completion evaluation results">
+                    <div class="report-icon">◆</div>
+                    <strong>Practical Task Report</strong>
+                    <p>Review practical task submissions, completion and evaluation results.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+
+                <a class="report orange" href="#" data-search="training impact overall progress competency improvement">
+                    <div class="report-icon">★</div>
+                    <strong>Training Impact</strong>
+                    <p>Review overall training progress and competency improvement.</p>
+                    <span class="report-btn">View report</span>
+                </a>
+            </div>
+
+            <div class="empty" id="noMatch">
+                <strong>No reports match</strong>
+                <p>Try a different keyword.</p>
+            </div>
+        </div>
+
+        <!-- Generated reports (optional model attribute: generatedReports with name, createdAt, url) -->
+        <div class="card reveal">
+            <div class="card-head">
+                <h2>Generated Reports</h2>
+            </div>
+
+            <div th:if="${generatedReports != null and !generatedReports.isEmpty()}">
+                <div class="generated" th:each="r : ${generatedReports}">
+                    <div class="generated-icon">▤</div>
+                    <div class="generated-info">
+                        <div class="generated-name" th:text="${r.name != null ? r.name : 'Untitled report'}">Report</div>
+                        <div class="generated-meta" th:text="${r.createdAt != null ? r.createdAt : ''}">Date</div>
+                    </div>
+                    <a class="dl" th:href="${r.url != null ? r.url : '#'}">Open</a>
+                </div>
+            </div>
+
+            <div class="empty" th:if="${generatedReports == null or generatedReports.isEmpty()}">
+                <div class="empty-icon">▤</div>
+                <strong>No generated reports yet</strong>
+                <p>Reports will become available after trainee assessments, learning activities and practical tasks are recorded.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Notifications -->
+<div class="notification-panel" id="notificationPanel" role="dialog" aria-label="Notifications">
+    <div class="notification-head">
+        <strong>Notifications</strong>
+        <button id="closeNotifications" type="button" aria-label="Close notifications">✕</button>
+    </div>
+    <div class="notice" th:each="n : ${notifications}" th:if="${notifications != null}">
+        <span class="notice-dot"></span>
+        <p><strong th:text="${n.title}">Title</strong><br><span th:text="${n.message}">Message</span></p>
+    </div>
+    <div class="empty" th:if="${notifications == null or notifications.isEmpty()}">
+        <strong>You're all caught up</strong>
+        <p>New activity from your trainees will show up here.</p>
+    </div>
+</div>
+
+<script>
+    const $ = (s, r = document) => r.querySelector(s);
+    const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mainEl = $('#main');
+
+    /* ---- Date ---- */
+    $('#today').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+
+    /* ---- Sidebar drawer + notifications ---- */
+    const sidebar = $('#sidebar'), overlay = $('#overlay'), mobileMenu = $('#mobileMenu');
+    const nBtn = $('#notificationBtn'), nPanel = $('#notificationPanel');
+
+    function setSidebar(open) {
+        sidebar.classList.toggle('open', open);
+        overlay.classList.toggle('show', open);
+        document.body.classList.toggle('no-scroll', open);
+        mobileMenu.setAttribute('aria-expanded', open);
+    }
+    function setPanel(open) {
+        nPanel.classList.toggle('show', open);
+        nBtn.setAttribute('aria-expanded', open);
+    }
+    mobileMenu.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
+    overlay.addEventListener('click', () => { setSidebar(false); setPanel(false); });
+    $$('.menu a').forEach(a => a.addEventListener('click', () => { if (innerWidth <= 650) setSidebar(false); }));
+    nBtn.addEventListener('click', e => { e.stopPropagation(); setPanel(!nPanel.classList.contains('show')); });
+    $('#closeNotifications').addEventListener('click', () => setPanel(false));
+    document.addEventListener('click', e => { if (!nPanel.contains(e.target) && !nBtn.contains(e.target)) setPanel(false); });
+    addEventListener('resize', () => { if (innerWidth > 650) setSidebar(false); });
+
+    /* keep the active nav item visible inside the sidebar's own scroll area */
+    (function () {
+        const act = $('.menu a.active'), nav = $('#nav');
+        if (act && nav) nav.scrollTop = Math.max(0, act.offsetTop - nav.clientHeight / 2 + act.offsetHeight / 2);
+    })();
+
+    /* ---- Count-up (final text is already server-rendered) ---- */
+    $$('.number[data-count]').forEach(el => {
+        const target = parseFloat(el.dataset.count) || 0;
+        const suffix = el.dataset.suffix || '';
+        const finalText = el.textContent;
+        if (reduceMotion || target === 0) return;
+        const start = performance.now(), dur = 900;
+        (function tick(now) {
+            const p = Math.min((now - start) / dur, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(target * eased) + suffix;
+            if (p < 1) requestAnimationFrame(tick); else el.textContent = finalText;
+        })(start);
+    });
+
+    /* ---- Reveal cards once as they enter ---- */
+    const hasIO = 'IntersectionObserver' in window;
+    const revealObserver = hasIO
+        ? new IntersectionObserver((entries, obs) => entries.forEach(en => {
+            if (en.isIntersecting) { en.target.classList.add('in'); obs.unobserve(en.target); }
+        }), { root: mainEl, threshold: .05 })
+        : null;
+    $$('.reveal').forEach((el, i) => {
+        el.style.transitionDelay = (i % 2) * 80 + 'ms';
+        revealObserver ? revealObserver.observe(el) : el.classList.add('in');
+    });
+    setTimeout(() => $$('.reveal').forEach(el => el.classList.add('in')), 2500);
+
+    /* ---- Report search ---- */
+    const search = $('#reportSearch');
+    if (search) {
+        const cards = $$('.report'), noMatch = $('#noMatch');
+        search.addEventListener('input', () => {
+            const q = search.value.trim().toLowerCase();
+            let shown = 0;
+            cards.forEach(c => {
+                const text = ((c.dataset.search || '') + ' ' + c.textContent).toLowerCase();
+                const ok = text.includes(q);
+                c.hidden = !ok;
+                if (ok) shown++;
+            });
+            noMatch.style.display = shown ? 'none' : 'block';
+        });
+    }
+
+    /* ---- Keyboard: "/" focuses search, Escape closes drawer / notifications / leaves search ---- */
+    document.addEventListener('keydown', e => {
+        const tag = (document.activeElement || {}).tagName;
+        if (e.key === '/' && search && tag !== 'INPUT' && tag !== 'SELECT' && tag !== 'TEXTAREA') { e.preventDefault(); search.focus(); }
+        if (e.key === 'Escape') {
+            setPanel(false); setSidebar(false);
+            if (search && document.activeElement === search) search.blur();
+        }
+    });
+</script>
+</body>
+</html>

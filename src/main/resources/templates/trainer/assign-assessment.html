@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Assign AI-Generated Assessment | Capacitix">
+<meta name="theme-color" content="#635bff">
+<title>Assign Assessment | Capacitix</title>
+<style>
+/* ========== 1. DESIGN TOKENS ========== */
+:root{
+  --primary:#635bff;--teal:#14b8a6;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;
+  --ink:#101828;--muted:#667085;--line:#eaecf0;--bg:#f4f7fb;--sidebar:#0b1220;
+  --shadow:0 12px 35px rgba(16,24,40,.08);--shadow-sm:0 5px 18px rgba(16,24,40,.055);
+  --ease:cubic-bezier(.2,.8,.2,1);--side:272px;--side-compact:82px;--header-h:78px
+}
+
+/* ========== 2. GLOBAL (no body scroll: sidebar nav and .main scroll independently) ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;color:var(--ink);
+  background:radial-gradient(circle at 85% 5%,rgba(99,91,255,.10),transparent 25rem),radial-gradient(circle at 15% 70%,rgba(20,184,166,.07),transparent 24rem),var(--bg)
+}
+a{text-decoration:none;color:inherit}
+button,input,select{font:inherit}
+.skip{position:absolute;left:-999px;top:8px;background:#fff;padding:8px 14px;border-radius:8px;z-index:3000}
+.skip:focus{left:8px}
+
+/* ========== 3. SIDEBAR (brand / scrollable nav / pinned logout) ========== */
+.sidebar{
+  position:fixed;inset:0 auto 0 0;width:var(--side);height:100vh;z-index:1100;display:flex;flex-direction:column;overflow:hidden;color:#fff;
+  background:radial-gradient(circle at 80% 10%,rgba(99,91,255,.20),transparent 13rem),linear-gradient(180deg,var(--sidebar),#0e1728);
+  box-shadow:10px 0 40px rgba(15,23,42,.13);transition:transform .35s var(--ease),width .35s var(--ease);animation:slideIn .6s var(--ease) both
+}
+.brand{flex:none;display:flex;align-items:center;gap:11px;padding:22px 24px 14px}
+.brand-mark{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:13px;font-weight:900;font-size:20px;background:linear-gradient(135deg,var(--primary),var(--teal));box-shadow:0 12px 30px rgba(99,91,255,.32);transition:transform .4s var(--ease)}
+.brand:hover .brand-mark{transform:rotate(-8deg) scale(1.06)}
+.brand-name{font-size:22px;font-weight:850;letter-spacing:-.7px}
+.brand-name span{color:#9c96ff}
+
+/* ========== 4. NAVIGATION (independent vertical scroll) ========== */
+.nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scroll-behavior:smooth;padding:0 14px 12px;scrollbar-width:thin;scrollbar-color:#3b4560 transparent}
+.nav::-webkit-scrollbar{width:6px}
+.nav::-webkit-scrollbar-thumb{background:#3b4560;border-radius:20px}
+.nav::-webkit-scrollbar-thumb:hover{background:#5b6785}
+.menu-label{padding:15px 12px 8px;color:#7f8ba3;font-size:11px;font-weight:700;letter-spacing:.6px}
+.menu{list-style:none}
+.menu li{margin:4px 0}
+.menu a{position:relative;min-height:46px;display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid transparent;border-radius:13px;color:#b8c1d1;font-size:13px;font-weight:600;transition:all .25s var(--ease);overflow:hidden}
+.menu a::before{content:"";position:absolute;inset:0 auto 0 0;width:3px;transform:scaleY(0);background:linear-gradient(180deg,var(--primary),var(--teal));transition:transform .25s var(--ease)}
+.menu a:hover{color:#fff;background:rgba(255,255,255,.065);transform:translateX(3px)}
+.menu a:active{transform:translateX(1px) scale(.98)}
+.menu a.active{color:#fff;background:linear-gradient(100deg,rgba(99,91,255,.28),rgba(20,184,166,.1));border-color:rgba(255,255,255,.055);box-shadow:0 0 22px rgba(99,91,255,.18)}
+.menu a.active::before{transform:scaleY(.65)}
+.icon{width:23px;height:23px;flex:0 0 23px;display:grid;place-items:center;color:#8d99ad;font-size:16px;transition:transform .25s ease,color .25s ease}
+.menu a:hover .icon,.menu a.active .icon{color:#fff;transform:scale(1.12)}
+.menu a:hover .icon{color:#5eead4}
+.sidebar-bottom{flex:none;padding:10px 14px 16px;border-top:1px solid rgba(255,255,255,.07);background:var(--sidebar)}
+.logout form{margin:0}
+.logout button{width:100%;display:flex;align-items:center;justify-content:center;gap:9px;padding:11px 12px;cursor:pointer;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.035);color:#c5cbd6;font-size:12px;font-weight:700;transition:all .25s ease}
+.logout button:hover{background:rgba(239,68,68,.12);color:#fff;border-color:rgba(239,68,68,.25)}
+.logout button:active{transform:scale(.98)}
+.overlay{position:fixed;inset:0;z-index:1050;background:rgba(15,23,42,.45);opacity:0;visibility:hidden;transition:.25s}
+.overlay.show{opacity:1;visibility:visible}
+
+/* ========== 5. MAIN (independent vertical scroll) ========== */
+.main{margin-left:var(--side);height:100vh;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;transition:margin .35s var(--ease);scrollbar-width:thin;scrollbar-color:#c5cbd8 transparent}
+.main::-webkit-scrollbar{width:7px}
+.main::-webkit-scrollbar-thumb{background:#c5cbd8;border-radius:20px}
+.no-scroll .main{overflow:hidden}
+
+/* ========== 6. HEADER ========== */
+.header{position:sticky;top:0;z-index:900;min-height:var(--header-h);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px 36px;background:rgba(255,255,255,.86);border-bottom:1px solid var(--line);backdrop-filter:blur(18px);animation:dropIn .6s var(--ease) both}
+.header-left{display:flex;align-items:center;gap:12px;min-width:0}
+.mobile-menu{display:none;width:42px;height:42px;flex:0 0 42px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font-size:19px;transition:.2s}
+.mobile-menu:hover{border-color:#cbc7ff;background:#f5f3ff}
+.header-title{font-size:21px;font-weight:850;letter-spacing:-.5px}
+.header-subtitle{margin-top:3px;color:var(--muted);font-size:12px}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-btn{position:relative;width:42px;height:42px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;transition:all .25s ease}
+.header-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
+.header-btn:active{transform:scale(.96)}
+.badge-count{position:absolute;top:-5px;right:-5px;min-width:19px;height:19px;padding:0 5px;display:grid;place-items:center;border:2px solid #fff;border-radius:99px;background:var(--danger);color:#fff;font-size:10px;font-weight:800;animation:pulseBadge 2.4s ease-in-out 3}
+.profile{display:flex;align-items:center;gap:10px}
+.avatar{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;color:#fff;font-size:13px;font-weight:850;background:linear-gradient(135deg,var(--primary),var(--teal));box-shadow:0 8px 20px rgba(99,91,255,.22);transition:transform .25s}
+.avatar:hover{transform:scale(1.07)}
+.profile-name{font-size:12px;font-weight:800}
+.profile-role{margin-top:2px;color:var(--muted);font-size:11px}
+
+/* ========== 7. MAIN CONTENT ========== */
+.container{width:min(1000px,100%);margin:0 auto;padding:30px 36px 55px}
+.st{animation:fadeUp .55s var(--ease) both;animation-delay:calc(var(--i,0)*70ms)}
+.back-link{display:inline-flex;align-items:center;gap:7px;color:#4f46e5;font-size:13px;font-weight:700;margin-bottom:18px;transition:.2s}
+.back-link:hover{transform:translateX(-3px);text-decoration:underline}
+.page-header{margin-bottom:22px}
+.page-header h1{font-size:26px;letter-spacing:-.6px;margin-bottom:7px}
+.page-header p{color:var(--muted);font-size:13px;line-height:1.6;max-width:70ch}
+.error-message{display:flex;gap:10px;background:#fef3f2;border:1px solid #fecdca;color:#b42318;border-radius:14px;padding:13px 16px;margin-bottom:20px;font-size:13px;line-height:1.6;font-weight:600}
+.ai-notice{display:flex;gap:14px;padding:18px 20px;margin-bottom:20px;border:1px solid #dfe5ff;border-radius:20px;background:linear-gradient(100deg,#eef2ff,#ecfeff);transition:box-shadow .3s}
+.ai-notice:hover{box-shadow:var(--shadow-sm)}
+.ai-icon{width:40px;height:40px;min-width:40px;border-radius:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;display:grid;place-items:center;font-size:13px;font-weight:900;box-shadow:0 6px 14px rgba(79,70,229,.25)}
+.ai-title{font-size:14px;font-weight:800;color:#3730a3;margin-bottom:4px}
+.ai-text{color:#596579;font-size:12.5px;line-height:1.6}
+
+/* ========== 8. CARDS ========== */
+.card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:26px;box-shadow:var(--shadow-sm);margin-bottom:20px;transition:box-shadow .3s}
+.card:hover{box-shadow:var(--shadow)}
+.card-title{font-size:17px;font-weight:850;letter-spacing:-.25px;margin-bottom:18px}
+.assessment-box{border:1px solid #e5e8ef;border-radius:18px;padding:20px;background:linear-gradient(135deg,#fafbff,#f7fffe)}
+.assessment-title{font-size:18px;font-weight:850;margin-bottom:8px;overflow-wrap:anywhere}
+.assessment-description{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:16px}
+.meta{display:flex;flex-wrap:wrap;gap:8px}
+.badge{display:inline-flex;align-items:center;padding:6px 11px;border-radius:999px;background:#f1f5f9;color:#475569;font-size:11px;font-weight:750}
+.badge.ai{background:#eef2ff;color:#4f46e5}
+.badge.success{background:#ecfdf5;color:#047857}
+.badge.warning{background:#fff7ed;color:#c2410c}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.info-item{background:#fff;border:1px solid #e6e9ef;border-radius:14px;padding:14px;transition:transform .25s var(--ease),box-shadow .25s}
+.info-item:hover{transform:translateY(-3px);box-shadow:var(--shadow-sm)}
+.info-label{color:#8a93a5;font-size:10px;font-weight:750;text-transform:uppercase;letter-spacing:.4px}
+.info-value{font-size:15px;font-weight:850;margin-top:5px;overflow-wrap:anywhere}
+.status-message{margin-top:16px;border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.6}
+.status-message.ready{background:#ecfdf5;border:1px solid #bbf7d0;color:#166534}
+.status-message.warning{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412}
+
+/* ========== 9. FORMS ========== */
+.form-group{margin-bottom:20px}
+.form-label{display:block;font-size:13px;font-weight:800;margin-bottom:8px}
+.form-help{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.5}
+select{width:100%;min-height:48px;border:1px solid #d0d5dd;border-radius:12px;background:#fff;color:var(--ink);padding:0 13px;font-size:14px;outline:0;cursor:pointer;transition:border-color .2s,box-shadow .2s}
+select:hover{border-color:#a5b4fc}
+select:focus{border-color:#8b85ff;box-shadow:0 0 0 4px rgba(99,91,255,.12)}
+select:disabled{background:#f8fafc;cursor:not-allowed}
+.employee-preview{display:none;margin-top:14px;padding:14px;background:#f8fafc;border:1px solid #e5e8ef;border-radius:14px}
+.employee-preview.show{display:flex;align-items:center;gap:12px;animation:fadeUp .3s var(--ease)}
+.employee-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#eef2ff,#e9f8f6);color:#4f46e5;display:grid;place-items:center;font-weight:850;flex-shrink:0}
+.employee-name{font-size:13px;font-weight:800}
+.employee-details{font-size:11px;color:var(--muted);margin-top:3px;word-break:break-word}
+.empty-employees{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:16px;font-size:13px;line-height:1.6}
+.security-note{display:flex;gap:9px;align-items:flex-start;margin-top:18px;color:var(--muted);font-size:11.5px;line-height:1.6}
+.security-icon{color:var(--teal);font-weight:900}
+.submitting{opacity:.75;pointer-events:none}
+
+/* ========== 10. BUTTONS ========== */
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.btn{height:44px;border:0;border-radius:12px;padding:0 20px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s,border-color .2s,color .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;box-shadow:0 6px 14px rgba(79,70,229,.25)}
+.btn-primary:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 10px 20px rgba(79,70,229,.32)}
+.btn-primary:disabled{background:#c7d2fe;box-shadow:none;cursor:not-allowed}
+.btn-secondary{background:#fff;color:#344054;border:1px solid #d0d5dd}
+.btn-secondary:hover{border-color:#cbc7ff;color:#4f46e5;transform:translateY(-1px);box-shadow:0 6px 14px rgba(79,70,229,.1)}
+
+/* notifications */
+.notification-panel{position:fixed;right:25px;top:72px;width:min(350px,calc(100vw - 30px));z-index:1200;padding:15px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.97);backdrop-filter:blur(18px);box-shadow:0 20px 55px rgba(16,24,40,.16);max-height:70vh;overflow-y:auto;opacity:0;visibility:hidden;transform:translateY(-10px) scale(.98);transition:all .25s var(--ease)}
+.notification-panel.show{opacity:1;visibility:visible;transform:none}
+.notification-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.notification-head strong{font-size:13px}
+.notification-head button{border:0;background:none;cursor:pointer;color:var(--muted);padding:4px 6px;border-radius:8px}
+.notification-head button:hover{background:#f2f4f7}
+.notice{display:flex;gap:10px;padding:11px 8px;border-radius:11px;transition:.2s}
+.notice:hover{background:#f7f8fc}
+.notice-dot{width:8px;height:8px;margin-top:5px;border-radius:50%;background:var(--primary);flex:0 0 8px}
+.notice p{font-size:11px;line-height:1.45;color:var(--muted)}
+.notice strong{color:var(--ink)}
+.empty{padding:30px 14px;text-align:center;color:var(--muted)}
+.empty strong{display:block;margin-bottom:5px;color:var(--ink);font-size:13px}
+.empty p{max-width:300px;margin:0 auto;font-size:12px;line-height:1.5}
+
+/* ========== 11. ANIMATIONS ========== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:none}}
+@keyframes dropIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+@keyframes pulseBadge{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.45)}50%{box-shadow:0 0 0 6px rgba(239,68,68,0)}}
+
+/* ========== 12. RESPONSIVE (1200 / 900 / 650 / 430) ========== */
+@media(max-width:1200px){
+  :root{--side:245px}
+  .container{padding:26px 25px 45px}.header{padding:14px 25px}
+}
+@media(max-width:900px){
+  :root{--side:var(--side-compact)}
+  .sidebar .brand{justify-content:center;padding:22px 0 14px}
+  .brand-name,.menu-label,.menu a span:not(.icon),.logout button span:not(.icon){display:none}
+  .nav{padding:0 10px 12px}
+  .menu a{justify-content:center;padding:11px 8px;gap:0}
+  .icon{width:100%}
+  .sidebar-bottom{padding:10px}
+  .header{padding:13px 20px}
+}
+@media(max-width:650px){
+  :root{--side:0px}
+  .sidebar{width:265px;transform:translateX(-105%);animation:none}
+  .sidebar.open{transform:none}
+  .sidebar .brand{justify-content:flex-start;padding:22px 24px 14px}
+  .brand-name,.menu-label{display:block}
+  .menu a span:not(.icon),.logout button span:not(.icon){display:inline}
+  .menu a{justify-content:flex-start;padding:10px 12px;gap:12px}
+  .icon{width:23px}
+  .nav{padding:0 14px 12px}
+  .sidebar-bottom{padding:10px 14px 16px}
+  .mobile-menu{display:grid;place-items:center}
+  .header{min-height:70px;padding:12px 16px}
+  .header-title{font-size:18px}
+  .header-subtitle,.profile-name,.profile-role{display:none}
+  .container{padding:20px 15px 35px}
+  .card{padding:19px;border-radius:18px}
+  .info-grid{grid-template-columns:1fr}
+  .actions{flex-direction:column-reverse}
+  .btn{width:100%}
+  .page-header h1{font-size:23px}
+  .ai-notice{align-items:flex-start}
+  .notification-panel{right:15px;top:66px}
+}
+
+/* ========== 13. ACCESSIBILITY ========== */
+:focus-visible{outline:3px solid rgba(99,91,255,.45);outline-offset:2px;border-radius:10px}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#content">Skip to content</a>
+<div class="overlay" id="overlay"></div>
+
+<!-- ===== SIDEBAR: brand / scrollable navigation / pinned logout ===== -->
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+    <div class="brand">
+        <div class="brand-mark">C</div>
+        <div class="brand-name">Capacit<span>ix</span></div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Trainer menu">
+        <div class="menu-label">Training</div>
+        <ul class="menu">
+            <li><a href="/trainer/dashboard" title="Dashboard"><span class="icon">⌂</span><span>Dashboard</span></a></li>
+            <li><a href="/trainer/employees" title="My Trainees"><span class="icon">♙</span><span>My Trainees</span></a></li>
+            <li><a href="/trainer/skill-gaps" title="Skill Gaps"><span class="icon">△</span><span>Skill Gaps</span></a></li>
+            <li><a href="/trainer/learning-resources" title="Learning Resources"><span class="icon">▣</span><span>Learning Resources</span></a></li>
+            <li><a href="/trainer/assessments" class="active" aria-current="page" title="Assessments"><span class="icon">✓</span><span>Assessments</span></a></li>
+         
+        </ul>
+
+        <div class="menu-label">Analytics</div>
+        <ul class="menu">
+            <li><a href="/trainer/progress" title="Trainee Progress"><span class="icon">↗</span><span>Trainee Progress</span></a></li>
+            <li><a href="/trainer/reports" title="Reports"><span class="icon">▤</span><span>Reports</span></a></li>
+        </ul>
+
+        <div class="menu-label">Account</div>
+        <ul class="menu">
+            <li><a href="/trainer/profile" title="My Profile"><span class="icon">●</span><span>My Profile</span></a></li>
+            <li><a href="/trainer/settings" title="Settings"><span class="icon">⚙</span><span>Settings</span></a></li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-bottom">
+        <div class="logout">
+            <!-- th:action adds the CSRF token automatically -->
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" title="Logout"><span class="icon">↪</span><span>Logout</span></button>
+            </form>
+        </div>
+    </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<main class="main" id="main">
+
+    <header class="header">
+        <div class="header-left">
+            <button class="mobile-menu" id="mobileMenu" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button>
+            <div>
+                <div class="header-title">Assign Assessment</div>
+                <div class="header-subtitle">Assign an AI-generated assessment to one of your trainees</div>
+            </div>
+        </div>
+
+        <div class="header-right">
+            <button class="header-btn" id="notificationBtn" type="button" aria-label="Notifications" aria-expanded="false" aria-controls="notificationPanel">
+                🔔<span class="badge-count" th:if="${notifications != null and !notifications.isEmpty()}" th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">0</span>
+            </button>
+            <div class="profile">
+                <div>
+                    <div class="profile-name"
+                         th:text="${trainer != null and trainer.fullName != null
+                            ? trainer.fullName
+                            : 'Trainer'}">Trainer</div>
+                    <div class="profile-role">Trainer</div>
+                </div>
+                <div class="avatar"
+                     th:text="${trainer != null
+                            and trainer.fullName != null
+                            and !trainer.fullName.isBlank()
+                            ? trainer.fullName.substring(0,1).toUpperCase()
+                            : 'T'}">T</div>
+            </div>
+        </div>
+    </header>
+
+    <section class="container" id="content">
+
+        <a th:href="@{/trainer/assessments}" class="back-link st" style="--i:0">← Back to Assessments</a>
+
+        <!-- PAGE HEADER -->
+        <div class="page-header st" style="--i:1">
+            <h1>Assign Assessment</h1>
+            <p>
+                Assign this AI-generated assessment to an employee
+                who is assigned to your trainer account.
+            </p>
+        </div>
+
+        <!-- ERROR MESSAGE -->
+        <div class="error-message" role="alert"
+             th:if="${errorMessage != null}">
+            <span>!</span>
+            <span th:text="${errorMessage}">Unable to assign assessment.</span>
+        </div>
+
+        <!-- AI NOTICE -->
+        <div class="ai-notice st" style="--i:2">
+            <div class="ai-icon">AI</div>
+            <div>
+                <div class="ai-title">AI-Generated Assessment</div>
+                <div class="ai-text">
+                    The questions in this assessment were generated
+                    from the organization's required competencies.
+                    You do not need to create or modify questions.
+                    Your role is to assign the assessment to the
+                    appropriate employee.
+                </div>
+            </div>
+        </div>
+
+        <!-- ASSESSMENT DETAILS -->
+        <section class="card st" style="--i:3">
+
+            <div class="card-title">Assessment Details</div>
+
+            <div class="assessment-box">
+
+                <!-- Assessment name -->
+                <div class="assessment-title"
+                     th:text="${assessment != null and assessment.name != null
+                        ? assessment.name
+                        : 'Assessment'}">AI Assessment</div>
+
+                <!-- Description -->
+                <div class="assessment-description"
+                     th:text="${assessment != null
+                        and assessment.description != null
+                        and !assessment.description.isBlank()
+                        ? assessment.description
+                        : 'AI-generated skill assessment based on the required competencies.'}">AI-generated skill assessment.</div>
+
+                <!-- BADGES -->
+                <div class="meta">
+
+                    <span class="badge ai"
+                          th:if="${assessment != null
+                              and assessment.aiGenerated == true}">✓ AI Generated</span>
+
+                    <span class="badge"
+                          th:text="${assessment != null
+                              and assessment.type != null
+                              ? assessment.type
+                              : 'SKILL'}">SKILL</span>
+
+                    <span class="badge"
+                          th:if="${assessment != null
+                              and assessment.targetRole != null
+                              and !assessment.targetRole.isBlank()}"
+                          th:text="${assessment.targetRole}">Target Role</span>
+
+                    <span class="badge success"
+                          th:if="${assessment != null
+                              and assessment.questionCount != null
+                              and assessment.questionCount > 0}">✓ Ready to Assign</span>
+
+                    <span class="badge warning"
+                          th:if="${assessment == null
+                              or assessment.questionCount == null
+                              or assessment.questionCount <= 0}">⚠ No Questions</span>
+
+                </div>
+
+                <!-- INFORMATION GRID -->
+                <div class="info-grid">
+
+                    <div class="info-item">
+                        <div class="info-label">Questions</div>
+                        <div class="info-value"
+                             th:text="${assessment != null
+                                and assessment.questionCount != null
+                                ? assessment.questionCount
+                                : 0}">0</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Maximum Marks</div>
+                        <div class="info-value"
+                             th:text="${assessment != null
+                                and assessment.maxScore != null
+                                ? assessment.maxScore
+                                : (assessment != null
+                                    and assessment.questionCount != null
+                                    ? assessment.questionCount
+                                    : 0)}">0</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">Status</div>
+                        <div class="info-value"
+                             th:text="${assessment != null
+                                and assessment.status != null
+                                ? assessment.status
+                                : 'GENERATED'}">GENERATED</div>
+                    </div>
+
+                </div>
+
+                <!-- READY MESSAGE -->
+                <div class="status-message ready"
+                     th:if="${assessment != null
+                        and assessment.questionCount != null
+                        and assessment.questionCount > 0}">
+                    <strong>Assessment ready.</strong>
+                    This assessment contains
+                    <span th:text="${assessment.questionCount}">0</span>
+                    generated questions and can be assigned to an
+                    Students in your trainer group.
+                </div>
+
+                <!-- WARNING MESSAGE -->
+                <div class="status-message warning"
+                     th:if="${assessment == null
+                        or assessment.questionCount == null
+                        or assessment.questionCount <= 0}">
+                    <strong>Assessment cannot be assigned.</strong>
+                    This assessment does not contain generated
+                    questions. Please return to the assessment list
+                    and generate the questions before assigning it.
+                </div>
+
+            </div>
+        </section>
+
+        <!-- ASSIGN FORM -->
+        <section class="card st" style="--i:4">
+
+            <div class="card-title">Select Employee</div>
+
+            <!-- NO EMPLOYEES -->
+            <div th:if="${employees == null or employees.isEmpty()}" class="empty-employees">
+                <strong>No employees available.</strong>
+                <br>
+                There are currently no employees assigned to your
+                trainer account. Please contact the organization
+                administrator before assigning this assessment.
+
+                <div style="margin-top:12px;">
+                    <a th:href="@{/trainer/assessments}" class="btn btn-secondary">← Back to Assessments</a>
+                </div>
+            </div>
+
+            <!-- EMPLOYEE FORM -->
+            <form th:if="${employees != null
+                and !employees.isEmpty()
+                and assessment != null
+                and assessment.questionCount != null
+                and assessment.questionCount > 0}"
+                  th:action="@{/trainer/assessments/{id}/assign(id=${assessment.id})}"
+                  method="post"
+                  id="assignForm">
+
+                <!-- CSRF -->
+                <input type="hidden"
+                       th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}">
+
+                <!-- EMPLOYEE SELECT -->
+                <div class="form-group">
+
+                    <label class="form-label" for="employeeId">Employee</label>
+
+                    <select id="employeeId"
+                            name="employeeId"
+                            required
+                            onchange="showEmployeePreview()">
+
+                        <option value="">-- Select Students --</option>
+
+                        <option th:each="employee : ${employees}"
+                                th:value="${employee.id}"
+                                th:text="${employee.fullName
+                                    + ' — '
+                                    + (employee.designation != null
+                                        and !employee.designation.isBlank()
+                                        ? employee.designation
+                                        : 'Employee')}"
+                                th:attr="
+                                    data-name=${employee.fullName},
+                                    data-email=${employee.email},
+                                    data-designation=${employee.designation},
+                                    data-department=${employee.department}">Employee</option>
+
+                    </select>
+
+                    <div class="form-help">
+                        Only employees assigned to you are displayed.
+                        You cannot assign this assessment to an
+                        Students outside your trainer group.
+                    </div>
+
+                    <!-- EMPLOYEE PREVIEW -->
+                    <div class="employee-preview" id="employeePreview" aria-live="polite">
+                        <div class="employee-avatar" id="previewAvatar">E</div>
+                        <div>
+                            <div class="employee-name" id="previewName">Student</div>
+                            <div class="employee-details" id="previewDetails">Student details</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ACTIONS -->
+                <div class="actions">
+                    <a th:href="@{/trainer/assessments}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary" id="assignButton" disabled>Assign Assessment</button>
+                </div>
+
+                <!-- SECURITY NOTE -->
+                <div class="security-note">
+                    <span class="security-icon">✓</span>
+                    <span>
+                        The assignment will be linked to the selected
+                        Student and your trainer account. After
+                        successful assignment, the Student will see
+                        this assessment in
+                        <strong>Employee → Assessments</strong>.
+                    </span>
+                </div>
+
+            </form>
+
+            <!-- NO QUESTIONS MESSAGE -->
+            <div th:if="${assessment != null
+                and (assessment.questionCount == null
+                or assessment.questionCount <= 0)}"
+                 class="empty-employees">
+                <strong>Questions are not available.</strong>
+                <br>
+                This assessment cannot be assigned until AI-generated
+                questions are available.
+
+                <div style="margin-top:12px;">
+                    <a th:href="@{/trainer/assessments}" class="btn btn-secondary">← Back to Assessments</a>
+                </div>
+            </div>
+
+        </section>
+    </section>
+</main>
+
+<!-- Notifications (shows controller-provided "notifications" when available) -->
+<div class="notification-panel" id="notificationPanel" role="dialog" aria-label="Notifications">
+    <div class="notification-head">
+        <strong>Notifications</strong>
+        <button id="closeNotifications" type="button" aria-label="Close notifications">✕</button>
+    </div>
+    <div class="notice" th:each="n : ${notifications}" th:if="${notifications != null}">
+        <span class="notice-dot"></span>
+        <p><strong th:text="${n.title}">Title</strong><br><span th:text="${n.message}">Message</span></p>
+    </div>
+    <div class="empty" th:if="${notifications == null or notifications.isEmpty()}">
+        <strong>You're all caught up</strong>
+        <p>New activity from your trainees will show up here.</p>
+    </div>
+</div>
+
+<script>
+    /* ========== EXISTING PAGE LOGIC (unchanged behavior) ========== */
+    function showEmployeePreview() {
+
+        const select = document.getElementById("employeeId");
+        const preview = document.getElementById("employeePreview");
+        const button = document.getElementById("assignButton");
+
+        if (!select || !preview || !button) {
+            return;
+        }
+
+        const selected = select.options[select.selectedIndex];
+
+        if (!select.value) {
+            preview.classList.remove("show");
+            button.disabled = true;
+            return;
+        }
+
+        const name = selected.getAttribute("data-name") || "Employee";
+        const email = selected.getAttribute("data-email") || "";
+        const designation = selected.getAttribute("data-designation") || "Employee";
+        const department = selected.getAttribute("data-department") || "";
+
+        const avatar = document.getElementById("previewAvatar");
+        const previewName = document.getElementById("previewName");
+        const previewDetails = document.getElementById("previewDetails");
+
+        /* AVATAR */
+        if (avatar) {
+            const trimmedName = name.trim();
+            const firstLetter = trimmedName.length > 0 ? trimmedName.charAt(0).toUpperCase() : "E";
+            avatar.textContent = firstLetter;
+        }
+
+        /* NAME */
+        if (previewName) {
+            previewName.textContent = name;
+        }
+
+        /* DETAILS */
+        if (previewDetails) {
+            let details = designation;
+            if (department) {
+                details += " • " + department;
+            }
+            if (email) {
+                details += " • " + email;
+            }
+            previewDetails.textContent = details;
+        }
+
+        preview.classList.add("show");
+        button.disabled = false;
+    }
+
+    /* FORM SUBMISSION */
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const form = document.getElementById("assignForm");
+
+        if (!form) {
+            return;
+        }
+
+        /* if the browser restored a selected employee (e.g. after Back), sync the preview and button */
+        showEmployeePreview();
+
+        form.addEventListener("submit", function (event) {
+
+            const select = document.getElementById("employeeId");
+            const button = document.getElementById("assignButton");
+
+            if (!select || !select.value) {
+                event.preventDefault();
+                alert("Please select an employee.");
+                return;
+            }
+
+            const selected = select.options[select.selectedIndex];
+            const employeeName = selected.getAttribute("data-name") || "this employee";
+
+            const confirmed = confirm(
+                "Assign this AI-generated assessment to " + employeeName + "?"
+            );
+
+            if (!confirmed) {
+                event.preventDefault();
+                return;
+            }
+
+            /* Prevent double-click / duplicate POST. */
+            if (button) {
+                button.disabled = true;
+                button.textContent = "Assigning...";
+                form.classList.add("submitting");
+            }
+        });
+
+        /* if the page is restored from the back/forward cache, re-enable the form */
+        addEventListener("pageshow", function (e) {
+            if (e.persisted) {
+                form.classList.remove("submitting");
+                const button = document.getElementById("assignButton");
+                if (button) button.textContent = "Assign Assessment";
+                showEmployeePreview();
+            }
+        });
+    });
+
+    /* ========== UI ENHANCEMENTS: shell (drawer, notifications, keyboard) ========== */
+    (function () {
+        const $ = (s, r = document) => r.querySelector(s);
+        const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+        const sidebar = $('#sidebar'), overlay = $('#overlay'), menuBtn = $('#mobileMenu');
+        const nBtn = $('#notificationBtn'), nPanel = $('#notificationPanel');
+
+        function setSidebar(open) {
+            sidebar.classList.toggle('open', open);
+            overlay.classList.toggle('show', open);
+            document.body.classList.toggle('no-scroll', open);   /* locks .main scrolling only while the drawer is open */
+            menuBtn.setAttribute('aria-expanded', open);
+        }
+        function setPanel(open) {
+            nPanel.classList.toggle('show', open);
+            nBtn.setAttribute('aria-expanded', open);
+        }
+        menuBtn.addEventListener('click', () => setSidebar(!sidebar.classList.contains('open')));
+        overlay.addEventListener('click', () => { setSidebar(false); setPanel(false); });
+        $$('.menu a').forEach(a => a.addEventListener('click', () => { if (innerWidth <= 650) setSidebar(false); }));
+        nBtn.addEventListener('click', e => { e.stopPropagation(); setPanel(!nPanel.classList.contains('show')); });
+        $('#closeNotifications').addEventListener('click', () => setPanel(false));
+        document.addEventListener('click', e => { if (!nPanel.contains(e.target) && !nBtn.contains(e.target)) setPanel(false); });
+        addEventListener('resize', () => { if (innerWidth > 650) setSidebar(false); });
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') { setPanel(false); setSidebar(false); } });
+
+        /* keep the active nav item visible inside the sidebar's own scroll area */
+        const act = $('.menu a.active'), nav = $('#nav');
+        if (act && nav) nav.scrollTop = Math.max(0, act.offsetTop - nav.clientHeight / 2 + act.offsetHeight / 2);
+    })();
+</script>
+</body>
+</html>

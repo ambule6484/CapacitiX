@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Assign Video | Capacitix</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 35px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .header a {
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 650px;
+            margin: 45px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 32px;
+            border-radius: 14px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .video-info {
+            background: #f9fafb;
+            padding: 18px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+
+        .video-title {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 7px;
+        }
+
+        .video-description {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 9px;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 15px;
+            background: white;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        button,
+        .cancel {
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 15px;
+        }
+
+        button {
+            border: none;
+            background: #4f46e5;
+            color: white;
+        }
+
+        .cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .no-employees {
+            padding: 15px;
+            background: #fff7ed;
+            color: #9a3412;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <a th:href="@{/trainer/videos}">
+        ← Back to Training Videos
+    </a>
+
+</div>
+
+<div class="container">
+
+    <div class="card">
+
+        <h1>Assign Training Video</h1>
+
+        <!-- Video information -->
+        <div class="video-info">
+
+            <div class="video-title"
+                 th:text="${video.title}">
+                Java Collections
+            </div>
+
+            <div class="video-description"
+                 th:text="${video.description}">
+                Learn Java Collections Framework.
+            </div>
+
+        </div>
+
+        <!-- Employee selection -->
+        <form th:action="@{/trainer/videos/{id}/assign(id=${video.id})}"
+              method="post">
+
+            <label for="employeeId">
+                Select Student
+            </label>
+
+            <select id="employeeId"
+                    name="employeeId"
+                    required
+                    th:if="${not #lists.isEmpty(employees)}">
+
+                <option value="">
+                    -- Select Student --
+                </option>
+
+                <option th:each="employee : ${employees}"
+                        th:value="${employee.id}"
+                        th:text="${employee.fullName}">
+                    Student Name
+                </option>
+
+            </select>
+
+            <div th:if="${#lists.isEmpty(employees)}"
+                 class="no-employees">
+
+                No Students are currently available.
+
+            </div>
+
+            <div class="actions"
+                 th:if="${not #lists.isEmpty(employees)}">
+
+                <button type="submit">
+                    Assign Video
+                </button>
+
+                <a th:href="@{/trainer/videos}"
+                   class="cancel">
+                    Cancel
+                </a>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>
