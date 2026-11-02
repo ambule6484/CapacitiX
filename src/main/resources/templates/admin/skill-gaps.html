@@ -1,0 +1,3271 @@
+<!DOCTYPE html>
+
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Identify Student skill gaps and training requirements">
+    <title>Skill Gaps | Capacitix</title>
+
+<style>
+
+:root{
+    --bg:#f4f6fb;
+    --text:#172033;
+    --muted:#667085;
+    --line:#e6e9f0;
+    --brand:#4f46e5;
+    --teal:#14b8a6;
+    --red:#dc2626;
+    --amber:#d97706;
+    --green:#059669;
+    --radius:16px;
+    --shadow:0 12px 30px rgba(15,23,42,.08);
+    --ease:cubic-bezier(.2,.8,.2,1);
+    --side:265px;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,
+body{
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    font-family:"Inter","Segoe UI",system-ui,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+button,
+input,
+select{
+    font-family:inherit;
+}
+
+.skip{
+    position:absolute;
+    left:-999px;
+    top:8px;
+    background:#fff;
+    padding:8px 14px;
+    border-radius:8px;
+    z-index:3000;
+}
+
+.skip:focus{
+    left:8px;
+}
+
+.progress{
+    position:fixed;
+    top:0;
+    left:0;
+    height:3px;
+    width:0;
+    background:linear-gradient(90deg,var(--brand),var(--teal));
+    z-index:4000;
+    transition:width .5s var(--ease),opacity .4s;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar{
+    position:fixed;
+    inset:0 auto 0 0;
+    width:var(--side);
+    height:100vh;
+    background:linear-gradient(180deg,#0f172a,#111827 60%,#0b1220);
+    color:#fff;
+    z-index:1000;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    transition:transform .3s ease;
+    animation:slideIn .6s var(--ease) both;
+}
+
+.logo{
+    flex:none;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    padding:22px 26px 16px;
+}
+
+.logo-mark{
+    width:42px;
+    height:42px;
+    border-radius:13px;
+    background:linear-gradient(135deg,#6366f1,#14b8a6);
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:20px;
+    box-shadow:0 8px 25px rgba(99,102,241,.35);
+    transition:transform .4s var(--ease);
+}
+
+.logo:hover .logo-mark{
+    transform:rotate(-8deg) scale(1.06);
+}
+
+.logo-text{
+    font-size:22px;
+    font-weight:750;
+    letter-spacing:-.5px;
+}
+
+.nav{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    overflow-x:hidden;
+    overscroll-behavior:contain;
+    scroll-behavior:smooth;
+    padding:0 12px 12px;
+    scrollbar-width:thin;
+    scrollbar-color:#3b4560 transparent;
+}
+
+.nav::-webkit-scrollbar{
+    width:6px;
+}
+
+.nav::-webkit-scrollbar-thumb{
+    background:#3b4560;
+    border-radius:20px;
+}
+
+.nav::-webkit-scrollbar-thumb:hover{
+    background:#5b6785;
+}
+
+.menu-label{
+    color:#667085;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:1.2px;
+    margin:16px 12px 8px;
+}
+
+.menu{
+    list-style:none;
+}
+
+.menu a{
+    position:relative;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 12px;
+    margin:3px 0;
+    border-radius:10px;
+    color:#aab4c3;
+    font-size:14px;
+    transition:background .25s,color .25s,transform .25s;
+}
+
+.menu a:hover{
+    background:rgba(255,255,255,.07);
+    color:#fff;
+    transform:translateX(4px);
+}
+
+.menu a:hover .icon{
+    transform:scale(1.2) translateX(2px);
+    color:#5eead4;
+}
+
+.menu a.active{
+    background:linear-gradient(
+        90deg,
+        rgba(99,91,255,.3),
+        rgba(20,184,166,.1)
+    );
+    color:#fff;
+    box-shadow:
+        inset 3px 0 #6366f1,
+        0 0 22px rgba(99,102,241,.2);
+}
+
+.menu a.active::after{
+    content:"";
+    position:absolute;
+    right:12px;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:#14b8a6;
+    box-shadow:0 0 10px #14b8a6;
+}
+
+.icon{
+    width:22px;
+    text-align:center;
+    transition:transform .25s,color .25s;
+}
+
+.logout{
+    flex:none;
+    padding:10px 12px 16px;
+    border-top:1px solid rgba(255,255,255,.07);
+    background:#0b1220;
+}
+
+.logout button{
+    width:100%;
+    border:0;
+    background:transparent;
+    color:#aab4c3;
+    padding:12px;
+    text-align:left;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:14px;
+    transition:.25s;
+}
+
+.logout button:hover{
+    background:rgba(239,68,68,.14);
+    color:#fca5a5;
+    transform:translateX(3px);
+}
+
+.scrim{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(15,23,42,.5);
+    z-index:900;
+}
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.main{
+    margin-left:var(--side);
+    height:100vh;
+    overflow-y:auto;
+    overflow-x:hidden;
+    scroll-behavior:smooth;
+    scrollbar-width:thin;
+    scrollbar-color:#c5cbd8 transparent;
+}
+
+.main::-webkit-scrollbar{
+    width:7px;
+}
+
+.main::-webkit-scrollbar-thumb{
+    background:#c5cbd8;
+    border-radius:20px;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.header{
+    height:74px;
+    position:sticky;
+    top:0;
+    z-index:500;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 32px;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);
+}
+
+.header-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.burger{
+    display:none;
+    width:40px;
+    height:40px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:10px;
+    cursor:pointer;
+    font-size:18px;
+}
+
+.header-title{
+    font-size:20px;
+    font-weight:700;
+}
+
+.header-subtitle{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:3px;
+}
+
+.header-right{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.notification{
+    position:relative;
+    width:41px;
+    height:41px;
+    border:1px solid var(--line);
+    border-radius:11px;
+    display:grid;
+    place-items:center;
+    background:#fff;
+    cursor:pointer;
+}
+
+.profile{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.avatar{
+    width:42px;
+    height:42px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#6366f1,#14b8a6);
+    color:#fff;
+    display:grid;
+    place-items:center;
+    font-weight:700;
+}
+
+.name{
+    font-size:13px;
+    font-weight:650;
+}
+
+.role-name{
+    color:var(--muted);
+    font-size:11px;
+    margin-top:2px;
+}
+
+/* =========================================================
+   CONTENT
+   ========================================================= */
+
+.content{
+    padding:28px 32px 48px;
+    max-width:1400px;
+}
+
+.st{
+    animation:rise .6s var(--ease) both;
+    animation-delay:calc(var(--i,0) * 90ms);
+}
+
+.hero{
+    position:relative;
+    overflow:hidden;
+    padding:26px 30px;
+    margin-bottom:20px;
+    border-radius:20px;
+    color:#fff;
+    background:
+        radial-gradient(
+            circle at 10% 0,
+            rgba(99,102,241,.6),
+            transparent 55%
+        ),
+        linear-gradient(
+            135deg,
+            #1e1b4b,
+            #312e81 55%,
+            #0f766e
+        );
+    box-shadow:0 18px 40px rgba(49,46,129,.25);
+}
+
+.hero h2{
+    font-size:22px;
+    letter-spacing:-.3px;
+    margin-bottom:6px;
+}
+
+.hero p{
+    font-size:14px;
+    opacity:.88;
+    line-height:1.6;
+    max-width:62ch;
+}
+
+.dist{
+    display:flex;
+    height:12px;
+    border-radius:20px;
+    overflow:hidden;
+    background:rgba(255,255,255,.15);
+    gap:2px;
+    margin-top:18px;
+}
+
+.dist i{
+    display:block;
+    height:100%;
+    width:0;
+    transition:width 1.4s var(--ease);
+}
+
+.dist .c{
+    background:#f87171;
+}
+
+.dist .m{
+    background:#fbbf24;
+}
+
+.dist .l{
+    background:#34d399;
+}
+
+.legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    margin-top:10px;
+    font-size:12px;
+    opacity:.85;
+}
+
+.legend span::before{
+    content:"";
+    display:inline-block;
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    margin-right:6px;
+    background:var(--k);
+}
+
+/* =========================================================
+   STATS
+   ========================================================= */
+
+.stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:20px;
+}
+
+.stat{
+    --c:var(--brand);
+    text-align:left;
+    cursor:pointer;
+    background:#fff;
+    border:1px solid var(--line);
+    border-top:3px solid var(--c);
+    border-radius:var(--radius);
+    padding:16px 20px;
+    box-shadow:0 5px 18px rgba(16,24,40,.03);
+    transition:.2s;
+}
+
+.stat:nth-child(2){
+    --c:var(--red);
+}
+
+.stat:nth-child(3){
+    --c:var(--amber);
+}
+
+.stat:nth-child(4){
+    --c:var(--green);
+}
+
+.stat:hover{
+    transform:translateY(-3px);
+    box-shadow:var(--shadow);
+}
+
+.stat.on{
+    border-color:var(--c);
+    box-shadow:0 0 0 3px rgba(79,70,229,.12);
+}
+
+.stat small{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+    margin-bottom:6px;
+}
+
+.stat b{
+    display:block;
+    font-size:30px;
+    font-weight:800;
+    color:var(--c);
+}
+
+.stat span{
+    font-size:12px;
+    color:var(--muted);
+}
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:12px 14px;
+    margin-bottom:14px;
+}
+
+.search{
+    position:relative;
+    flex:1;
+    min-width:220px;
+    max-width:360px;
+}
+
+.search::before{
+    content:"🔍";
+    position:absolute;
+    left:13px;
+    top:50%;
+    transform:translateY(-50%);
+    font-size:13px;
+    pointer-events:none;
+}
+
+.search input{
+    width:100%;
+    height:40px;
+    padding:0 13px 0 37px;
+    border:1px solid #d0d5dd;
+    border-radius:10px;
+    font-size:13px;
+    background:#fff;
+}
+
+select{
+    height:40px;
+    padding:0 12px;
+    border:1px solid #d0d5dd;
+    border-radius:10px;
+    background:#fff;
+    color:#344054;
+    font-size:12px;
+    cursor:pointer;
+}
+
+.search input:focus,
+select:focus{
+    outline:0;
+    border-color:#8b85ff;
+    box-shadow:0 0 0 4px rgba(99,91,255,.12);
+}
+
+.chips{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-left:auto;
+}
+
+.chip{
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--muted);
+    padding:8px 13px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:650;
+    cursor:pointer;
+}
+
+.chip.on{
+    background:var(--brand);
+    border-color:var(--brand);
+    color:#fff;
+}
+
+.tools{
+    display:flex;
+    gap:8px;
+}
+
+.count{
+    font-size:13px;
+    color:var(--muted);
+    margin:0 4px 12px;
+}
+
+.count b{
+    color:var(--text);
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.ghost{
+    height:40px;
+    padding:0 14px;
+    border:1px solid #d0d5dd;
+    background:#fff;
+    color:#344054;
+    border-radius:10px;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.view{
+    display:inline-flex;
+    align-items:center;
+    padding:9px 15px;
+    border-radius:10px;
+    background:var(--brand);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+}
+
+.view::after{
+    content:"→";
+    margin-left:6px;
+}
+
+.view:hover{
+    background:#4338ca;
+}
+
+.wait{
+    font-size:12px;
+    color:#98a2b3;
+    white-space:nowrap;
+}
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.wrap{
+    overflow-x:auto;
+    overflow-y:hidden;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+}
+
+table{
+    width:100%;
+    min-width:1050px;
+    border-collapse:collapse;
+}
+
+/* Header */
+
+th{
+    background:#f8fafc;
+    padding:13px 16px;
+    text-align:left;
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+}
+
+/* =========================================================
+   SAME ROW COLOR SYSTEM AS EMPLOYEE MANAGEMENT
+   ========================================================= */
+
+tbody tr.dynamic-row{
+    --row-bg:#ffffff;
+
+    animation:rowIn .5s var(--ease) both;
+}
+
+tbody tr.dynamic-row.row-alt{
+    --row-bg:#f3f5fc;
+}
+
+/*
+ * IMPORTANT:
+ * Background is applied directly to TDs.
+ * This guarantees that the complete row keeps
+ * the alternating color even when cells contain
+ * different components.
+ */
+
+tbody tr.dynamic-row td{
+    background:var(--row-bg);
+    transition:
+        background .2s ease,
+        box-shadow .2s ease;
+}
+
+/* Hover = same Employee Management color */
+
+tbody tr.dynamic-row:hover{
+    --row-bg:#e8ecfd;
+}
+
+/* Indigo left indicator on hover */
+
+tbody tr.dynamic-row td:first-child{
+    box-shadow:
+        inset 3px 0 0 transparent;
+
+    transition:
+        background .2s ease,
+        box-shadow .2s ease;
+}
+
+tbody tr.dynamic-row:hover td:first-child{
+    box-shadow:
+        inset 3px 0 0 var(--brand);
+}
+
+/* Remove bottom border on final visible table row */
+
+tbody tr.dynamic-row:last-child td{
+    border-bottom:none;
+}
+
+/* Hidden rows */
+
+tbody tr.dynamic-row.is-hidden{
+    display:none;
+}
+
+/* Row entrance animation */
+
+@keyframes rowIn{
+    from{
+        opacity:0;
+        transform:translateY(10px);
+    }
+
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+/* =========================================================
+   TABLE CELL CONTENT
+   ========================================================= */
+
+td{
+    padding:15px 16px;
+    border-bottom:1px solid #f1f5f9;
+    font-size:13px;
+    vertical-align:middle;
+}
+
+.emp{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    min-width:190px;
+}
+
+.emp-av{
+    flex:none;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:linear-gradient(135deg,#6366f1,#14b8a6);
+    color:#fff;
+    display:grid;
+    place-items:center;
+    font-size:12px;
+    font-weight:700;
+}
+
+.emp b{
+    display:block;
+    font-size:14px;
+}
+
+.emp small{
+    font-size:12px;
+    color:var(--muted);
+}
+
+.skill b{
+    display:block;
+    font-size:14px;
+    margin-bottom:2px;
+}
+
+.skill small{
+    display:block;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.4;
+    max-width:34ch;
+}
+
+/* =========================================================
+   COMPETENCY METER
+   ========================================================= */
+
+.meter{
+    width:250px;
+}
+
+.meter-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    font-size:12px;
+    color:var(--muted);
+    margin-bottom:7px;
+}
+
+.meter-top b{
+    color:var(--text);
+}
+
+.level-text{
+    font-weight:700;
+}
+
+.level-now{
+    color:var(--brand);
+}
+
+.level-required{
+    color:#101828;
+}
+
+.track{
+    position:relative;
+    height:9px;
+    background:#eaecf0;
+    border-radius:20px;
+}
+
+.fill{
+    height:100%;
+    width:0;
+    border-radius:20px;
+    transition:width 1.2s var(--ease);
+}
+
+.fill.red{
+    background:#ef4444;
+}
+
+.fill.yellow{
+    background:#f59e0b;
+}
+
+.fill.green{
+    background:#10b981;
+}
+
+.tick{
+    position:absolute;
+    top:-4px;
+    bottom:-4px;
+    width:3px;
+    border-radius:3px;
+    background:#101828;
+    left:0;
+    transition:left 1.2s var(--ease);
+}
+
+.score-label{
+    margin-top:7px;
+    font-size:11px;
+    color:var(--muted);
+}
+
+.score-label strong{
+    color:var(--text);
+}
+
+.gapv{
+    font-size:15px;
+    font-weight:800;
+    color:var(--red);
+    font-variant-numeric:tabular-nums;
+}
+
+.gapv.medium{
+    color:var(--amber);
+}
+
+.gapv.low{
+    color:var(--green);
+}
+
+.muted{
+    color:#98a2b3;
+    font-weight:500;
+}
+
+/* =========================================================
+   BADGES
+   ========================================================= */
+
+.badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:5px 12px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+    border:1px solid transparent;
+}
+
+.badge::before{
+    content:"";
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:currentColor;
+}
+
+.gap-high{
+    background:#fef2f2;
+    color:#dc2626;
+    border-color:#fecaca;
+}
+
+.gap-medium{
+    background:#fffbeb;
+    color:#d97706;
+    border-color:#fde68a;
+}
+
+.gap-low{
+    background:#ecfdf5;
+    color:#059669;
+    border-color:#a7f3d0;
+}
+
+.gap-not-assessed{
+    background:#f1f5f9;
+    color:#64748b;
+    border-color:#cbd5e1;
+}
+
+/* =========================================================
+   EMPTY / INFO
+   ========================================================= */
+
+.empty-state{
+    display:none;
+    text-align:center;
+    padding:60px 20px;
+    background:#fff;
+}
+
+.empty-icon{
+    width:64px;
+    height:64px;
+    margin:0 auto 16px;
+    display:grid;
+    place-items:center;
+    border-radius:18px;
+    background:#eef2ff;
+    font-size:26px;
+    color:var(--brand);
+}
+
+.empty-state h3{
+    margin-bottom:8px;
+    font-size:17px;
+    color:#344054;
+}
+
+.empty-state p{
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.7;
+    max-width:430px;
+    margin:0 auto 14px;
+}
+
+.info-box{
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    margin-top:20px;
+    padding:18px 20px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+}
+
+.info-box > i{
+    font-style:normal;
+    font-size:22px;
+    color:var(--brand);
+}
+
+.info-box h3{
+    font-size:14px;
+    margin-bottom:6px;
+}
+
+.info-box p{
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.7;
+}
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.toast{
+    position:fixed;
+    right:24px;
+    bottom:24px;
+    background:#111827;
+    color:#fff;
+    padding:13px 18px;
+    border-radius:12px;
+    font-size:13px;
+    box-shadow:var(--shadow);
+    opacity:0;
+    transform:translateY(14px);
+    pointer-events:none;
+    transition:.3s;
+    z-index:3000;
+}
+
+.toast.show{
+    opacity:1;
+    transform:none;
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+@keyframes rise{
+    from{
+        opacity:0;
+        transform:translateY(16px) scale(.985);
+    }
+
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes slideIn{
+    from{
+        opacity:0;
+        transform:translateX(-30px);
+    }
+
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+@media(max-width:1100px){
+
+    .stats{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .chips{
+        margin-left:0;
+        width:100%;
+    }
+}
+
+@media(max-width:800px){
+
+    .sidebar{
+        transform:translateX(-100%);
+        animation:none;
+    }
+
+    .sidebar.open{
+        transform:none;
+        box-shadow:0 0 40px rgba(0,0,0,.4);
+    }
+
+    .scrim.show{
+        display:block;
+    }
+
+    .main{
+        margin-left:0;
+    }
+
+    .burger{
+        display:block;
+    }
+
+    .content,
+    .header{
+        padding-left:18px;
+        padding-right:18px;
+    }
+
+    .name,
+    .role-name{
+        display:none;
+    }
+
+    .search{
+        max-width:none;
+    }
+}
+
+@media(max-width:520px){
+
+    .header-subtitle,
+    .notification{
+        display:none;
+    }
+
+    .hero{
+        padding:22px;
+    }
+
+    .stats{
+        gap:12px;
+    }
+
+    .stat b{
+        font-size:24px;
+    }
+
+    .tools,
+    .tools .ghost,
+    select{
+        width:100%;
+    }
+
+    .info-box{
+        flex-direction:column;
+    }
+}
+
+:focus-visible{
+    outline:3px solid #a5b4fc;
+    outline-offset:2px;
+    border-radius:8px;
+}
+
+@media(prefers-reduced-motion:reduce){
+
+    *,
+    *::before,
+    *::after{
+        animation:none!important;
+        transition:none!important;
+        scroll-behavior:auto!important;
+    }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<a class="skip" href="#content">Skip to content</a>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- =========================================================
+     SIDEBAR
+     ========================================================= -->
+
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+
+<div class="logo">
+
+    <div class="logo-mark">C</div>
+
+    <div class="logo-text">
+        Capacitix
+    </div>
+
+</div>
+
+<nav class="nav" id="nav" aria-label="Admin menu">
+
+    <div class="menu-label">
+        Overview
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/admin/dashboard">
+                <span class="icon">⌂</span>
+                <span>Dashboard</span>
+            </a>
+        </li>
+
+    </ul>
+
+    <div class="menu-label">
+        Workforce Management
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/admin/employees">
+                <span class="icon">♙</span>
+                <span>Students</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/admin/trainers">
+                <span class="icon">♟</span>
+                <span>Trainers</span>
+            </a>
+        </li>
+
+    </ul>
+
+    <div class="menu-label">
+        Competency Intelligence
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/admin/competencies">
+                <span class="icon">◈</span>
+                <span>Competencies</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/admin/skill-heatmap">
+                <span class="icon">▦</span>
+                <span>Skill Heatmap</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/admin/skill-gaps"
+               class="active"
+               aria-current="page">
+
+                <span class="icon">△</span>
+
+                <span>Skill Gaps</span>
+
+            </a>
+        </li>
+
+    </ul>
+
+    <div class="menu-label">
+        Learning &amp; Assessment
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/admin/assessments">
+                <span class="icon">✓</span>
+                <span>Assessments</span>
+            </a>
+        </li>
+
+        <li>
+            <a href="/admin/reports">
+                <span class="icon">▤</span>
+                <span>Reports</span>
+            </a>
+        </li>
+
+    </ul>
+
+    <div class="menu-label">
+        System
+    </div>
+
+    <ul class="menu">
+
+        <li>
+            <a href="/admin/settings">
+                <span class="icon">⚙</span>
+                <span>Settings</span>
+            </a>
+        </li>
+
+    </ul>
+
+</nav>
+
+<form class="logout"
+      th:action="@{/logout}"
+      method="post">
+
+    <input type="hidden"
+           th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}">
+
+    <button type="submit">
+        ↪ &nbsp; Logout
+    </button>
+
+</form>
+
+</aside>
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<main class="main" id="main">
+
+<header class="header">
+
+<div class="header-left">
+
+    <button class="burger"
+            id="burger"
+            aria-label="Open menu"
+            aria-controls="sidebar"
+            aria-expanded="false">
+
+        ☰
+
+    </button>
+
+    <div>
+
+        <div class="header-title">
+            Skill Gaps
+        </div>
+
+        <div class="header-subtitle">
+            Find competency gaps and plan the right training
+        </div>
+
+    </div>
+
+</div>
+
+<div class="header-right">
+
+    <div class="notification"
+         id="bell"
+         role="button"
+         tabindex="0"
+         aria-label="Notifications">
+
+        🔔
+
+    </div>
+
+    <div class="profile">
+
+        <div class="avatar"
+             th:text="${userInitial != null ? userInitial : 'A'}">
+
+            A
+
+        </div>
+
+        <div>
+
+            <div class="name"
+                 th:text="${userName != null ? userName : 'Administrator'}">
+
+                Administrator
+
+            </div>
+
+            <div class="role-name">
+                Organization Administrator
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+</header>
+
+<section class="content" id="content">
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+
+<div class="hero st">
+
+<h2 id="heroTitle">
+    Organization skill gap analysis
+</h2>
+
+<p id="heroText">
+    Current competency compared with the level each competency requires.
+</p>
+
+<div class="dist"
+     role="img"
+     id="dist"
+     aria-label="Share of high, medium and low gaps">
+
+    <i class="c" data-k="critical"></i>
+
+    <i class="m" data-k="moderate"></i>
+
+    <i class="l" data-k="low"></i>
+
+</div>
+
+<div class="legend">
+
+    <span style="--k:#f87171">
+        Critical
+    </span>
+
+    <span style="--k:#fbbf24">
+        Moderate
+    </span>
+
+    <span style="--k:#34d399">
+        Low
+    </span>
+
+</div>
+
+
+</div>
+
+<!-- =========================================================
+     STATS
+     ========================================================= -->
+
+<div class="stats">
+
+
+<button type="button"
+        class="stat st on"
+        style="--i:1"
+        data-sev="">
+
+    <small>
+        Total skill gaps
+    </small>
+
+    <b id="totalSkillGaps"
+       th:text="${totalSkillGaps}">
+        0
+    </b>
+
+    <span>
+        Across all Students
+    </span>
+
+</button>
+
+<button type="button"
+        class="stat st"
+        style="--i:2"
+        data-sev="Critical">
+
+    <small>
+        Critical
+    </small>
+
+    <b id="criticalGaps"
+       th:text="${criticalGaps}">
+        0
+    </b>
+
+    <span>
+        Need priority attention
+    </span>
+
+</button>
+
+<button type="button"
+        class="stat st"
+        style="--i:3"
+        data-sev="Moderate">
+
+    <small>
+        Moderate
+    </small>
+
+    <b id="moderateGaps"
+       th:text="${moderateGaps}">
+        0
+    </b>
+
+    <span>
+        Plan learning soon
+    </span>
+
+</button>
+
+<button type="button"
+        class="stat st"
+        style="--i:4"
+        data-sev="Low">
+
+    <small>
+        Low
+    </small>
+
+    <b id="lowGaps"
+       th:text="${lowGaps}">
+        0
+    </b>
+
+    <span>
+        Minor improvements
+    </span>
+
+</button>
+
+</div>
+
+<!-- =========================================================
+     TOOLBAR
+     ========================================================= -->
+
+<div class="toolbar st"
+     style="--i:5">
+
+<div class="search">
+
+    <input type="search"
+           id="searchInput"
+           placeholder="Search Students, skill or department  ( / )"
+           aria-label="Search"
+           autocomplete="off">
+
+</div>
+
+<select id="departmentFilter"
+        aria-label="Filter by department">
+
+    <option value="">
+        All departments
+    </option>
+
+</select>
+
+<select id="sortBy"
+        aria-label="Sort records">
+
+    <option value="default">
+        Sort: Default
+    </option>
+
+    <option value="gap">
+        Sort: Lowest score first
+    </option>
+
+    <option value="name">
+        Sort: Student A–Z
+    </option>
+
+</select>
+
+<div class="chips"
+     id="chips"
+     role="group"
+     aria-label="Filter by status">
+</div>
+
+<div class="tools">
+
+    <button type="button"
+            class="ghost"
+            id="clear"
+            hidden>
+
+        ✕ Clear filters
+
+    </button>
+
+    <button type="button"
+            class="ghost"
+            id="refresh">
+
+        <span>↻</span>
+        Refresh
+
+    </button>
+
+</div>
+
+
+</div>
+
+<div class="count"
+     aria-live="polite">
+
+Showing
+
+<b id="visibleCount">
+    0
+</b>
+
+of
+
+<span id="allCount">
+    0
+</span>
+
+records
+
+
+</div>
+
+<!-- =========================================================
+     GAP TABLE
+     ========================================================= -->
+
+<div class="card st"
+     style="--i:6">
+
+<div class="wrap">
+
+    <table id="gapTable">
+
+        <thead>
+
+        <tr>
+
+            <th>
+                Student
+            </th>
+
+            <th>
+                Skill
+            </th>
+
+            <th>
+                Current vs required
+            </th>
+
+            <th>
+                Assessment score
+            </th>
+
+            <th>
+                Status
+            </th>
+
+            <th>
+                Action
+            </th>
+
+        </tr>
+
+        </thead>
+
+        <tbody id="gapTableBody">
+
+        <tr th:each="gap : ${skillGaps}"
+            class="dynamic-row"
+            th:attr="
+                data-department=${gap.department},
+                data-severity=${gap.severity},
+                data-gap=${gap.currentScore != null ? gap.currentScore : 0},
+                data-score=${gap.currentScore != null ? gap.currentScore : 0},
+                data-name=${gap.employeeName}
+            ">
+
+            <!-- EMPLOYEE -->
+
+            <td>
+
+                <div class="emp">
+
+                    <div class="emp-av"
+                         th:text="${gap.initials}">
+
+                        EM
+
+                    </div>
+
+                    <div>
+
+                        <b th:text="${gap.employeeName}">
+                            Student Name
+                        </b>
+
+                        <small th:text="${gap.department != null
+                            ? gap.department
+                            : 'Not assigned'}">
+
+                            Department
+
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </td>
+
+            <!-- SKILL -->
+
+            <td>
+
+                <div class="skill">
+
+                    <b th:text="${gap.skillName}">
+                        Competency
+                    </b>
+
+                    <small th:text="${gap.description}">
+                        Skill description
+                    </small>
+
+                </div>
+
+            </td>
+
+            <!-- CURRENT VS REQUIRED -->
+
+            <td>
+
+                <div class="meter"
+                     th:if="${gap.severity != 'Not Assessed'}">
+
+                    <div class="meter-top">
+
+                        <span>
+                            Now
+
+                            <b class="level-text level-now"
+                               th:text="${gap.currentLevel}">
+                                BEGINNER
+                            </b>
+
+                        </span>
+
+                        <span>
+                            Needs
+
+                            <b class="level-text level-required"
+                               th:text="${gap.requiredLevel}">
+                                ADVANCED
+                            </b>
+
+                        </span>
+
+                    </div>
+
+                    <div class="track"
+                         role="progressbar"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         th:attr="
+                            data-current-score=${gap.currentScore != null ? gap.currentScore : gap.gapPercentage},
+                            data-required-level=${gap.requiredLevel},
+                            aria-label=${gap.skillName + ' competency score'}
+                         ">
+
+                        <div class="fill"
+                             th:classappend="${gap.progressClass}"
+                             data-w="0">
+                        </div>
+
+                        <div class="tick"
+                             data-w="0"
+                             title="Required competency level">
+                        </div>
+
+                    </div>
+
+                    <div class="score-label">
+
+                        Current assessment:
+
+                        <strong th:text="${(gap.currentScore != null ? gap.currentScore : gap.gapPercentage) + '%'}">
+                            0%
+                        </strong>
+
+                        <span>
+                            &nbsp;•&nbsp;
+                        </span>
+
+                        Required:
+
+                        <strong class="required-score">
+                            0%
+                        </strong>
+
+                    </div>
+
+                </div>
+
+                <span class="muted"
+                      th:if="${gap.severity == 'Not Assessed'}">
+
+                    Not assessed yet
+
+                </span>
+
+            </td>
+
+            <!-- ASSESSMENT SCORE -->
+
+            <td>
+
+                <span class="gapv"
+                      th:if="${gap.severity != 'Not Assessed'}"
+                      th:classappend="
+                          ${gap.severity == 'MEDIUM'
+                            or gap.severity == 'Moderate'}
+                            ? ' medium'
+                            :
+                          (${gap.severity == 'LOW'
+                            or gap.severity == 'Low'}
+                            ? ' low' : '')
+                      "
+                      th:text="${(gap.currentScore != null
+                                 ? gap.currentScore
+                                 : gap.gapPercentage) + '%'}">
+
+                    0%
+
+                </span>
+
+                <span class="muted"
+                      th:if="${gap.severity == 'Not Assessed'}">
+
+                    —
+
+                </span>
+
+            </td>
+
+            <!-- STATUS -->
+
+            <td>
+
+                <span class="badge"
+                      th:classappend="${gap.badgeClass}"
+                      th:text="${gap.severity}">
+
+                    Not Assessed
+
+                </span>
+
+            </td>
+
+            <!-- ACTION -->
+
+            <td>
+
+                <a class="view"
+                   th:if="${gap.severity != 'Not Assessed'
+                           and gap.id != null}"
+                   th:href="@{'/admin/skill-gaps/' + ${gap.id}}">
+
+                    View details
+
+                </a>
+
+                <span class="wait"
+                      th:if="${gap.severity == 'Not Assessed'
+                             or gap.id == null}">
+
+                    <span th:if="${gap.severity == 'Not Assessed'}">
+                        Awaiting assessment
+                    </span>
+
+                    <span th:if="${gap.severity != 'Not Assessed'
+                                  and gap.id == null}">
+                        Assessment analyzed
+                    </span>
+
+                </span>
+
+            </td>
+
+        </tr>
+
+        </tbody>
+
+    </table>
+
+    <div class="empty-state"
+         id="emptyState">
+
+        <div class="empty-icon">
+            △
+        </div>
+
+        <h3 id="emptyTitle">
+            No records found
+        </h3>
+
+        <p id="emptyDescription">
+            No records match your search or filters.
+        </p>
+
+        <button type="button"
+                class="ghost"
+                id="emptyClear"
+                hidden>
+
+            Clear filters
+
+        </button>
+
+    </div>
+
+</div>
+
+
+</div>
+
+<!-- =========================================================
+     INFORMATION
+     ========================================================= -->
+
+<div class="info-box st"
+     style="--i:7">
+
+<i>ⓘ</i>
+
+<div>
+
+    <h3>
+        How skill gap analysis works
+    </h3>
+
+    <p>
+
+        Capacitix analyzes the Student's completed assessment
+        responses competency by competency. The current level is
+        derived from the actual assessment percentage, while the
+        required level comes from the competency definition.
+        Students below 60% are identified as skill gaps.
+        Scores below 40% are high-priority gaps, scores from
+        40% to 59% are medium-priority gaps, and Students
+        without a completed assessment remain
+        <b>Not assessed</b>.
+
+    </p>
+
+</div>
+
+
+</div>
+
+</section>
+
+</main>
+
+<div class="toast"
+     id="toast"
+     role="status"
+     aria-live="polite">
+</div>
+
+<script>
+
+(function(){
+
+    "use strict";
+
+    /* =====================================================
+       HELPERS
+       ===================================================== */
+
+    var reduce =
+        window.matchMedia(
+            "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+    var $ = function(selector, context){
+
+        return (context || document)
+            .querySelector(selector);
+
+    };
+
+    var $$ = function(selector, context){
+
+        return Array.prototype.slice.call(
+            (context || document)
+                .querySelectorAll(selector)
+        );
+
+    };
+
+    var toast = $("#toast");
+
+    var toastTimer;
+
+    function say(message){
+
+        toast.textContent = message;
+
+        toast.classList.add("show");
+
+        clearTimeout(toastTimer);
+
+        toastTimer = setTimeout(
+            function(){
+
+                toast.classList.remove("show");
+
+            },
+            2400
+        );
+
+    }
+
+    function clampPercentage(value){
+
+        value = parseFloat(value);
+
+        if(isNaN(value)){
+            return 0;
+        }
+
+        return Math.max(
+            0,
+            Math.min(100,value)
+        );
+
+    }
+
+    /* =====================================================
+       REQUIRED LEVEL -> VISUAL TARGET
+       ===================================================== */
+
+    function levelToRequiredPercentage(level){
+
+        if(!level){
+            return 0;
+        }
+
+        var normalized =
+            String(level)
+                .trim()
+                .toUpperCase();
+
+        switch(normalized){
+
+            case "BEGINNER":
+            case "BASIC":
+                return 40;
+
+            case "INTERMEDIATE":
+            case "MEDIUM":
+            case "DEVELOPING":
+                return 60;
+
+            case "ADVANCED":
+            case "EXPERT":
+                return 80;
+
+            default:
+                return 0;
+        }
+
+    }
+
+    /* =====================================================
+       LOADING PROGRESS
+       ===================================================== */
+
+    var progressBar = $("#progress");
+
+    function progress(){
+
+        progressBar.style.opacity = 1;
+
+        progressBar.style.width = "70%";
+
+        setTimeout(
+            function(){
+
+                progressBar.style.width = "100%";
+
+                setTimeout(
+                    function(){
+
+                        progressBar.style.opacity = 0;
+
+                        setTimeout(
+                            function(){
+
+                                progressBar.style.width = "0";
+
+                            },
+                            400
+                        );
+
+                    },
+                    350
+                );
+
+            },
+            300
+        );
+
+    }
+
+    progress();
+
+    /* =====================================================
+       TABLE ROWS
+       ===================================================== */
+
+    var tbody = $("#gapTableBody");
+
+    /*
+     * Keep a master list of rows.
+     * This allows filtering and sorting without
+     * losing the original row collection.
+     */
+
+    var rows = $$(
+        "tr.dynamic-row",
+        tbody
+    );
+
+    var state = {
+
+        sev:"",
+        dept:"",
+        q:""
+
+    };
+
+    /* =====================================================
+       DEPARTMENT FILTER
+       ===================================================== */
+
+    var departments = {};
+
+    rows.forEach(
+        function(row){
+
+            var department =
+                (row.dataset.department || "")
+                    .trim();
+
+            if(department){
+
+                departments[department] = true;
+
+            }
+
+        }
+    );
+
+    Object.keys(departments)
+        .sort()
+        .forEach(
+            function(department){
+
+                var option =
+                    document.createElement("option");
+
+                option.value = department;
+
+                option.textContent = department;
+
+                $("#departmentFilter")
+                    .appendChild(option);
+
+            }
+        );
+
+    /* =====================================================
+       REAL STATUS COUNTS
+       ===================================================== */
+
+    var criticalCount = 0;
+
+    var moderateCount = 0;
+
+    var lowCount = 0;
+
+    var notAssessedCount = 0;
+
+    rows.forEach(
+        function(row){
+
+            var severity =
+                String(
+                    row.dataset.severity || ""
+                )
+                .trim()
+                .toUpperCase();
+
+            if(
+                severity === "HIGH" ||
+                severity === "CRITICAL"
+            ){
+
+                criticalCount++;
+
+            }
+            else if(
+                severity === "MEDIUM" ||
+                severity === "MODERATE"
+            ){
+
+                moderateCount++;
+
+            }
+            else if(
+                severity === "LOW"
+            ){
+
+                lowCount++;
+
+            }
+            else if(
+                severity === "NOT ASSESSED"
+            ){
+
+                notAssessedCount++;
+
+            }
+
+        }
+    );
+
+    var total =
+        criticalCount +
+        moderateCount +
+        lowCount;
+
+    /* =====================================================
+       NUMBER ANIMATION
+       ===================================================== */
+
+    function countTo(element,totalValue){
+
+        if(reduce || !totalValue){
+
+            element.textContent =
+                totalValue;
+
+            return;
+        }
+
+        var startTime = null;
+
+        function step(timestamp){
+
+            if(!startTime){
+
+                startTime = timestamp;
+
+            }
+
+            var progressValue =
+                Math.min(
+                    (timestamp - startTime) / 1100,
+                    1
+                );
+
+            var easing =
+                1 -
+                Math.pow(
+                    1 - progressValue,
+                    3
+                );
+
+            element.textContent =
+                Math.round(
+                    totalValue * easing
+                );
+
+            if(progressValue < 1){
+
+                requestAnimationFrame(step);
+
+            }
+            else{
+
+                element.textContent =
+                    totalValue;
+
+            }
+
+        }
+
+        requestAnimationFrame(step);
+
+    }
+
+    countTo(
+        $("#totalSkillGaps"),
+        total
+    );
+
+    countTo(
+        $("#criticalGaps"),
+        criticalCount
+    );
+
+    countTo(
+        $("#moderateGaps"),
+        moderateCount
+    );
+
+    countTo(
+        $("#lowGaps"),
+        lowCount
+    );
+
+    $("#allCount").textContent =
+        rows.length;
+
+    /* =====================================================
+       HERO
+       ===================================================== */
+
+    $("#heroTitle").textContent =
+        !total
+            ? "No skill gaps to show yet"
+            : criticalCount
+                ? criticalCount +
+                  (
+                      criticalCount === 1
+                        ? " critical gap needs"
+                        : " critical gaps need"
+                  ) +
+                  " attention"
+                : "No critical gaps right now";
+
+    $("#heroText").textContent =
+        notAssessedCount
+            ? notAssessedCount +
+              (
+                  notAssessedCount === 1
+                    ? " employee is"
+                    : " employees are"
+              ) +
+              " still waiting for an assessment."
+            : total
+                ? "Real assessment scores are being used to identify competency gaps."
+                : "Complete an employee assessment to generate skill-gap analysis.";
+
+    /* =====================================================
+       DISTRIBUTION
+       ===================================================== */
+
+    setTimeout(
+        function(){
+
+            $$("#dist i")
+                .forEach(
+                    function(item){
+
+                        var key =
+                            item.dataset.k;
+
+                        var value =
+                            key === "critical"
+                                ? criticalCount
+                                : key === "moderate"
+                                    ? moderateCount
+                                    : lowCount;
+
+                        item.style.width =
+                            (
+                                total
+                                    ? value / total * 100
+                                    : 0
+                            ) + "%";
+
+                    }
+                );
+
+        },
+        200
+    );
+
+    /* =====================================================
+       COMPETENCY METERS
+       ===================================================== */
+
+    setTimeout(
+        function(){
+
+            rows.forEach(
+                function(row,index){
+
+                    var meter =
+                        $(".meter",row);
+
+                    if(!meter){
+                        return;
+                    }
+
+                    var track =
+                        $(".track",meter);
+
+                    if(!track){
+                        return;
+                    }
+
+                    var currentScore =
+                        clampPercentage(
+                            track.dataset.currentScore
+                        );
+
+                    var requiredLevel =
+                        track.dataset.requiredLevel;
+
+                    var requiredPercentage =
+                        levelToRequiredPercentage(
+                            requiredLevel
+                        );
+
+                    var fill =
+                        $(".fill",track);
+
+                    var tick =
+                        $(".tick",track);
+
+                    var requiredScore =
+                        $(".required-score",meter);
+
+                    if(fill){
+
+                        fill.dataset.w =
+                            currentScore;
+
+                        setTimeout(
+                            function(){
+
+                                fill.style.width =
+                                    currentScore + "%";
+
+                            },
+                            Math.min(index * 40,600)
+                        );
+
+                    }
+
+                    if(tick){
+
+                        tick.dataset.w =
+                            requiredPercentage;
+
+                        setTimeout(
+                            function(){
+
+                                tick.style.left =
+                                    "calc(" +
+                                    requiredPercentage +
+                                    "% - 1.5px)";
+
+                            },
+                            Math.min(index * 40,600)
+                        );
+
+                    }
+
+                    if(requiredScore){
+
+                        requiredScore.textContent =
+                            requiredPercentage + "%";
+
+                    }
+
+                    track.setAttribute(
+                        "aria-valuenow",
+                        currentScore
+                    );
+
+                    track.setAttribute(
+                        "aria-valuetext",
+                        currentScore +
+                        "% current, " +
+                        requiredPercentage +
+                        "% required"
+                    );
+
+                }
+            );
+
+        },
+        200
+    );
+
+    /* =====================================================
+       STATUS CHIPS
+       ===================================================== */
+
+    var chips =
+        $("#chips");
+
+    var definitions = [
+
+        ["","All",rows.length],
+
+        ["Critical","Critical",criticalCount],
+
+        ["Moderate","Moderate",moderateCount],
+
+        ["Low","Low",lowCount],
+
+        [
+            "Not Assessed",
+            "Not assessed",
+            notAssessedCount
+        ]
+
+    ];
+
+    definitions.forEach(
+        function(definition){
+
+            var button =
+                document.createElement("button");
+
+            button.type = "button";
+
+            button.className =
+                "chip" +
+                (
+                    definition[0] === ""
+                        ? " on"
+                        : ""
+                );
+
+            button.dataset.sev =
+                definition[0];
+
+            button.innerHTML =
+                definition[1] +
+                "<b>" +
+                definition[2] +
+                "</b>";
+
+            chips.appendChild(button);
+
+        }
+    );
+
+    /* =====================================================
+       SEVERITY NORMALIZATION
+       ===================================================== */
+
+    function normalizeSeverity(value){
+
+        if(!value){
+            return "";
+        }
+
+        var normalized =
+            String(value)
+                .trim()
+                .toUpperCase();
+
+        if(
+            normalized === "HIGH" ||
+            normalized === "CRITICAL"
+        ){
+
+            return "Critical";
+
+        }
+
+        if(
+            normalized === "MEDIUM" ||
+            normalized === "MODERATE"
+        ){
+
+            return "Moderate";
+
+        }
+
+        if(normalized === "LOW"){
+
+            return "Low";
+
+        }
+
+        if(normalized === "NOT ASSESSED"){
+
+            return "Not Assessed";
+
+        }
+
+        return value;
+
+    }
+
+    function setSeverity(value){
+
+        state.sev = value;
+
+        $$(".chip")
+            .forEach(
+                function(chip){
+
+                    chip.classList.toggle(
+                        "on",
+                        normalizeSeverity(
+                            chip.dataset.sev
+                        ) ===
+                        normalizeSeverity(value)
+                    );
+
+                }
+            );
+
+        $$(".stat")
+            .forEach(
+                function(stat){
+
+                    stat.classList.toggle(
+                        "on",
+                        normalizeSeverity(
+                            stat.dataset.sev
+                        ) ===
+                        normalizeSeverity(value)
+                    );
+
+                }
+            );
+
+        applyFilters();
+
+    }
+
+    $$(".chip,.stat")
+        .forEach(
+            function(element){
+
+                element.addEventListener(
+                    "click",
+                    function(){
+
+                        setSeverity(
+                            element.dataset.sev
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    /* =====================================================
+       APPLY ALTERNATING ROW COLORS
+       SAME LOGIC AS EMPLOYEE MANAGEMENT
+       ===================================================== */
+
+    function applyRowColors(visibleRows){
+
+        visibleRows.forEach(
+            function(row,index){
+
+                /*
+                 * White:
+                 * index 0,2,4,6...
+                 *
+                 * Light blue:
+                 * index 1,3,5,7...
+                 */
+
+                row.classList.toggle(
+                    "row-alt",
+                    index % 2 === 1
+                );
+
+                /*
+                 * Restart row animation after
+                 * filtering/sorting.
+                 */
+
+                if(!reduce){
+
+                    row.style.animation = "none";
+
+                    void row.offsetWidth;
+
+                    row.style.animation = "";
+
+                    row.style.animationDelay =
+                        (index * 0.04) + "s";
+
+                }
+
+            }
+        );
+
+    }
+
+    /* =====================================================
+       FILTERING
+       ===================================================== */
+
+    function applyFilters(){
+
+        var query =
+            state.q.toLowerCase();
+
+        var visible = 0;
+
+        var visibleRows = [];
+
+        rows.forEach(
+            function(row){
+
+                var rowSeverity =
+                    normalizeSeverity(
+                        row.dataset.severity
+                    );
+
+                var wantedSeverity =
+                    normalizeSeverity(
+                        state.sev
+                    );
+
+                var severityMatch =
+                    !wantedSeverity ||
+                    rowSeverity === wantedSeverity;
+
+                var departmentMatch =
+                    !state.dept ||
+                    row.dataset.department ===
+                    state.dept;
+
+                var searchMatch =
+                    !query ||
+                    row.innerText
+                        .toLowerCase()
+                        .indexOf(query) > -1;
+
+                var visibleRow =
+                    severityMatch &&
+                    departmentMatch &&
+                    searchMatch;
+
+                row.style.display =
+                    visibleRow
+                        ? ""
+                        : "none";
+
+                if(visibleRow){
+
+                    row.style.setProperty(
+                        "--i",
+                        Math.min(visible,12)
+                    );
+
+                    visibleRows.push(row);
+
+                    visible++;
+
+                }
+
+            }
+        );
+
+        /*
+         * IMPORTANT:
+         * Recalculate alternating row colors
+         * AFTER filtering.
+         *
+         * This means if only 3 rows remain:
+         *
+         * Row 1 = white
+         * Row 2 = blue
+         * Row 3 = white
+         */
+
+        applyRowColors(visibleRows);
+
+        $("#visibleCount").textContent =
+            visible;
+
+        var filtered =
+            !!(
+                state.sev ||
+                state.dept ||
+                state.q
+            );
+
+        $("#clear").hidden =
+            !filtered;
+
+        $("#emptyClear").hidden =
+            !filtered;
+
+        var emptyState =
+            $("#emptyState");
+
+        emptyState.style.display =
+            visible
+                ? "none"
+                : "block";
+
+        if(!visible){
+
+            $("#emptyTitle").textContent =
+                rows.length
+                    ? "No matching records"
+                    : "No employees found";
+
+            $("#emptyDescription").textContent =
+                rows.length
+                    ? "Nothing matches your search or filters. Try a different word or clear the filters."
+                    : "There are no employee accounts available for skill gap analysis yet.";
+
+        }
+
+    }
+
+    /* =====================================================
+       CLEAR FILTERS
+       ===================================================== */
+
+    function clearAll(){
+
+        state = {
+
+            sev:"",
+            dept:"",
+            q:""
+
+        };
+
+        $("#searchInput").value = "";
+
+        $("#departmentFilter").value = "";
+
+        setSeverity("");
+
+    }
+
+    $("#clear")
+        .addEventListener(
+            "click",
+            clearAll
+        );
+
+    $("#emptyClear")
+        .addEventListener(
+            "click",
+            clearAll
+        );
+
+    /* =====================================================
+       SEARCH
+       ===================================================== */
+
+    var searchTimer;
+
+    $("#searchInput")
+        .addEventListener(
+            "input",
+            function(event){
+
+                clearTimeout(searchTimer);
+
+                searchTimer =
+                    setTimeout(
+                        function(){
+
+                            state.q =
+                                event.target
+                                    .value
+                                    .trim();
+
+                            applyFilters();
+
+                        },
+                        150
+                    );
+
+            }
+        );
+
+    /* =====================================================
+       DEPARTMENT FILTER
+       ===================================================== */
+
+    $("#departmentFilter")
+        .addEventListener(
+            "change",
+            function(event){
+
+                state.dept =
+                    event.target.value;
+
+                applyFilters();
+
+            }
+        );
+
+    /* =====================================================
+       SORT
+       ===================================================== */
+
+    $("#sortBy")
+        .addEventListener(
+            "change",
+            function(event){
+
+                var value =
+                    event.target.value;
+
+                var sorted =
+                    rows.slice();
+
+                if(value === "gap"){
+
+                    sorted.sort(
+                        function(a,b){
+
+                            return (
+                                parseFloat(
+                                    a.dataset.score
+                                ) || 0
+                            )
+                            -
+                            (
+                                parseFloat(
+                                    b.dataset.score
+                                ) || 0
+                            );
+
+                        }
+                    );
+
+                }
+
+                if(value === "name"){
+
+                    sorted.sort(
+                        function(a,b){
+
+                            return (
+                                a.dataset.name || ""
+                            ).localeCompare(
+                                b.dataset.name || ""
+                            );
+
+                        }
+                    );
+
+                }
+
+                rows = sorted;
+
+                sorted.forEach(
+                    function(row){
+
+                        tbody.appendChild(row);
+
+                    }
+                );
+
+                /*
+                 * Reapply filters and row colors
+                 * after sorting.
+                 */
+
+                applyFilters();
+
+            }
+        );
+
+    /* =====================================================
+       REFRESH
+       ===================================================== */
+
+    $("#refresh")
+        .addEventListener(
+            "click",
+            function(){
+
+                this.classList.add("spin");
+
+                say("Refreshing data…");
+
+                progress();
+
+                setTimeout(
+                    function(){
+
+                        location.reload();
+
+                    },
+                    450
+                );
+
+            }
+        );
+
+    /* =====================================================
+       INITIAL FILTER
+       ===================================================== */
+
+    applyFilters();
+
+    /* =====================================================
+       MOBILE MENU
+       ===================================================== */
+
+    var sidebar =
+        $("#sidebar");
+
+    var scrim =
+        $("#scrim");
+
+    var burger =
+        $("#burger");
+
+    function toggleMenu(open){
+
+        sidebar.classList.toggle(
+            "open",
+            open
+        );
+
+        scrim.classList.toggle(
+            "show",
+            open
+        );
+
+        burger.setAttribute(
+            "aria-expanded",
+            open
+        );
+
+    }
+
+    burger.addEventListener(
+        "click",
+        function(){
+
+            toggleMenu(
+                !sidebar.classList.contains("open")
+            );
+
+        }
+    );
+
+    scrim.addEventListener(
+        "click",
+        function(){
+
+            toggleMenu(false);
+
+        }
+    );
+
+    $$(".menu a")
+        .forEach(
+            function(link){
+
+                link.addEventListener(
+                    "click",
+                    function(){
+
+                        toggleMenu(false);
+
+                    }
+                );
+
+            }
+        );
+
+    /* =====================================================
+       KEEP ACTIVE NAV VISIBLE
+       ===================================================== */
+
+    var activeLink =
+        $(".menu a.active");
+
+    if(activeLink){
+
+        var nav =
+            $("#nav");
+
+        nav.scrollTop =
+            Math.max(
+                0,
+                activeLink.offsetTop -
+                nav.clientHeight / 2 +
+                activeLink.offsetHeight / 2
+            );
+
+    }
+
+    /* =====================================================
+       KEYBOARD
+       ===================================================== */
+
+    document.addEventListener(
+        "keydown",
+        function(event){
+
+            var tag =
+                (
+                    document.activeElement || {}
+                ).tagName;
+
+            if(
+                event.key === "/" &&
+                tag !== "INPUT" &&
+                tag !== "SELECT" &&
+                tag !== "TEXTAREA"
+            ){
+
+                event.preventDefault();
+
+                $("#searchInput").focus();
+
+            }
+
+            if(event.key === "Escape"){
+
+                toggleMenu(false);
+
+                if(
+                    document.activeElement ===
+                    $("#searchInput")
+                ){
+
+                    document.activeElement.blur();
+
+                }
+
+            }
+
+        }
+    );
+
+    /* =====================================================
+       NOTIFICATIONS
+       ===================================================== */
+
+    var bell =
+        $("#bell");
+
+    bell.addEventListener(
+        "click",
+        function(){
+
+            say(
+                "🔔 Notifications will appear here."
+            );
+
+        }
+    );
+
+    bell.addEventListener(
+        "keydown",
+        function(event){
+
+            if(
+                event.key === "Enter" ||
+                event.key === " "
+            ){
+
+                event.preventDefault();
+
+                say(
+                    "🔔 Notifications will appear here."
+                );
+
+            }
+
+        }
+    );
+
+    /* =====================================================
+       PREVENT DOUBLE LOGOUT
+       ===================================================== */
+
+    var logoutForm =
+        $(".logout");
+
+    logoutForm.addEventListener(
+        "submit",
+        function(){
+
+            var button =
+                $("button",logoutForm);
+
+            button.disabled = true;
+
+            button.textContent =
+                "Signing out…";
+
+        }
+    );
+
+})();
+
+</script>
+
+</body>
+</html>
