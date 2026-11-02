@@ -4,22 +4,76 @@ package com.capacitix.service;
 import com.capacitix.dto.LearningPathItem;
 import com.capacitix.dto.LearningPathResponse;
 import com.capacitix.entity.User;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import jakarta.annotation.PostConstruct;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AIServiceImpl implements AIService {
 
-    private final OllamaChatModel ollamaChatModel;
+    private final RestClient.Builder restClientBuilder;
+
+    // =========================================================
+    // GROQ CONFIGURATION
+    // =========================================================
+
+    @Value("${groq.api-key:}")
+    private String groqApiKey;
+
+    @Value("${groq.base-url:https://api.groq.com/openai/v1}")
+    private String groqBaseUrl;
+
+    @Value("${groq.model:openai/gpt-oss-120b}")
+    private String groqModel;
+
+    @Value("${groq.temperature:0.2}")
+    private double groqTemperature;
+
+    @Value("${groq.max-tokens:4096}")
+    private int groqMaxTokens;
+
+    private RestClient restClient;
+
+    // =========================================================
+    // INITIALIZE GROQ CLIENT
+    // =========================================================
+
+    @PostConstruct
+    public void initialize() {
+
+        restClient = restClientBuilder
+                .baseUrl(groqBaseUrl)
+                .defaultHeader(
+                        "Authorization",
+                        "Bearer " + (groqApiKey == null ? "" : groqApiKey)
+                )
+                .defaultHeader(
+                        "Content-Type",
+                        MediaType.APPLICATION_JSON_VALUE
+                )
+                .build();
+
+        log.info(
+                "CapacitiX Learning Path AI initialized | Provider: Groq | Model: {}",
+                groqModel
+        );
+    }
 
     // =========================================================
     // GENERATE LEARNING PATH
@@ -40,7 +94,10 @@ public class AIServiceImpl implements AIService {
         List<SkillAnalysisService.SkillResult> gaps =
                 getSkillGaps(skillGaps);
 
-        // No skill gaps: no need to call Ollama.
+        // -----------------------------------------------------
+        // NO SKILL GAPS
+        // -----------------------------------------------------
+
         if (gaps.isEmpty()) {
 
             log.info(
@@ -51,13 +108,33 @@ public class AIServiceImpl implements AIService {
             return buildLearningPathResponse(
                     employee,
                     gaps,
-                    "Your assessment results indicate that "
-                            + "no major skill gaps were identified. "
-                            + "Continue practicing your existing skills."
+                    "Your assessment results indicate that no major "
+                            + "skill gaps were identified. Continue "
+                            + "practicing your existing skills."
             );
         }
 
-        // Build a compact prompt containing only real gaps.
+        // -----------------------------------------------------
+        // CHECK GROQ API KEY
+        // -----------------------------------------------------
+
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+
+            log.error(
+                    "Groq API key is not configured. Using fallback recommendation."
+            );
+
+            return buildLearningPathResponse(
+                    employee,
+                    gaps,
+                    getFallbackRecommendation()
+            );
+        }
+
+        // -----------------------------------------------------
+        // BUILD PROMPT
+        // -----------------------------------------------------
+
         String prompt = buildLearningPathPrompt(
                 employee,
                 gaps
@@ -65,35 +142,125 @@ public class AIServiceImpl implements AIService {
 
         String aiResponse;
 
-        // Exactly ONE Ollama request.
+        // =====================================================
+        // ONE GROQ API REQUEST
+        // =====================================================
+
         try {
 
             log.info(
-                    "Generating learning path for employee: {} "
-                            + "with {} skill gaps",
+                    "Generating learning path | Employee={} | Gaps={} | Provider=Groq",
                     employee.getEmail(),
                     gaps.size()
             );
 
-            aiResponse = ollamaChatModel.call(prompt);
+            long startTime = System.nanoTime();
+
+            Map<String, Object> requestBody = Map.of(
+                    "model", groqModel,
+                    "messages", List.of(
+                            Map.of(
+                                    "role", "system",
+                                    "content",
+                                    "You are CapacitiX, an enterprise employee learning assistant. "
+                                            + "Use only the employee assessment data supplied. "
+                                            + "Never invent scores, competencies, or employee information. "
+                                            + "Give concise, practical, professional recommendations."
+                            ),
+                            Map.of(
+                                    "role", "user",
+                                    "content", prompt
+                            )
+                    ),
+                    "temperature", groqTemperature,
+                    "max_completion_tokens", groqMaxTokens
+            );
+
+            JsonNode response = restClient.post()
+                    .uri("/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
+
+            long elapsedMillis =
+                    (System.nanoTime() - startTime) / 1_000_000;
+
+            // -------------------------------------------------
+            // EXTRACT AI RESPONSE
+            // -------------------------------------------------
+
+            if (response == null
+                    || !response.has("choices")
+                    || !response.get("choices").isArray()
+                    || response.get("choices").isEmpty()) {
+
+                throw new IllegalStateException(
+                        "Groq returned an invalid or empty response."
+                );
+            }
+
+            aiResponse = response
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText("");
 
             if (aiResponse == null || aiResponse.isBlank()) {
 
+                log.warn(
+                        "Groq returned an empty learning-path response."
+                );
+
                 aiResponse = getFallbackRecommendation();
+
+            } else {
+
+                aiResponse = aiResponse.trim();
+
+                log.info(
+                        "Learning path AI generation completed | Time={} ms",
+                        elapsedMillis
+                );
             }
+
+        } catch (RestClientResponseException exception) {
+
+            log.error(
+                    "Groq API error during learning-path generation | HTTP Status={} | Response={}",
+                    exception.getStatusCode(),
+                    exception.getResponseBodyAsString(),
+                    exception
+            );
+
+            aiResponse = getFallbackRecommendation();
+
+        } catch (RestClientException exception) {
+
+            log.error(
+                    "Unable to connect to Groq during learning-path generation: {}",
+                    exception.getMessage(),
+                    exception
+            );
+
+            aiResponse = getFallbackRecommendation();
 
         } catch (Exception exception) {
 
-            log.warn(
-                    "Ollama learning path generation failed "
-                            + "for employee {}: {}",
+            log.error(
+                    "Groq learning-path generation failed for employee {}: {}",
                     employee.getEmail(),
-                    exception.getMessage()
+                    exception.getMessage(),
+                    exception
             );
 
-            // Learning path is still created using Java logic.
             aiResponse = getFallbackRecommendation();
         }
+
+        // =====================================================
+        // BUILD FINAL RESPONSE
+        // =====================================================
 
         return buildLearningPathResponse(
                 employee,
@@ -135,20 +302,21 @@ public class AIServiceImpl implements AIService {
         StringBuilder prompt = new StringBuilder(1000);
 
         prompt.append("""
-                You are CapacitiX, an employee learning assistant.
+                You are CapacitiX, an enterprise employee learning assistant.
 
-                Analyze the actual assessment skill gaps below.
+                Analyze the actual assessment skill gaps provided below.
 
-                Rules:
+                RULES:
                 - Use only the provided assessment data.
                 - Never invent scores or competencies.
                 - Prioritize HIGH gaps before MEDIUM gaps.
                 - Give practical and achievable advice.
                 - Do not recommend unrelated skills.
-                - Keep the recommendation concise.
+                - Keep recommendations concise.
                 - Do not generate a separate learning path.
-                
-                Employee:
+                - Do not repeat employee personal information.
+
+                EMPLOYEE:
                 """);
 
         prompt.append("\nName: ")
@@ -160,7 +328,7 @@ public class AIServiceImpl implements AIService {
         prompt.append("\nDesignation: ")
                 .append(safe(employee.getDesignation()));
 
-        prompt.append("\n\nActual Skill Gaps:\n");
+        prompt.append("\n\nACTUAL SKILL GAPS:\n");
 
         for (SkillAnalysisService.SkillResult skill : gaps) {
 
@@ -191,15 +359,16 @@ public class AIServiceImpl implements AIService {
         }
 
         prompt.append("""
-                
-                Provide:
+
+                PROVIDE:
                 1. Overall assessment observation.
                 2. Most important improvement area.
                 3. Recommended learning strategy.
                 4. Practical advice for improving competency.
 
                 Keep the complete response within 100 words.
-                Do not use markdown tables.
+                Use simple professional English.
+                Do not use Markdown tables.
                 """);
 
         return prompt.toString();
@@ -392,8 +561,7 @@ public class AIServiceImpl implements AIService {
         );
 
         topics.add(
-                "Important concepts of "
-                        + competencyName
+                "Important concepts of " + competencyName
         );
 
         topics.add(
@@ -401,16 +569,13 @@ public class AIServiceImpl implements AIService {
         );
 
         topics.add(
-                "Hands-on practice with "
-                        + competencyName
+                "Hands-on practice with " + competencyName
         );
 
         if (category != null && !category.isBlank()) {
 
             topics.add(
-                    "Practical "
-                            + category
-                            + " use cases"
+                    "Practical " + category + " use cases"
             );
         }
 

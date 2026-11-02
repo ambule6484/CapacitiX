@@ -1,3 +1,4 @@
+
 package com.capacitix.config;
 
 import com.capacitix.service.CustomUserDetailsService;
@@ -45,31 +46,56 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final String rememberMeKey;
+    private final boolean secureCookie;
 
     public SecurityConfig(
             CustomUserDetailsService userDetailsService,
+
             @Value("${capacitix.security.remember-me-key:capacitix-dev-only-change-me}")
-            String rememberMeKey
+            String rememberMeKey,
+
+            @Value("${capacitix.security.cookie-secure:false}")
+            boolean secureCookie
     ) {
         this.userDetailsService = userDetailsService;
         this.rememberMeKey = rememberMeKey;
+        this.secureCookie = secureCookie;
     }
+
+    // =========================================================
+    // PASSWORD ENCODER
+    // =========================================================
 
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // =========================================================
+    // CSRF TOKEN REPOSITORY
+    // =========================================================
+
     @Bean
     public CookieCsrfTokenRepository csrfTokenRepository() {
+
         CookieCsrfTokenRepository repository =
                 CookieCsrfTokenRepository.withHttpOnlyFalse();
 
         repository.setCookiePath("/");
         repository.setHeaderName("X-XSRF-TOKEN");
 
+        // HTTPS protection in production.
+        repository.setCookieCustomizer(cookie -> cookie
+                .secure(secureCookie)
+                .sameSite("Lax")
+        );
+
         return repository;
     }
+
+    // =========================================================
+    // SECURITY FILTER CHAIN
+    // =========================================================
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -78,28 +104,45 @@ public class SecurityConfig {
     ) throws Exception {
 
         http
-            // CSRF stays enabled. The SPA-style handler accepts:
-            //  - the masked token from Thymeleaf hidden inputs (_csrf), and
-            //  - the raw cookie value sent by JavaScript in X-XSRF-TOKEN.
+
+            // -------------------------------------------------
+            // CSRF PROTECTION
+            // -------------------------------------------------
+
             .csrf(csrf -> csrf
                     .csrfTokenRepository(csrfTokenRepository)
-                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
+                    .csrfTokenRequestHandler(
+                            new SpaCsrfTokenRequestHandler()
+                    )
             )
 
-            // Spring Security 6+/7 loads the CSRF token lazily, so the
-            // XSRF-TOKEN cookie is only written if something reads the token.
-            // This filter forces it on every response, including right after
-            // login/logout when the token is rotated.
-            .addFilterAfter(new CsrfCookieFilter(), CsrfFilter.class)
+            .addFilterAfter(
+                    new CsrfCookieFilter(),
+                    CsrfFilter.class
+            )
+
+            // -------------------------------------------------
+            // SESSION MANAGEMENT
+            // -------------------------------------------------
 
             .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                    .sessionFixation(fixation -> fixation.migrateSession())
+                    .sessionCreationPolicy(
+                            SessionCreationPolicy.IF_REQUIRED
+                    )
+                    .sessionFixation(fixation ->
+                            fixation.migrateSession()
+                    )
             )
+
+            // -------------------------------------------------
+            // AUTHORIZATION
+            // -------------------------------------------------
 
             .authorizeHttpRequests(auth -> auth
 
-                    .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                    .dispatcherTypeMatchers(
+                            DispatcherType.ERROR
+                    ).permitAll()
 
                     .requestMatchers(
                             "/",
@@ -120,25 +163,35 @@ public class SecurityConfig {
                             "/employee/create-password"
                     ).permitAll()
 
-                    .requestMatchers("/videos/**").authenticated()
+                    .requestMatchers("/videos/**")
+                    .authenticated()
 
-                    .requestMatchers("/admin/**").hasRole("ADMIN")
+                    .requestMatchers("/admin/**")
+                    .hasRole("ADMIN")
 
                     .requestMatchers("/organization/**")
                     .hasRole("ORGANIZATION")
 
-                    .requestMatchers("/trainer/**").hasRole("TRAINER")
+                    .requestMatchers("/trainer/**")
+                    .hasRole("TRAINER")
 
-                    .requestMatchers("/employee/**").hasRole("EMPLOYEE")
+                    .requestMatchers("/employee/**")
+                    .hasRole("EMPLOYEE")
 
                     .anyRequest().authenticated()
             )
 
             .userDetailsService(userDetailsService)
 
+            // -------------------------------------------------
+            // LOGIN CONFIGURATION
+            // -------------------------------------------------
+
             .formLogin(form -> form
+
                     .loginPage("/login")
                     .loginProcessingUrl("/login")
+
                     .usernameParameter("username")
                     .passwordParameter("password")
 
@@ -151,14 +204,34 @@ public class SecurityConfig {
                         );
 
                         if (hasRole(authentication, "ROLE_ADMIN")) {
+
                             response.sendRedirect("/admin/dashboard");
-                        } else if (hasRole(authentication, "ROLE_ORGANIZATION")) {
-                            response.sendRedirect("/organization/dashboard");
-                        } else if (hasRole(authentication, "ROLE_TRAINER")) {
+
+                        } else if (hasRole(
+                                authentication,
+                                "ROLE_ORGANIZATION"
+                        )) {
+
+                            response.sendRedirect(
+                                    "/organization/dashboard"
+                            );
+
+                        } else if (hasRole(
+                                authentication,
+                                "ROLE_TRAINER"
+                        )) {
+
                             response.sendRedirect("/trainer/dashboard");
-                        } else if (hasRole(authentication, "ROLE_EMPLOYEE")) {
+
+                        } else if (hasRole(
+                                authentication,
+                                "ROLE_EMPLOYEE"
+                        )) {
+
                             response.sendRedirect("/employee/dashboard");
+
                         } else {
+
                             log.warn(
                                     "User {} has no recognized application role: {}",
                                     authentication.getName(),
@@ -170,10 +243,10 @@ public class SecurityConfig {
                     })
 
                     .failureHandler((request, response, exception) -> {
+
                         log.warn(
-                                "Login failed for username={}. Reason={}",
-                                request.getParameter("username"),
-                                exception.getMessage()
+                                "Login failed for username={}",
+                                request.getParameter("username")
                         );
 
                         response.sendRedirect("/login?error=true");
@@ -182,36 +255,69 @@ public class SecurityConfig {
                     .permitAll()
             )
 
+            // -------------------------------------------------
+            // REMEMBER ME
+            // -------------------------------------------------
+
             .rememberMe(remember -> remember
+
                     .userDetailsService(userDetailsService)
+
                     .key(rememberMeKey)
-                    .tokenValiditySeconds(30 * 24 * 60 * 60)
+
+                    .tokenValiditySeconds(
+                            30 * 24 * 60 * 60
+                    )
+
                     .rememberMeParameter("remember-me")
-                    .rememberMeCookieName("CAPACITIX_REMEMBER_ME")
-                    // Local HTTP only. Set to true when served over HTTPS.
-                    .useSecureCookie(false)
+
+                    .rememberMeCookieName(
+                            "CAPACITIX_REMEMBER_ME"
+                    )
+
+                    // HTTP locally; HTTPS in production.
+                    .useSecureCookie(secureCookie)
             )
 
-            // Logout must be a POST with a valid CSRF token.
-            // A plain <a href="/logout"> will NOT log out; it will fail.
+            // -------------------------------------------------
+            // LOGOUT
+            // -------------------------------------------------
+
             .logout(logout -> logout
+
                     .logoutUrl("/logout")
+
                     .logoutSuccessUrl("/login?logout=true")
+
                     .invalidateHttpSession(true)
+
                     .clearAuthentication(true)
-                    .deleteCookies("JSESSIONID", "CAPACITIX_REMEMBER_ME")
+
+                    .deleteCookies(
+                            "JSESSIONID",
+                            "CAPACITIX_REMEMBER_ME",
+                            "XSRF-TOKEN"
+                    )
+
                     .permitAll()
             )
 
+            // -------------------------------------------------
+            // EXCEPTION HANDLING
+            // -------------------------------------------------
+
             .exceptionHandling(exceptions -> exceptions
+
                     .accessDeniedHandler((request, response, exception) -> {
 
                         Authentication authentication =
                                 SecurityContextHolder.getContext()
                                         .getAuthentication();
 
-                        boolean anonymous = authentication == null
-                                || authentication instanceof AnonymousAuthenticationToken;
+                        boolean anonymous =
+                                authentication == null
+                                || authentication instanceof
+                                AnonymousAuthenticationToken;
 
                         String username = anonymous
                                 ? "anonymous"
@@ -221,25 +327,27 @@ public class SecurityConfig {
                                 ? "none"
                                 : authentication.getAuthorities().toString();
 
-                        boolean csrfFailure = exception instanceof CsrfException;
+                        boolean csrfFailure =
+                                exception instanceof CsrfException;
 
-                        // Never log tokens, cookies or session ids.
+                        // Never log passwords, tokens, cookies or session IDs.
                         log.error(
-                                "403 Forbidden: type={}, method={}, uri={}, user={}, "
-                                        + "authorities={}, exception={}, reason={}",
+                                "403 Forbidden: type={}, method={}, uri={}, "
+                                        + "user={}, authorities={}, exception={}",
                                 csrfFailure ? "CSRF" : "AUTHORIZATION",
                                 request.getMethod(),
                                 request.getRequestURI(),
                                 username,
                                 authorities,
-                                exception.getClass().getSimpleName(),
-                                exception.getMessage()
+                                exception.getClass().getSimpleName()
                         );
 
-                        // Expired session / stale form: send the user to login
-                        // instead of a dead-end 403 page.
                         if (csrfFailure && anonymous) {
-                            response.sendRedirect("/login?expired=true");
+
+                            response.sendRedirect(
+                                    "/login?expired=true"
+                            );
+
                             return;
                         }
 
@@ -256,22 +364,29 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // =========================================================
+    // ROLE CHECK
+    // =========================================================
+
     private boolean hasRole(
             Authentication authentication,
             String requiredAuthority
     ) {
+
         return authentication.getAuthorities()
                 .stream()
                 .anyMatch(authority ->
-                        authority.getAuthority().equals(requiredAuthority)
+                        authority.getAuthority()
+                                .equals(requiredAuthority)
                 );
     }
 
-    /**
-     * Forces the deferred CSRF token to load so the XSRF-TOKEN cookie is
-     * always present in the browser, even on pages that render no form.
-     */
-    private static final class CsrfCookieFilter extends OncePerRequestFilter {
+    // =========================================================
+    // CSRF COOKIE FILTER
+    // =========================================================
+
+    private static final class CsrfCookieFilter
+            extends OncePerRequestFilter {
 
         @Override
         protected void doFilterInternal(
@@ -280,9 +395,10 @@ public class SecurityConfig {
                 FilterChain filterChain
         ) throws ServletException, IOException {
 
-            CsrfToken csrfToken = (CsrfToken) request.getAttribute("_csrf");
+            CsrfToken csrfToken =
+                    (CsrfToken) request.getAttribute("_csrf");
+
             if (csrfToken != null) {
-                // Reading the value triggers the repository to write the cookie.
                 csrfToken.getToken();
             }
 
@@ -290,10 +406,10 @@ public class SecurityConfig {
         }
     }
 
-    /**
-     * Supports both Thymeleaf hidden inputs (masked token) and JavaScript
-     * requests that send the raw cookie value in the header.
-     */
+    // =========================================================
+    // SPA CSRF REQUEST HANDLER
+    // =========================================================
+
     private static final class SpaCsrfTokenRequestHandler
             extends CsrfTokenRequestAttributeHandler {
 
@@ -306,7 +422,8 @@ public class SecurityConfig {
                 HttpServletResponse response,
                 Supplier<CsrfToken> csrfToken
         ) {
-            // Expose the masked token to Thymeleaf as ${_csrf}.
+
+            // Masked token for Thymeleaf.
             this.xor.handle(request, response, csrfToken);
         }
 
@@ -315,11 +432,24 @@ public class SecurityConfig {
                 HttpServletRequest request,
                 CsrfToken csrfToken
         ) {
-            String headerValue = request.getHeader(csrfToken.getHeaderName());
 
-            return (StringUtils.hasText(headerValue)
-                    ? super.resolveCsrfTokenValue(request, csrfToken)
-                    : this.xor.resolveCsrfTokenValue(request, csrfToken));
+            String headerValue =
+                    request.getHeader(csrfToken.getHeaderName());
+
+            // Raw cookie token for JavaScript AJAX requests.
+            if (StringUtils.hasText(headerValue)) {
+
+                return super.resolveCsrfTokenValue(
+                        request,
+                        csrfToken
+                );
+            }
+
+            // Masked token for Thymeleaf forms.
+            return this.xor.resolveCsrfTokenValue(
+                    request,
+                    csrfToken
+            );
         }
     }
 }

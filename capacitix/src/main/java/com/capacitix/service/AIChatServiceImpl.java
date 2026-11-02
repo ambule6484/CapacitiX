@@ -1,24 +1,82 @@
+
 package com.capacitix.service;
 
 import com.capacitix.entity.ChatMessage;
 import com.capacitix.entity.User;
 import com.capacitix.repository.ChatMessageRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import jakarta.annotation.PostConstruct;
+
 import lombok.RequiredArgsConstructor;
-import org.springframework.ai.ollama.OllamaChatModel;
+import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class AIChatServiceImpl implements AIChatService {
 
-    private final OllamaChatModel ollamaChatModel;
-
     private final ChatMessageRepository chatMessageRepository;
 
+    private final RestClient.Builder restClientBuilder;
+
+    // =========================================================
+    // GROQ CONFIGURATION
+    // =========================================================
+
+    @Value("${groq.api-key:}")
+    private String groqApiKey;
+
+    @Value("${groq.base-url:https://api.groq.com/openai/v1}")
+    private String groqBaseUrl;
+
+    @Value("${groq.model:openai/gpt-oss-120b}")
+    private String groqModel;
+
+    @Value("${groq.temperature:0.2}")
+    private double groqTemperature;
+
+    @Value("${groq.max-tokens:4096}")
+    private int groqMaxTokens;
+
+    private RestClient restClient;
+
+    // =========================================================
+    // INITIALIZE GROQ REST CLIENT
+    // =========================================================
+
+    @PostConstruct
+    public void initialize() {
+
+        restClient = restClientBuilder
+                .baseUrl(groqBaseUrl)
+                .defaultHeader(
+                        "Authorization",
+                        "Bearer " + (groqApiKey == null ? "" : groqApiKey)
+                )
+                .defaultHeader(
+                        "Content-Type",
+                        MediaType.APPLICATION_JSON_VALUE
+                )
+                .build();
+
+        log.info(
+                "CapacitiX AI Chat initialized | Provider: Groq | Model: {}",
+                groqModel
+        );
+    }
 
     // =========================================================
     // CHAT WITH AI
@@ -40,7 +98,6 @@ public class AIChatServiceImpl implements AIChatService {
             );
         }
 
-
         // -----------------------------------------------------
         // SECURITY CHECK
         // -----------------------------------------------------
@@ -50,7 +107,6 @@ public class AIChatServiceImpl implements AIChatService {
                     "Only employees can use the AI Assistant."
             );
         }
-
 
         // -----------------------------------------------------
         // VALIDATE MESSAGE
@@ -62,9 +118,7 @@ public class AIChatServiceImpl implements AIChatService {
             );
         }
 
-
         String userMessage = message.trim();
-
 
         // -----------------------------------------------------
         // LIMIT MESSAGE SIZE
@@ -76,6 +130,17 @@ public class AIChatServiceImpl implements AIChatService {
             );
         }
 
+        // -----------------------------------------------------
+        // CHECK GROQ API KEY
+        // -----------------------------------------------------
+
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+            log.error("Groq API key is not configured.");
+
+            throw new IllegalStateException(
+                    "The AI service is not configured. Please contact the administrator."
+            );
+        }
 
         // =====================================================
         // SAVE USER MESSAGE
@@ -90,125 +155,150 @@ public class AIChatServiceImpl implements AIChatService {
 
         chatMessageRepository.save(userChatMessage);
 
+        // =====================================================
+        // BUILD SYSTEM PROMPT
+        // =====================================================
+
+        String systemPrompt = buildSystemPrompt(employee);
 
         // =====================================================
-        // BUILD AI PROMPT
-        // =====================================================
-
-        String prompt = buildPrompt(
-                employee,
-                userMessage
-        );
-
-
-        // =====================================================
-        // CALL OLLAMA
+        // CALL GROQ API
         // =====================================================
 
         String aiResponse;
 
         try {
 
-            System.out.println(
-                    "================================================="
+            log.info(
+                    "CapacitiX AI Assistant request started | Employee ID: {} | Provider: Groq | Model: {}",
+                    employee.getId(),
+                    groqModel
             );
 
-            System.out.println(
-                    "Capacitix AI Assistant"
+            long startTime = System.nanoTime();
+
+            Map<String, Object> requestBody = Map.of(
+                    "model", groqModel,
+                    "messages", List.of(
+                            Map.of(
+                                    "role", "system",
+                                    "content", systemPrompt
+                            ),
+                            Map.of(
+                                    "role", "user",
+                                    "content", userMessage
+                            )
+                    ),
+                    "temperature", groqTemperature,
+                    "max_completion_tokens", groqMaxTokens
             );
 
-            System.out.println(
-                    "Employee: " + employee.getEmail()
-            );
+            JsonNode response = restClient.post()
+                    .uri("/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
 
-            System.out.println(
-                    "Question: " + userMessage
-            );
-
-            System.out.println(
-                    "Sending request to Ollama..."
-            );
-
-            System.out.println(
-                    "================================================="
-            );
-
-
-            aiResponse = ollamaChatModel.call(prompt);
-
-
-            System.out.println(
-                    "Capacitix AI response received successfully."
-            );
-
-
-        } catch (Exception e) {
+            long elapsedMillis =
+                    (System.nanoTime() - startTime) / 1_000_000;
 
             // -------------------------------------------------
-            // LOG COMPLETE TECHNICAL ERROR
+            // EXTRACT RESPONSE CONTENT
             // -------------------------------------------------
 
-            System.err.println(
-                    "================================================="
+            if (response == null
+                    || !response.has("choices")
+                    || !response.get("choices").isArray()
+                    || response.get("choices").isEmpty()) {
+
+                throw new IllegalStateException(
+                        "Groq returned an invalid or empty response."
+                );
+            }
+
+            JsonNode messageNode = response
+                    .path("choices")
+                    .get(0)
+                    .path("message");
+
+            aiResponse = messageNode
+                    .path("content")
+                    .asText("");
+
+            if (aiResponse.isBlank()) {
+                throw new IllegalStateException(
+                        "Groq returned empty message content."
+                );
+            }
+
+            log.info(
+                    "CapacitiX AI response received successfully | Employee ID: {} | Time: {} ms",
+                    employee.getId(),
+                    elapsedMillis
             );
 
-            System.err.println(
-                    "CAPACITIX AI ASSISTANT ERROR"
+        } catch (RestClientResponseException exception) {
+
+            log.error(
+                    "Groq API returned an error | Employee ID: {} | HTTP Status: {} | Response: {}",
+                    employee.getId(),
+                    exception.getStatusCode(),
+                    exception.getResponseBodyAsString(),
+                    exception
             );
-
-            System.err.println(
-                    "Ollama request failed."
-            );
-
-            System.err.println(
-                    "Employee: " + employee.getEmail()
-            );
-
-            System.err.println(
-                    "Question: " + userMessage
-            );
-
-            System.err.println(
-                    "Error: " + e.getMessage()
-            );
-
-            System.err.println(
-                    "================================================="
-            );
-
-            e.printStackTrace();
-
-
-            // -------------------------------------------------
-            // IMPORTANT
-            // -------------------------------------------------
-            // Do NOT return a fake successful AI response.
-            // Throw the exception so AIChatController can
-            // return an error response to the frontend.
 
             throw new RuntimeException(
-                    "Unable to connect to the Capacitix AI service. "
-                            + "Please make sure Ollama is running.",
-                    e
+                    "The AI service is temporarily unavailable. Please try again later.",
+                    exception
+            );
+
+        } catch (RestClientException exception) {
+
+            log.error(
+                    "Unable to connect to Groq API | Employee ID: {} | Error: {}",
+                    employee.getId(),
+                    exception.getMessage(),
+                    exception
+            );
+
+            throw new RuntimeException(
+                    "Unable to connect to the CapacitiX AI service. Please try again later.",
+                    exception
+            );
+
+        } catch (Exception exception) {
+
+            log.error(
+                    "CapacitiX AI Assistant request failed | Employee ID: {} | Error: {}",
+                    employee.getId(),
+                    exception.getMessage(),
+                    exception
+            );
+
+            throw new RuntimeException(
+                    "Unable to generate an AI response. Please try again later.",
+                    exception
             );
         }
-
 
         // =====================================================
         // VALIDATE AI RESPONSE
         // =====================================================
 
-        if (aiResponse == null
-                || aiResponse.trim().isEmpty()) {
+        if (aiResponse == null || aiResponse.isBlank()) {
+
+            log.error(
+                    "Groq returned an empty response | Employee ID: {}",
+                    employee.getId()
+            );
 
             throw new RuntimeException(
                     "The AI service returned an empty response."
             );
         }
 
-
         aiResponse = aiResponse.trim();
-
 
         // =====================================================
         // SAVE AI RESPONSE
@@ -223,6 +313,10 @@ public class AIChatServiceImpl implements AIChatService {
 
         chatMessageRepository.save(aiChatMessage);
 
+        log.info(
+                "AI chat conversation saved successfully | Employee ID: {}",
+                employee.getId()
+        );
 
         // =====================================================
         // RETURN RESPONSE
@@ -230,7 +324,6 @@ public class AIChatServiceImpl implements AIChatService {
 
         return aiResponse;
     }
-
 
     // =========================================================
     // GET CHAT HISTORY
@@ -248,13 +341,11 @@ public class AIChatServiceImpl implements AIChatService {
             );
         }
 
-
         return chatMessageRepository
                 .findByEmployeeOrderByCreatedAtAsc(
                         employee
                 );
     }
-
 
     // =========================================================
     // CLEAR CHAT HISTORY
@@ -271,20 +362,22 @@ public class AIChatServiceImpl implements AIChatService {
             );
         }
 
-
         chatMessageRepository.deleteByEmployee(
                 employee
         );
+
+        log.info(
+                "AI chat history cleared | Employee ID: {}",
+                employee.getId()
+        );
     }
 
-
     // =========================================================
-    // BUILD AI PROMPT
+    // BUILD SYSTEM PROMPT
     // =========================================================
 
-    private String buildPrompt(
-            User employee,
-            String userMessage
+    private String buildSystemPrompt(
+            User employee
     ) {
 
         String employeeName =
@@ -296,16 +389,11 @@ public class AIChatServiceImpl implements AIChatService {
         String designation =
                 safe(employee.getDesignation());
 
-
-        // =====================================================
-        // CAPACITIX AI SYSTEM PROMPT
-        // =====================================================
-
         return """
-                You are Capacitix AI Assistant.
+                You are CapacitiX AI Assistant.
 
                 You are an intelligent learning and employee
-                development assistant inside the Capacitix
+                development assistant inside the CapacitiX
                 employee platform.
 
                 =================================================
@@ -402,7 +490,7 @@ public class AIChatServiceImpl implements AIChatService {
                 Do not assume assessment results, skill gaps,
                 learning path details, training progress or
                 competency information unless they are explicitly
-                provided in the prompt.
+                provided in the conversation.
 
                 If the employee asks something such as:
 
@@ -418,33 +506,20 @@ public class AIChatServiceImpl implements AIChatService {
                 is not available, explain that the information
                 is currently unavailable instead of inventing it.
 
-                =================================================
-                EMPLOYEE QUESTION
-                =================================================
-
-                %s
-
-                =================================================
-                RESPONSE
-                =================================================
-
-                Answer the employee's question now.
+                Answer the employee's latest question clearly
+                and practically.
                 """.formatted(
                 employeeName,
                 department,
-                designation,
-                userMessage
+                designation
         );
     }
-
 
     // =========================================================
     // SAFE STRING
     // =========================================================
 
-    private String safe(
-            String value
-    ) {
+    private String safe(String value) {
 
         if (value == null || value.isBlank()) {
             return "Not specified";

@@ -15,7 +15,7 @@
         <relativePath/>
     </parent>
 
-    <!-- Project information -->
+    <!-- Project Information -->
     <groupId>com.capacitix</groupId>
     <artifactId>capacitix</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -24,14 +24,14 @@
         AI Based Employee Competency and Personalized Learning Platform
     </description>
 
-    <!-- Java 25 configuration -->
+    <!-- Java 25 -->
     <properties>
         <java.version>25</java.version>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <!-- Spring AI dependency management -->
+    <!-- Spring AI BOM -->
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -71,7 +71,7 @@
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
 
-        <!-- Thymeleaf Security Integration -->
+        <!-- Thymeleaf Security -->
         <dependency>
             <groupId>org.thymeleaf.extras</groupId>
             <artifactId>thymeleaf-extras-springsecurity6</artifactId>
@@ -95,10 +95,10 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
 
-        <!-- Spring AI - Ollama -->
+        <!-- Spring AI - OpenAI Compatible API (Groq) -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-ollama</artifactId>
+            <artifactId>spring-ai-starter-model-openai</artifactId>
         </dependency>
 
         <!-- PDFBox -->
@@ -163,17 +163,16 @@
 
     </dependencies>
 
-    <!-- Build configuration -->
+    <!-- Build Configuration -->
     <build>
         <plugins>
 
-            <!-- Spring Boot -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Java 25 compiler and Lombok annotation processing -->
+            <!-- Java 25 and Lombok -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

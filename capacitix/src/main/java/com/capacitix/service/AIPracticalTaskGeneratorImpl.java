@@ -1,3 +1,4 @@
+
 package com.capacitix.service;
 
 import com.capacitix.entity.LearningPath;
@@ -5,65 +6,114 @@ import com.capacitix.entity.LearningPathItem;
 import com.capacitix.entity.PracticalTask;
 import com.capacitix.entity.TrainingModule;
 import com.capacitix.entity.User;
+
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.annotation.PostConstruct;
+
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * AI Practical Task Generator
- *
- * Generates personalized practical tasks using the local Ollama model.
- *
- * Flow:
- *
- * Assessment
- *      ↓
- * Skill Analysis
- *      ↓
- * Learning Path
- *      ↓
- * Learning Path Item
- *      ↓
- * Training Module
- *      ↓
- * AI Practical Tasks
- *
- * IMPORTANT:
- *
- * This class only generates PracticalTask entities.
- *
- * PracticalTaskService is responsible for persistence.
- */
 @Service
 @Slf4j
 public class AIPracticalTaskGeneratorImpl
         implements AIPracticalTaskGenerator {
 
     // =========================================================
-    // OLLAMA CONFIGURATION
+    // GROQ CONFIGURATION
     // =========================================================
 
-    @Value("${ollama.base-url:http://localhost:11434}")
-    private String ollamaBaseUrl;
+    @Value("${groq.api-key:}")
+    private String groqApiKey;
 
-    @Value("${ollama.model:llama3.2}")
-    private String ollamaModel;
+    @Value("${groq.base-url:https://api.groq.com/openai/v1}")
+    private String groqBaseUrl;
 
-    @Value("${ollama.timeout:180000}")
-    private int ollamaTimeout;
+    @Value("${groq.model:openai/gpt-oss-120b}")
+    private String groqModel;
+
+    @Value("${groq.timeout:180000}")
+    private int groqTimeout;
+
+    @Value("${groq.temperature:0.2}")
+    private double groqTemperature;
+
+    @Value("${groq.max-tokens:4096}")
+    private int groqMaxTokens;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private volatile RestClient restClient;
 
     private static final int DEFAULT_TASK_COUNT = 3;
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
+
+    @PostConstruct
+    public void initialize() {
+
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+            log.warn("GROQ_API_KEY is not configured.");
+        }
+
+        SimpleClientHttpRequestFactory factory =
+                new SimpleClientHttpRequestFactory();
+
+        factory.setConnectTimeout(
+                Duration.ofMillis(15000)
+        );
+
+        factory.setReadTimeout(
+                Duration.ofMillis(
+                        Math.max(groqTimeout, 10000)
+                )
+        );
+
+        restClient = RestClient.builder()
+                .baseUrl(removeTrailingSlash(groqBaseUrl))
+                .requestFactory(factory)
+                .defaultHeader(
+                        HttpHeaders.AUTHORIZATION,
+                        "Bearer " + groqApiKey
+                )
+                .defaultHeader(
+                        HttpHeaders.CONTENT_TYPE,
+                        MediaType.APPLICATION_JSON_VALUE
+                )
+                .defaultHeader(
+                        HttpHeaders.ACCEPT,
+                        MediaType.APPLICATION_JSON_VALUE
+                )
+                .build();
+
+        log.info("========================================");
+        log.info("PRACTICAL TASK GENERATOR INITIALIZED");
+        log.info("Provider: Groq Cloud API");
+        log.info("Model: {}", groqModel);
+        log.info("API URL: {}", sanitizeUrl(groqBaseUrl));
+        log.info("Timeout: {} ms", groqTimeout);
+        log.info("Strategy: SINGLE REQUEST PER LEARNING ITEM");
+        log.info("========================================");
+    }
 
     // =========================================================
     // GENERATE TASKS FOR COMPLETE LEARNING PATH
@@ -72,27 +122,22 @@ public class AIPracticalTaskGeneratorImpl
     @Override
     public List<PracticalTask> generateTasks(
             User employee,
-            LearningPath learningPath
-    ) {
+            LearningPath learningPath) {
 
         List<PracticalTask> tasks = new ArrayList<>();
 
         if (employee == null) {
-
             log.warn(
                     "Practical task generation skipped: employee is null."
             );
-
             return tasks;
         }
 
         if (learningPath == null) {
-
             log.warn(
                     "Practical task generation skipped for employee {}: learning path is null.",
                     employee.getId()
             );
-
             return tasks;
         }
 
@@ -103,7 +148,6 @@ public class AIPracticalTaskGeneratorImpl
                     "No learning-path items found for employee {}.",
                     employee.getId()
             );
-
             return tasks;
         }
 
@@ -133,8 +177,7 @@ public class AIPracticalTaskGeneratorImpl
                                 DEFAULT_TASK_COUNT
                         );
 
-                if (itemTasks != null
-                        && !itemTasks.isEmpty()) {
+                if (itemTasks != null && !itemTasks.isEmpty()) {
 
                     tasks.addAll(itemTasks);
 
@@ -156,14 +199,11 @@ public class AIPracticalTaskGeneratorImpl
 
             } catch (Exception exception) {
 
-                /*
-                 * One learning-path item should not prevent
-                 * other valid items from being processed.
-                 */
                 log.error(
-                        "Failed to generate practical tasks for employee {} and skill '{}'.",
+                        "Failed to generate practical tasks for employee {} and skill '{}': {}",
                         employee.getId(),
                         safe(item.getTargetSkill()),
+                        exception.getMessage(),
                         exception
                 );
             }
@@ -186,8 +226,7 @@ public class AIPracticalTaskGeneratorImpl
     public List<PracticalTask> generateTasksForItem(
             User employee,
             LearningPathItem learningPathItem,
-            TrainingModule trainingModule
-    ) {
+            TrainingModule trainingModule) {
 
         return generateTasksForItem(
                 employee,
@@ -206,27 +245,20 @@ public class AIPracticalTaskGeneratorImpl
             User employee,
             LearningPathItem learningPathItem,
             TrainingModule trainingModule,
-            int numberOfTasks
-    ) {
+            int numberOfTasks) {
 
         List<PracticalTask> tasks = new ArrayList<>();
 
         if (employee == null) {
-
-            log.warn(
-                    "Cannot generate practical task: employee is null."
-            );
-
+            log.warn("Cannot generate practical task: employee is null.");
             return tasks;
         }
 
         if (learningPathItem == null) {
-
             log.warn(
                     "Cannot generate practical task for employee {}: learning-path item is null.",
                     employee.getId()
             );
-
             return tasks;
         }
 
@@ -234,101 +266,80 @@ public class AIPracticalTaskGeneratorImpl
             numberOfTasks = DEFAULT_TASK_COUNT;
         }
 
-        // -----------------------------------------------------
-        // TARGET SKILL
-        // -----------------------------------------------------
-
         String skillName =
                 safe(learningPathItem.getTargetSkill());
 
-        if (skillName.isBlank()
-                && trainingModule != null) {
-
-            skillName =
-                    safe(trainingModule.getSkillName());
+        if (skillName.isBlank() && trainingModule != null) {
+            skillName = safe(trainingModule.getSkillName());
         }
 
         if (skillName.isBlank()) {
-
             log.error(
                     "Cannot generate practical task for employee {}: target skill is empty.",
                     employee.getId()
             );
+            return tasks;
+        }
 
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+            log.error("Cannot generate tasks: GROQ_API_KEY is missing.");
             return tasks;
         }
 
         log.info(
-                "Generating {} AI practical tasks for employee {} | Skill: {}",
+                "Generating {} Groq practical tasks for employee {} | Skill: {}",
                 numberOfTasks,
                 employee.getId(),
                 skillName
         );
 
-        // -----------------------------------------------------
-        // BUILD PROMPT
-        // -----------------------------------------------------
+        String prompt = buildPrompt(
+                employee,
+                learningPathItem,
+                trainingModule,
+                skillName,
+                numberOfTasks
+        );
 
-        String prompt =
-                buildPrompt(
-                        employee,
-                        learningPathItem,
-                        trainingModule,
-                        skillName,
-                        numberOfTasks
-                );
+        String aiResponse = callGroq(
+                prompt,
+                employee,
+                skillName,
+                numberOfTasks
+        );
 
-        // -----------------------------------------------------
-        // CALL OLLAMA
-        // -----------------------------------------------------
-
-        String aiResponse =
-                callOllama(
-                        prompt,
-                        employee,
-                        skillName
-                );
-
-        if (aiResponse == null
-                || aiResponse.isBlank()) {
-
+        if (aiResponse == null || aiResponse.isBlank()) {
             log.error(
-                    "Ollama returned an empty response for employee {} and skill '{}'.",
+                    "Groq returned an empty response for employee {} and skill '{}'.",
                     employee.getId(),
                     skillName
             );
-
             return tasks;
         }
 
         log.info(
-                "Ollama returned {} characters for employee {} and skill '{}'.",
+                "Groq returned {} characters for employee {} and skill '{}'.",
                 aiResponse.length(),
                 employee.getId(),
                 skillName
         );
 
         log.debug(
-                "Ollama response for employee {}:\n{}",
+                "Groq response for employee {}:\n{}",
                 employee.getId(),
                 aiResponse
         );
 
-        // -----------------------------------------------------
-        // PARSE AI RESPONSE
-        // -----------------------------------------------------
-
-        tasks =
-                parseTasks(
-                        aiResponse,
-                        employee,
-                        learningPathItem,
-                        trainingModule,
-                        skillName
-                );
+        tasks = parseTasks(
+                aiResponse,
+                employee,
+                learningPathItem,
+                trainingModule,
+                skillName
+        );
 
         log.info(
-                "Parsed {} practical tasks from Ollama for employee {} and skill '{}'.",
+                "Parsed {} practical tasks from Groq for employee {} and skill '{}'.",
                 tasks.size(),
                 employee.getId(),
                 skillName
@@ -346,32 +357,22 @@ public class AIPracticalTaskGeneratorImpl
             LearningPathItem item,
             TrainingModule module,
             String skillName,
-            int numberOfTasks
-    ) {
+            int numberOfTasks) {
 
-        String employeeName =
-                safe(employee.getFullName());
+        String employeeName = safe(employee.getFullName());
 
-        String currentLevel =
-                "UNKNOWN";
-
-        String requiredLevel =
-                "UNKNOWN";
-
-        String priority =
-                "MEDIUM";
+        String currentLevel = "UNKNOWN";
+        String requiredLevel = "UNKNOWN";
+        String priority = "MEDIUM";
 
         if (module != null
                 && module.getDifficultyLevel() != null) {
 
-            currentLevel =
-                    module.getDifficultyLevel().name();
+            currentLevel = module.getDifficultyLevel().name();
         }
 
         if (item.getPriority() != null) {
-
-            priority =
-                    item.getPriority().name();
+            priority = item.getPriority().name();
         }
 
         String recommendationReason =
@@ -384,98 +385,54 @@ public class AIPracticalTaskGeneratorImpl
 
         if (module != null) {
 
-            moduleTitle =
-                    safe(module.getTitle());
-
-            moduleDescription =
-                    safe(module.getDescription());
-
-            moduleContent =
-                    safe(module.getContent());
-
-            /*
-             * TrainingModule currently exposes skillName.
-             * Use it as the primary technology/context.
-             */
-            technology =
-                    safe(module.getSkillName());
+            moduleTitle = safe(module.getTitle());
+            moduleDescription = safe(module.getDescription());
+            moduleContent = safe(module.getContent());
+            technology = safe(module.getSkillName());
 
             if (module.getDifficultyLevel() != null) {
-
-                currentLevel =
-                        module.getDifficultyLevel().name();
+                currentLevel = module.getDifficultyLevel().name();
             }
         }
 
-        /*
-         * If the module does not provide a technology,
-         * use the target skill as a safe fallback.
-         */
         if (technology.isBlank()) {
             technology = skillName;
         }
 
-        StringBuilder prompt =
-                new StringBuilder();
+        StringBuilder prompt = new StringBuilder();
 
         prompt.append("""
                 You are an enterprise employee training
                 practical-task generator for a platform
                 called CapacitiX.
 
-                Your job is to create realistic hands-on
-                practical tasks for one employee.
-
-                The tasks MUST be personalized to the
-                employee's identified skill gap and
-                personalized learning path.
+                Create realistic hands-on practical tasks
+                for one employee based on the employee's
+                identified skill gap and personalized learning path.
 
                 IMPORTANT RULES:
 
                 1. Generate exactly the requested number of tasks.
-
                 2. Every task MUST directly improve the target skill.
-
-                3. Do NOT generate generic tasks unrelated
-                   to the target skill.
-
+                3. Do NOT generate generic unrelated tasks.
                 4. Do NOT generate theoretical questions.
-
-                5. Every task must require the employee to
-                   actually build, implement, configure,
-                   debug, analyze, test, or demonstrate something.
-
+                5. Every task must require actual practical work.
                 6. Tasks must be measurable.
-
                 7. Tasks must have a clear expected outcome.
-
                 8. Tasks must be realistic for workplace learning.
-
-                9. Difficulty must match the employee's
-                   current learning level.
-
-                10. Higher-priority skill gaps should receive
-                    meaningful practical work.
-
+                9. Difficulty must match the employee's level.
+                10. Higher-priority skill gaps need meaningful work.
                 11. Do not introduce unrelated technologies.
-
                 12. Avoid duplicate tasks.
-
                 13. Use the training module context when available.
-
                 14. Every task must help close the identified skill gap.
-
                 15. Do not use placeholder text.
-
                 16. Do not mention that you are an AI.
-
                 17. Do not return Markdown tables.
-
-                18. Do not return explanations outside the task records.
-
-                19. Return ONLY the task records.
-
+                18. Do not return explanations outside task records.
+                19. Return ONLY task records.
                 20. Each task MUST start with TASK and end with END_TASK.
+                21. Keep each field concise and useful.
 
                 EXACT OUTPUT FORMAT:
 
@@ -523,21 +480,17 @@ public class AIPracticalTaskGeneratorImpl
                 .append(requiredLevel)
                 .append("\n");
 
-        prompt.append(
-                "Learning Path Recommendation: "
-        )
+        prompt.append("Learning Path Recommendation: ")
                 .append(recommendationReason)
                 .append("\n");
 
         if (!moduleTitle.isBlank()) {
-
             prompt.append("Training Module: ")
                     .append(moduleTitle)
                     .append("\n");
         }
 
         if (!moduleDescription.isBlank()) {
-
             prompt.append("Module Description: ")
                     .append(moduleDescription)
                     .append("\n");
@@ -559,108 +512,181 @@ public class AIPracticalTaskGeneratorImpl
                 .append(technology)
                 .append("\n");
 
-        prompt.append("\n");
-
-        prompt.append(
-                "Generate exactly "
-        )
-        .append(numberOfTasks)
-        .append(
-                " unique practical tasks for the target skill."
-        );
+        prompt.append("\nGenerate exactly ")
+                .append(numberOfTasks)
+                .append(" unique practical tasks for the target skill.");
 
         return prompt.toString();
     }
 
     // =========================================================
-    // CALL OLLAMA
+    // CALL GROQ CHAT COMPLETIONS API
     // =========================================================
 
-    private String callOllama(
+    private String callGroq(
             String prompt,
             User employee,
-            String skillName
-    ) {
+            String skillName,
+            int numberOfTasks) {
 
         try {
 
-            RestClient client =
-                    getRestClient();
+            RestClient client = getRestClient();
 
-            OllamaGenerateRequest request =
-                    new OllamaGenerateRequest(
-                            ollamaModel,
-                            prompt,
-                            false
-                    );
-
-            log.info(
-                    "Calling Ollama | URL: {} | Model: {} | Employee: {} | Skill: {} | Timeout: {} ms",
-                    ollamaBaseUrl,
-                    ollamaModel,
-                    employee.getId(),
-                    skillName,
-                    ollamaTimeout
+            int tokenLimit = Math.max(
+                    512,
+                    Math.min(
+                            8192,
+                            Math.min(
+                                    Math.max(groqMaxTokens, 512),
+                                    700 + numberOfTasks * 500
+                            )
+                    )
             );
 
-            OllamaGenerateResponse response =
-                    client.post()
-                            .uri("/api/generate")
-                            .contentType(
-                                    MediaType.APPLICATION_JSON
-                            )
-                            .body(request)
-                            .retrieve()
-                            .body(
-                                    OllamaGenerateResponse.class
-                            );
+            double temperature = Math.max(
+                    0.0,
+                    Math.min(0.5, groqTemperature)
+            );
 
-            if (response == null) {
+            Map<String, Object> request = Map.of(
+                    "model", groqModel,
+                    "messages", List.of(
+                            Map.of(
+                                    "role", "system",
+                                    "content",
+                                    """
+                                    You are a professional enterprise practical-task generator.
+                                    Follow the user's requested task format exactly.
+                                    Return only the requested task records.
+                                    Do not include introductory or concluding text.
+                                    """
+                            ),
+                            Map.of(
+                                    "role", "user",
+                                    "content", prompt
+                            )
+                    ),
+                    "temperature", temperature,
+                    "max_completion_tokens", tokenLimit
+            );
+
+            log.info(
+                    "Calling Groq | Model: {} | Employee: {} | Skill: {} | Tasks: {} | MaxTokens: {} | Timeout: {} ms",
+                    groqModel,
+                    employee.getId(),
+                    skillName,
+                    numberOfTasks,
+                    tokenLimit,
+                    groqTimeout
+            );
+
+            long startTime = System.nanoTime();
+
+            String rawResponse = client.post()
+                    .uri("/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(String.class);
+
+            long duration =
+                    (System.nanoTime() - startTime) / 1_000_000;
+
+            if (rawResponse == null || rawResponse.isBlank()) {
+
+                log.error("Groq returned an empty HTTP response.");
+
+                return "";
+            }
+
+            JsonNode root =
+                    objectMapper.readTree(rawResponse);
+
+            if (root == null || !root.isObject()) {
+                log.error("Groq returned an invalid response.");
+                return "";
+            }
+
+            if (root.has("error")
+                    && !root.path("error").isNull()) {
+
+                String errorMessage =
+                        root.path("error")
+                                .path("message")
+                                .asText("Unknown Groq API error");
+
+                log.error("Groq API error: {}", errorMessage);
+
+                return "";
+            }
+
+            JsonNode choices = root.path("choices");
+
+            if (!choices.isArray() || choices.isEmpty()) {
 
                 log.error(
-                        "Ollama returned NULL response for employee {} and skill '{}'.",
-                        employee.getId(),
-                        skillName
+                        "Groq returned no completion choices."
                 );
 
                 return "";
             }
 
+            JsonNode choice = choices.get(0);
+
+            JsonNode message = choice.path("message");
+
             String generatedText =
-                    safe(response.response());
+                    message.path("content").asText("");
 
             if (generatedText.isBlank()) {
 
                 log.error(
-                        "Ollama returned an empty response for employee {} and skill '{}'.",
-                        employee.getId(),
-                        skillName
+                        "Groq returned empty content. Finish reason: {}",
+                        choice.path("finish_reason").asText("unknown")
                 );
 
                 return "";
             }
 
-            return generatedText;
+            log.info(
+                    "Groq response completed in {} ms. Finish reason: {}",
+                    duration,
+                    choice.path("finish_reason").asText("unknown")
+            );
+
+            return generatedText.trim();
+
+        } catch (ResourceAccessException exception) {
+
+            log.error(
+                    "Groq request timed out or connection failed. Timeout: {} ms. Employee: {}. Skill: {}",
+                    groqTimeout,
+                    employee != null ? employee.getId() : null,
+                    skillName,
+                    exception
+            );
+
+            return "";
+
+        } catch (HttpStatusCodeException exception) {
+
+            log.error(
+                    "Groq HTTP error. Status: {}. Response: {}",
+                    exception.getStatusCode(),
+                    preview(exception.getResponseBodyAsString()),
+                    exception
+            );
+
+            return "";
 
         } catch (Exception exception) {
 
-            /*
-             * IMPORTANT:
-             *
-             * Previously this exception was silently ignored.
-             *
-             * That made the practical_tasks table remain empty
-             * without showing the real reason.
-             */
-
             log.error(
-                    "OLLAMA PRACTICAL TASK GENERATION FAILED | Employee: {} | Skill: {} | Model: {} | URL: {} | Error: {}",
-                    employee != null
-                            ? employee.getId()
-                            : null,
+                    "Groq practical task generation failed. Employee: {}. Skill: {}. Error: {}",
+                    employee != null ? employee.getId() : null,
                     skillName,
-                    ollamaModel,
-                    ollamaBaseUrl,
                     exception.getMessage(),
                     exception
             );
@@ -675,8 +701,7 @@ public class AIPracticalTaskGeneratorImpl
 
     private RestClient getRestClient() {
 
-        RestClient currentClient =
-                restClient;
+        RestClient currentClient = restClient;
 
         if (currentClient != null) {
             return currentClient;
@@ -686,31 +711,45 @@ public class AIPracticalTaskGeneratorImpl
 
             if (restClient == null) {
 
+                if (groqApiKey == null || groqApiKey.isBlank()) {
+                    throw new IllegalStateException(
+                            "GROQ_API_KEY is not configured."
+                    );
+                }
+
                 SimpleClientHttpRequestFactory factory =
                         new SimpleClientHttpRequestFactory();
 
-                int timeout =
-                        Math.max(
-                                ollamaTimeout,
-                                10000
-                        );
+                factory.setConnectTimeout(
+                        Duration.ofMillis(15000)
+                );
 
-                factory.setConnectTimeout(timeout);
-                factory.setReadTimeout(timeout);
+                factory.setReadTimeout(
+                        Duration.ofMillis(
+                                Math.max(groqTimeout, 10000)
+                        )
+                );
 
-                restClient =
-                        RestClient.builder()
-                                .baseUrl(
-                                        removeTrailingSlash(
-                                                ollamaBaseUrl
-                                        )
-                                )
-                                .requestFactory(factory)
-                                .build();
+                restClient = RestClient.builder()
+                        .baseUrl(removeTrailingSlash(groqBaseUrl))
+                        .requestFactory(factory)
+                        .defaultHeader(
+                                HttpHeaders.AUTHORIZATION,
+                                "Bearer " + groqApiKey
+                        )
+                        .defaultHeader(
+                                HttpHeaders.CONTENT_TYPE,
+                                MediaType.APPLICATION_JSON_VALUE
+                        )
+                        .defaultHeader(
+                                HttpHeaders.ACCEPT,
+                                MediaType.APPLICATION_JSON_VALUE
+                        )
+                        .build();
             }
-
-            return restClient;
         }
+
+        return restClient;
     }
 
     // =========================================================
@@ -722,98 +761,44 @@ public class AIPracticalTaskGeneratorImpl
             User employee,
             LearningPathItem learningPathItem,
             TrainingModule trainingModule,
-            String skillName
-    ) {
+            String skillName) {
 
-        List<PracticalTask> tasks =
-                new ArrayList<>();
+        List<PracticalTask> tasks = new ArrayList<>();
 
-        if (aiResponse == null
-                || aiResponse.isBlank()) {
-
+        if (aiResponse == null || aiResponse.isBlank()) {
             return tasks;
         }
 
-        String normalized =
-                aiResponse
-                        .replace("\r", "")
-                        .replace("```text", "")
-                        .replace("```", "")
-                        .trim();
+        String normalized = aiResponse
+                .replace("\r", "")
+                .replace("```text", "")
+                .replace("```", "")
+                .trim();
 
-        /*
-         * Match:
-         *
-         * TASK
-         * ...
-         * END_TASK
-         */
         Pattern taskPattern =
-                Pattern.compile(
-                        "(?is)\\bTASK\\s*(.*?)\\s*END_TASK\\b"
-                );
+                Pattern.compile("(?is)\\bTASK\\s*(.*?)\\s*END_TASK\\b");
 
-        Matcher matcher =
-                taskPattern.matcher(normalized);
+        Matcher matcher = taskPattern.matcher(normalized);
 
         int taskOrder = 1;
 
         while (matcher.find()) {
 
-            String block =
-                    matcher.group(1).trim();
+            String block = matcher.group(1).trim();
 
             if (block.isBlank()) {
                 continue;
             }
 
-            String title =
-                    extractField(
-                            block,
-                            "Title"
-                    );
+            String title = extractField(block, "Title");
+            String description = extractField(block, "Description");
+            String expectedOutcome = extractField(block, "ExpectedOutcome");
+            String requirements = extractField(block, "Requirements");
+            String technology = extractField(block, "Technology");
+            String difficulty = extractField(block, "Difficulty");
+            String estimatedMinutes = extractField(block, "EstimatedMinutes");
 
-            String description =
-                    extractField(
-                            block,
-                            "Description"
-                    );
-
-            String expectedOutcome =
-                    extractField(
-                            block,
-                            "ExpectedOutcome"
-                    );
-
-            String requirements =
-                    extractField(
-                            block,
-                            "Requirements"
-                    );
-
-            String technology =
-                    extractField(
-                            block,
-                            "Technology"
-                    );
-
-            String difficulty =
-                    extractField(
-                            block,
-                            "Difficulty"
-                    );
-
-            String estimatedMinutes =
-                    extractField(
-                            block,
-                            "EstimatedMinutes"
-                    );
-
-            /*
-             * Title and description are mandatory.
-             */
-            if (title.isBlank()
-                    || description.isBlank()) {
+            if (title.isBlank() || description.isBlank()) {
 
                 log.warn(
                         "Skipping AI practical task because Title or Description is missing."
@@ -822,139 +807,69 @@ public class AIPracticalTaskGeneratorImpl
                 continue;
             }
 
-            /*
-             * Technology fallback.
-             */
-            if (technology.isBlank()
-                    && trainingModule != null) {
-
-                technology =
-                        safe(
-                                trainingModule.getSkillName()
-                        );
+            if (technology.isBlank() && trainingModule != null) {
+                technology = safe(trainingModule.getSkillName());
             }
 
             if (technology.isBlank()) {
                 technology = skillName;
             }
 
-            PracticalTask task =
-                    PracticalTask.builder()
+            PracticalTask task = PracticalTask.builder()
 
-                            // Employee
-                            .employee(employee)
+                    .employee(employee)
 
-                            // Learning path
-                            .learningPathItem(
-                                    learningPathItem
-                            )
+                    .learningPathItem(learningPathItem)
 
-                            // Training module
-                            .trainingModule(
-                                    trainingModule
-                            )
+                    .trainingModule(trainingModule)
 
-                            // Basic task information
-                            .title(
-                                    limit(
-                                            title,
-                                            250
-                                    )
-                            )
+                    .title(limit(title, 250))
 
-                            .skillName(
-                                    limit(
-                                            skillName,
-                                            150
-                                    )
-                            )
+                    .skillName(limit(skillName, 150))
 
-                            .description(
-                                    description.trim()
-                            )
+                    .description(description.trim())
 
-                            .expectedOutcome(
-                                    emptyToNull(
-                                            expectedOutcome
-                                    )
-                            )
+                    .expectedOutcome(emptyToNull(expectedOutcome))
 
-                            .requirements(
-                                    emptyToNull(
-                                            requirements
-                                    )
-                            )
+                    .requirements(emptyToNull(requirements))
 
-                            .technology(
-                                    emptyToNull(
-                                            limit(
-                                                    technology,
-                                                    150
-                                            )
-                                    )
-                            )
+                    .technology(
+                            emptyToNull(limit(technology, 150))
+                    )
 
-                            // Difficulty
-                            .difficulty(
-                                    parseDifficulty(
-                                            difficulty
-                                    )
-                            )
+                    .difficulty(parseDifficulty(difficulty))
 
-                            // Estimated time
-                            .estimatedMinutes(
-                                    parseMinutes(
-                                            estimatedMinutes
-                                    )
-                            )
+                    .estimatedMinutes(parseMinutes(estimatedMinutes))
 
-                            // Skill information
-                            .skillScore(null)
-                            .requiredSkillLevel(null)
-                            .currentSkillLevel(null)
-                            .gapPercentage(null)
+                    .skillScore(null)
+                    .requiredSkillLevel(null)
+                    .currentSkillLevel(null)
+                    .gapPercentage(null)
 
-                            // Priority
-                            .priority(
-                                    convertPriority(
-                                            learningPathItem
-                                                    .getPriority()
-                                    )
-                            )
+                    .priority(
+                            convertPriority(learningPathItem.getPriority())
+                    )
 
-                            // Initial state
-                            .status(
-                                    PracticalTask.TaskStatus.PENDING
-                            )
+                    .status(PracticalTask.TaskStatus.PENDING)
 
-                            .progressPercentage(0)
+                    .progressPercentage(0)
 
-                            // AI generated
-                            .aiGenerated(true)
+                    .aiGenerated(true)
 
-                            // Order
-                            .taskOrder(
-                                    taskOrder++
-                            )
+                    .taskOrder(taskOrder++)
 
-                            .build();
+                    .build();
 
             tasks.add(task);
         }
 
-        /*
-         * Diagnostic logging.
-         */
         if (tasks.isEmpty()) {
 
             log.error(
-                    "Ollama response was received but NO practical tasks could be parsed."
+                    "Groq response was received but no practical tasks could be parsed."
             );
 
-            log.error(
-                    "AI response:\n{}",
-                    aiResponse
-            );
+            log.error("AI response:\n{}", aiResponse);
         }
 
         return tasks;
@@ -964,38 +879,20 @@ public class AIPracticalTaskGeneratorImpl
     // EXTRACT FIELD
     // =========================================================
 
-    private String extractField(
-            String block,
-            String fieldName
-    ) {
+    private String extractField(String block, String fieldName) {
 
-        /*
-         * Fields are expected to look like:
-         *
-         * Title: Build...
-         *
-         * Description: Build...
-         *
-         * ExpectedOutcome: ...
-         *
-         * The look-ahead stops at the next known field.
-         */
-        Pattern pattern =
-                Pattern.compile(
-                        "(?ims)^\\s*"
-                                + Pattern.quote(fieldName)
-                                + "\\s*:\\s*"
-                                + "(.*?)"
-                                + "(?=^\\s*(?:Title|Description|ExpectedOutcome|Requirements|Technology|Difficulty|EstimatedMinutes)\\s*:|\\z)"
-                );
+        Pattern pattern = Pattern.compile(
+                "(?ims)^\\s*"
+                        + Pattern.quote(fieldName)
+                        + "\\s*:\\s*"
+                        + "(.*?)"
+                        + "(?=^\\s*(?:Title|Description|ExpectedOutcome|Requirements|Technology|Difficulty|EstimatedMinutes)\\s*:|\\z)"
+        );
 
-        Matcher matcher =
-                pattern.matcher(block);
+        Matcher matcher = pattern.matcher(block);
 
         if (matcher.find()) {
-
-            return matcher.group(1)
-                    .trim();
+            return matcher.group(1).trim();
         }
 
         return "";
@@ -1005,27 +902,19 @@ public class AIPracticalTaskGeneratorImpl
     // PARSE DIFFICULTY
     // =========================================================
 
-    private PracticalTask.DifficultyLevel parseDifficulty(
-            String value
-    ) {
+    private PracticalTask.DifficultyLevel parseDifficulty(String value) {
 
-        if (value == null
-                || value.isBlank()) {
-
+        if (value == null || value.isBlank()) {
             return PracticalTask.DifficultyLevel.BEGINNER;
         }
 
-        String normalized =
-                value.trim()
-                        .toUpperCase(Locale.ROOT);
+        String normalized = value.trim().toUpperCase(Locale.ROOT);
 
         if (normalized.contains("ADVANCED")) {
-
             return PracticalTask.DifficultyLevel.ADVANCED;
         }
 
         if (normalized.contains("INTERMEDIATE")) {
-
             return PracticalTask.DifficultyLevel.INTERMEDIATE;
         }
 
@@ -1037,24 +926,19 @@ public class AIPracticalTaskGeneratorImpl
     // =========================================================
 
     private PracticalTask.Priority convertPriority(
-            LearningPathItem.Priority priority
-    ) {
+            LearningPathItem.Priority priority) {
 
         if (priority == null) {
-
             return PracticalTask.Priority.MEDIUM;
         }
 
         return switch (priority) {
 
-            case HIGH ->
-                    PracticalTask.Priority.HIGH;
+            case HIGH -> PracticalTask.Priority.HIGH;
 
-            case LOW ->
-                    PracticalTask.Priority.LOW;
+            case LOW -> PracticalTask.Priority.LOW;
 
-            default ->
-                    PracticalTask.Priority.MEDIUM;
+            default -> PracticalTask.Priority.MEDIUM;
         };
     }
 
@@ -1062,45 +946,29 @@ public class AIPracticalTaskGeneratorImpl
     // PARSE ESTIMATED MINUTES
     // =========================================================
 
-    private Integer parseMinutes(
-            String value
-    ) {
+    private Integer parseMinutes(String value) {
 
-        if (value == null
-                || value.isBlank()) {
-
+        if (value == null || value.isBlank()) {
             return 30;
         }
 
-        Matcher matcher =
-                Pattern.compile(
-                        "\\d+"
-                )
-                .matcher(value);
+        Matcher matcher = Pattern.compile("\\d+").matcher(value);
 
         if (!matcher.find()) {
-
             return 30;
         }
 
         try {
 
-            int minutes =
-                    Integer.parseInt(
-                            matcher.group()
-                    );
+            int minutes = Integer.parseInt(matcher.group());
 
             if (minutes <= 0) {
                 return 30;
             }
 
-            return Math.min(
-                    minutes,
-                    480
-            );
+            return Math.min(minutes, 480);
 
         } catch (NumberFormatException exception) {
-
             return 30;
         }
     }
@@ -1109,26 +977,17 @@ public class AIPracticalTaskGeneratorImpl
     // SAFE STRING
     // =========================================================
 
-    private String safe(
-            String value
-    ) {
-
-        return value == null
-                ? ""
-                : value.trim();
+    private String safe(String value) {
+        return value == null ? "" : value.trim();
     }
 
     // =========================================================
     // EMPTY TO NULL
     // =========================================================
 
-    private String emptyToNull(
-            String value
-    ) {
+    private String emptyToNull(String value) {
 
-        if (value == null
-                || value.isBlank()) {
-
+        if (value == null || value.isBlank()) {
             return null;
         }
 
@@ -1139,77 +998,74 @@ public class AIPracticalTaskGeneratorImpl
     // LIMIT STRING LENGTH
     // =========================================================
 
-    private String limit(
-            String value,
-            int maxLength
-    ) {
+    private String limit(String value, int maxLength) {
 
         if (value == null) {
             return "";
         }
 
-        String trimmed =
-                value.trim();
+        String trimmed = value.trim();
 
         if (trimmed.length() <= maxLength) {
-
             return trimmed;
         }
 
-        return trimmed
-                .substring(
-                        0,
-                        maxLength
-                )
-                .trim();
+        return trimmed.substring(0, maxLength).trim();
     }
 
     // =========================================================
     // REMOVE TRAILING SLASH
     // =========================================================
 
-    private String removeTrailingSlash(
-            String value
-    ) {
+    private String removeTrailingSlash(String value) {
 
-        if (value == null
-                || value.isBlank()) {
-
-            return "http://localhost:11434";
+        if (value == null || value.isBlank()) {
+            return "https://api.groq.com/openai/v1";
         }
 
-        String result =
-                value.trim();
+        String result = value.trim();
 
         while (result.endsWith("/")) {
-
-            result =
-                    result.substring(
-                            0,
-                            result.length() - 1
-                    );
+            result = result.substring(0, result.length() - 1);
         }
 
         return result;
     }
 
     // =========================================================
-    // OLLAMA REQUEST
+    // SANITIZE URL
     // =========================================================
 
-    private record OllamaGenerateRequest(
-            String model,
-            String prompt,
-            boolean stream
-    ) {
+    private String sanitizeUrl(String url) {
+
+        if (url == null || url.isBlank()) {
+            return "Not configured";
+        }
+
+        return removeTrailingSlash(url)
+                .replaceAll(
+                        "(?i)(https?://)[^/@]+:[^/@]+@",
+                        "$1***@"
+                );
     }
 
     // =========================================================
-    // OLLAMA RESPONSE
+    // RESPONSE PREVIEW
     // =========================================================
 
-    private record OllamaGenerateResponse(
-            String response
-    ) {
+    private String preview(String value) {
+
+        if (value == null || value.isBlank()) {
+            return "[empty response]";
+        }
+
+        String result = value
+                .replace('\n', ' ')
+                .replace('\r', ' ')
+                .trim();
+
+        return result.length() > 1000
+                ? result.substring(0, 1000) + "..."
+                : result;
     }
 }
