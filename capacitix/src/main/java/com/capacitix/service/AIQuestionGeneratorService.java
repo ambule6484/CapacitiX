@@ -7,6 +7,7 @@ import com.capacitix.entity.Competency;
 import com.capacitix.repository.AssessmentQuestionRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,7 @@ import org.springframework.web.client.RestClientResponseException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -32,12 +34,7 @@ import java.util.stream.Collectors;
 public class AIQuestionGeneratorService {
 
     private final AssessmentQuestionRepository questionRepository;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    // =========================================================
-    // OLLAMA CONFIGURATION
-    // =========================================================
 
     @Value("${ollama.base-url:http://localhost:11434}")
     private String ollamaBaseUrl;
@@ -48,34 +45,48 @@ public class AIQuestionGeneratorService {
     @Value("${ollama.timeout:120000}")
     private long ollamaTimeout;
 
-    @Value("${ollama.temperature:0.3}")
+    @Value("${ollama.temperature:0.2}")
     private double ollamaTemperature;
 
-    @Value("${ollama.num-predict:2048}")
+    @Value("${ollama.num-predict:1024}")
     private int ollamaNumPredict;
 
-    /*
-     * Number of attempts for one question.
-     */
-    private static final int MAX_ATTEMPTS_PER_QUESTION = 5;
+    private static final int BATCH_SIZE = 3;
+    private static final int MAX_CONSECUTIVE_FAILURES = 3;
+    private static final int MAX_PREVIOUS_QUESTIONS = 10;
 
-    // =========================================================
-    // MAIN METHOD
-    // =========================================================
+    private RestClient restClient;
+
+    @PostConstruct
+    public void initializeRestClient() {
+        var factory =
+                new org.springframework.http.client.SimpleClientHttpRequestFactory();
+
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofMillis(ollamaTimeout));
+
+        restClient = RestClient.builder()
+                .baseUrl(removeTrailingSlash(ollamaBaseUrl))
+                .requestFactory(factory)
+                .build();
+
+        log.info(
+                "AI question generator initialized. Model={}, batchSize={}",
+                ollamaModel,
+                BATCH_SIZE
+        );
+    }
 
     @Transactional
     public List<AssessmentQuestion> generateQuestions(
             Assessment assessment,
             List<Competency> competencies
     ) {
+        long startTime = System.nanoTime();
 
         validateInput(assessment, competencies);
 
         int requiredCount = assessment.getQuestionCount();
-
-        // -----------------------------------------------------
-        // CREATE COMPETENCY MAP
-        // -----------------------------------------------------
 
         Map<String, Competency> competencyMap =
                 competencies.stream()
@@ -84,574 +95,276 @@ public class AIQuestionGeneratorService {
                         .collect(Collectors.toMap(
                                 c -> normalize(c.getName()),
                                 c -> c,
-                                (first, second) -> first
+                                (first, second) -> first,
+                                LinkedHashMap::new
                         ));
 
         if (competencyMap.isEmpty()) {
-
-            throw new RuntimeException(
+            throw new IllegalArgumentException(
                     "No valid competencies were selected."
             );
         }
 
-        // -----------------------------------------------------
-        // GENERATE QUESTIONS
-        // -----------------------------------------------------
+        List<Competency> validCompetencies =
+                new ArrayList<>(competencyMap.values());
 
-        List<GeneratedQuestion> generatedQuestions =
-                new ArrayList<>();
+        List<GeneratedQuestion> generated = new ArrayList<>();
+        Set<String> questionKeys = new HashSet<>();
 
-        Set<String> questionKeys =
-                new HashSet<>();
+        int consecutiveFailures = 0;
+        int requestCount = 0;
 
-        int questionNumber = 1;
+        while (generated.size() < requiredCount) {
 
-        while (generatedQuestions.size() < requiredCount) {
+            int remaining = requiredCount - generated.size();
+            int batchCount = Math.min(BATCH_SIZE, remaining);
+
+            requestCount++;
 
             log.info(
-                    "Generating assessment question {} of {}",
-                    questionNumber,
-                    requiredCount
+                    "Generating assessment questions: {}/{} completed; requesting batch of {}",
+                    generated.size(),
+                    requiredCount,
+                    batchCount
             );
 
-            GeneratedQuestion question =
-                    generateOneQuestion(
-                            assessment,
-                            competencies,
-                            competencyMap,
-                            questionNumber,
-                            questionKeys
-                    );
+            long requestStart = System.nanoTime();
 
-            if (question == null) {
-
-                throw new RuntimeException(
-                        "AI could not generate question "
-                                + questionNumber
-                                + " after "
-                                + MAX_ATTEMPTS_PER_QUESTION
-                                + " attempts."
+            try {
+                String prompt = buildBatchPrompt(
+                        assessment,
+                        validCompetencies,
+                        batchCount,
+                        generated
                 );
-            }
 
-            // -------------------------------------------------
-            // NORMALIZE COMPETENCY
-            // -------------------------------------------------
+                String response = callOllama(prompt, batchCount);
 
-            Competency matchedCompetency =
-                    findCompetency(
-                            question.competency,
-                            competencyMap
-                    );
+                long requestMillis =
+                        (System.nanoTime() - requestStart) / 1_000_000;
 
-            if (matchedCompetency == null) {
-
-                throw new RuntimeException(
-                        "AI returned an invalid competency "
-                                + "for question "
-                                + questionNumber
-                                + "."
+                log.info(
+                        "Ollama request {} completed in {} ms",
+                        requestCount,
+                        requestMillis
                 );
-            }
 
-            question.competency =
-                    matchedCompetency.getName();
+                List<GeneratedQuestion> batch =
+                        parseQuestions(response);
 
-            // -------------------------------------------------
-            // NORMALIZE ANSWER
-            // -------------------------------------------------
+                int acceptedThisBatch = 0;
 
-            question.correctAnswer =
-                    normalizeAnswer(
-                            question.correctAnswer,
-                            question
+                for (GeneratedQuestion question : batch) {
+
+                    if (generated.size() >= requiredCount) {
+                        break;
+                    }
+
+                    if (!isValidQuestion(question)) {
+                        log.warn("Skipping invalid AI-generated question.");
+                        continue;
+                    }
+
+                    Competency competency =
+                            findCompetency(question.competency, competencyMap);
+
+                    if (competency == null) {
+                        log.warn(
+                                "Skipping question with unknown competency: {}",
+                                question.competency
+                        );
+                        continue;
+                    }
+
+                    question.competency = competency.getName();
+
+                    question.correctAnswer =
+                            normalizeAnswer(question.correctAnswer, question);
+
+                    if (!isValidCorrectAnswer(question.correctAnswer)) {
+                        log.warn("Skipping question with invalid correct answer.");
+                        continue;
+                    }
+
+                    String key = questionKey(question);
+
+                    if (!questionKeys.add(key)) {
+                        log.warn(
+                                "Skipping duplicate question: {}",
+                                question.question
+                        );
+                        continue;
+                    }
+
+                    question.question = question.question.trim();
+                    question.optionA = question.optionA.trim();
+                    question.optionB = question.optionB.trim();
+                    question.optionC = question.optionC.trim();
+                    question.optionD = question.optionD.trim();
+
+                    generated.add(question);
+                    acceptedThisBatch++;
+                }
+
+                if (acceptedThisBatch == 0) {
+                    consecutiveFailures++;
+                    log.warn(
+                            "Batch produced no usable questions. Consecutive failures: {}/{}",
+                            consecutiveFailures,
+                            MAX_CONSECUTIVE_FAILURES
                     );
+                } else {
+                    consecutiveFailures = 0;
+                }
 
-            if (!isValidCorrectAnswer(
-                    question.correctAnswer
-            )) {
+            } catch (RuntimeException e) {
+                consecutiveFailures++;
 
-                throw new RuntimeException(
-                        "AI returned an invalid correct answer "
-                                + "for question "
-                                + questionNumber
-                                + "."
-                );
-            }
-
-            // -------------------------------------------------
-            // DUPLICATE CHECK
-            // -------------------------------------------------
-
-            String key =
-                    questionKey(question);
-
-            if (questionKeys.contains(key)) {
-
-                /*
-                 * Normally this should already be prevented
-                 * inside generateOneQuestion().
-                 */
                 log.warn(
-                        "Duplicate question detected after generation: {}",
-                        question.question
+                        "Question batch request {} failed: {}",
+                        requestCount,
+                        safeExceptionMessage(e)
                 );
-
-                continue;
             }
 
-            questionKeys.add(key);
-
-            generatedQuestions.add(question);
-
-            log.info(
-                    "Successfully generated question {}",
-                    questionNumber
-            );
-
-            questionNumber++;
+            if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+                throw new RuntimeException(
+                        "AI could not generate enough valid questions. Generated "
+                                + generated.size() + " of " + requiredCount
+                                + ". Check the Ollama logs and model availability."
+                );
+            }
         }
 
-        // -----------------------------------------------------
-        // FINAL CHECK
-        // -----------------------------------------------------
-
-        if (generatedQuestions.size() != requiredCount) {
-
-            throw new RuntimeException(
-                    "AI generated "
-                            + generatedQuestions.size()
-                            + " questions instead of "
-                            + requiredCount
-                            + "."
-            );
-        }
-
-        // -----------------------------------------------------
-        // CONVERT TO DATABASE QUESTIONS
-        // -----------------------------------------------------
-
-        List<AssessmentQuestion> questions =
-                new ArrayList<>();
-
+        List<AssessmentQuestion> questions = new ArrayList<>();
         int order = 1;
 
-        for (GeneratedQuestion generated :
-                generatedQuestions) {
+        for (GeneratedQuestion item : generated) {
 
             Competency competency =
-                    findCompetency(
-                            generated.competency,
-                            competencyMap
-                    );
+                    findCompetency(item.competency, competencyMap);
 
             if (competency == null) {
-                continue;
+                throw new RuntimeException(
+                        "A generated question has an invalid competency."
+                );
             }
-
-            int marks =
-                    generated.marks > 0
-                            ? generated.marks
-                            : 1;
 
             AssessmentQuestion question =
                     AssessmentQuestion.builder()
                             .assessment(assessment)
                             .competency(competency)
-                            .questionText(
-                                    generated.question.trim()
-                            )
+                            .questionText(item.question)
                             .questionType("MCQ")
-                            .optionA(
-                                    generated.optionA.trim()
-                            )
-                            .optionB(
-                                    generated.optionB.trim()
-                            )
-                            .optionC(
-                                    generated.optionC.trim()
-                            )
-                            .optionD(
-                                    generated.optionD.trim()
-                            )
-                            .correctAnswer(
-                                    generated.correctAnswer
-                            )
-                            .difficulty(
-                                    normalizeDifficulty(
-                                            generated.difficulty
-                                    )
-                            )
-                            .marks(marks)
-                            .explanation(
-                                    safeNullable(
-                                            generated.explanation
-                                    )
-                            )
-                            .questionOrder(order)
+                            .optionA(item.optionA)
+                            .optionB(item.optionB)
+                            .optionC(item.optionC)
+                            .optionD(item.optionD)
+                            .correctAnswer(item.correctAnswer)
+                            .difficulty(normalizeDifficulty(item.difficulty))
+                            .marks(item.marks > 0 ? item.marks : 1)
+                            .explanation(safeNullable(item.explanation))
+                            .questionOrder(order++)
                             .active(true)
                             .build();
 
             questions.add(question);
-
-            order++;
         }
-
-        // -----------------------------------------------------
-        // FINAL DATABASE QUESTION CHECK
-        // -----------------------------------------------------
 
         if (questions.size() != requiredCount) {
-
             throw new RuntimeException(
-                    "Only "
-                            + questions.size()
-                            + " valid questions could be "
-                            + "prepared out of "
-                            + requiredCount
-                            + "."
+                    "Expected " + requiredCount
+                            + " questions but prepared " + questions.size() + "."
             );
         }
 
-        // -----------------------------------------------------
-        // DELETE OLD QUESTIONS
-        // -----------------------------------------------------
+        // Replace existing questions only after a complete valid set is ready.
+        questionRepository.deleteByAssessment(assessment);
 
-        questionRepository.deleteByAssessment(
-                assessment
-        );
+        List<AssessmentQuestion> saved =
+                questionRepository.saveAll(questions);
 
-        // -----------------------------------------------------
-        // SAVE QUESTIONS
-        // -----------------------------------------------------
-
-        List<AssessmentQuestion> savedQuestions =
-                questionRepository.saveAll(
-                        questions
-                );
-
-        // -----------------------------------------------------
-        // DATABASE VALIDATION
-        // -----------------------------------------------------
-
-        if (savedQuestions.size() != requiredCount) {
-
+        if (saved.size() != requiredCount) {
             throw new RuntimeException(
-                    "Assessment generation failed. "
-                            + "Expected "
-                            + requiredCount
-                            + " questions but saved "
-                            + savedQuestions.size()
-                            + "."
+                    "Expected " + requiredCount
+                            + " questions to be saved but saved " + saved.size() + "."
             );
         }
 
-        assessment.setQuestionCount(
-                savedQuestions.size()
-        );
+        assessment.setQuestionCount(saved.size());
+
+        long totalMillis =
+                (System.nanoTime() - startTime) / 1_000_000;
 
         log.info(
-                "Assessment question generation completed successfully. {} questions created.",
-                savedQuestions.size()
+                "Assessment generation completed: {} questions, {} Ollama requests, {} ms total",
+                saved.size(),
+                requestCount,
+                totalMillis
         );
 
-        return savedQuestions;
+        return saved;
     }
 
-    // =========================================================
-    // GENERATE ONE QUESTION
-    // =========================================================
-
-    private GeneratedQuestion generateOneQuestion(
+    private String buildBatchPrompt(
             Assessment assessment,
             List<Competency> competencies,
-            Map<String, Competency> competencyMap,
-            int questionNumber,
-            Set<String> existingQuestionKeys
+            int count,
+            List<GeneratedQuestion> previousQuestions
     ) {
+        String competencyText = competencies.stream()
+                .map(c -> "- " + c.getName()
+                        + " | Level: " + safe(c.getLevel())
+                        + " | Description: " + safe(c.getDescription()))
+                .collect(Collectors.joining("\n"));
 
-        RuntimeException lastException = null;
+        StringBuilder previousText = new StringBuilder();
 
-        for (int attempt = 1;
-             attempt <= MAX_ATTEMPTS_PER_QUESTION;
-             attempt++) {
+        int start = Math.max(
+                0,
+                previousQuestions.size() - MAX_PREVIOUS_QUESTIONS
+        );
 
-            try {
+        for (int i = start; i < previousQuestions.size(); i++) {
+            GeneratedQuestion q = previousQuestions.get(i);
 
-                /*
-                 * Every retry receives a different prompt strategy.
-                 * This is important because otherwise llama3.2 may
-                 * repeatedly return the same invalid/duplicate question.
-                 */
-                String prompt =
-                        buildQuestionPrompt(
-                                assessment,
-                                competencies,
-                                competencyMap,
-                                questionNumber,
-                                existingQuestionKeys,
-                                attempt
-                        );
-
-                log.info(
-                        "Ollama attempt {}/{} for question {}",
-                        attempt,
-                        MAX_ATTEMPTS_PER_QUESTION,
-                        questionNumber
-                );
-
-                String response =
-                        callOllama(
-                                prompt,
-                                attempt
-                        );
-
-                log.debug(
-                        "Ollama response for question {} attempt {}: {}",
-                        questionNumber,
-                        attempt,
-                        responsePreview(response)
-                );
-
-                GeneratedQuestion question =
-                        parseQuestion(response);
-
-                if (!isValidQuestion(question)) {
-
-                    throw new RuntimeException(
-                            "AI returned an incomplete question."
-                    );
-                }
-
-                // -------------------------------------------------
-                // MATCH COMPETENCY
-                // -------------------------------------------------
-
-                Competency competency =
-                        findCompetency(
-                                question.competency,
-                                competencyMap
-                        );
-
-                if (competency == null) {
-
-                    throw new RuntimeException(
-                            "AI returned an unknown competency: "
-                                    + question.competency
-                    );
-                }
-
-                question.competency =
-                        competency.getName();
-
-                // -------------------------------------------------
-                // NORMALIZE ANSWER
-                // -------------------------------------------------
-
-                question.correctAnswer =
-                        normalizeAnswer(
-                                question.correctAnswer,
-                                question
-                        );
-
-                if (!isValidCorrectAnswer(
-                        question.correctAnswer
-                )) {
-
-                    throw new RuntimeException(
-                            "Invalid correct answer: "
-                                    + question.correctAnswer
-                    );
-                }
-
-                // -------------------------------------------------
-                // CHECK DUPLICATE
-                // -------------------------------------------------
-
-                String key =
-                        questionKey(question);
-
-                if (existingQuestionKeys.contains(key)) {
-
-                    throw new RuntimeException(
-                            "AI generated a duplicate question: "
-                                    + question.question
-                    );
-                }
-
-                return question;
-
-            } catch (RuntimeException e) {
-
-                lastException = e;
-
-                log.warn(
-                        "Question {} attempt {} failed: {}",
-                        questionNumber,
-                        attempt,
-                        safeExceptionMessage(e)
-                );
-
-                /*
-                 * Short delay between retries.
-                 */
-                try {
-
-                    Thread.sleep(500L);
-
-                } catch (InterruptedException interruptedException) {
-
-                    Thread.currentThread().interrupt();
-
-                    throw new RuntimeException(
-                            "Question generation was interrupted.",
-                            interruptedException
-                    );
-                }
-            }
+            previousText.append("- ")
+                    .append(q.competency)
+                    .append(": ")
+                    .append(q.question)
+                    .append('\n');
         }
 
-        if (lastException != null) {
-
-            log.error(
-                    "Unable to generate question {} after {} attempts. Last error: {}",
-                    questionNumber,
-                    MAX_ATTEMPTS_PER_QUESTION,
-                    safeExceptionMessage(lastException)
-            );
-        }
-
-        return null;
-    }
-
-    // =========================================================
-    // BUILD QUESTION PROMPT
-    // =========================================================
-
-    private String buildQuestionPrompt(
-            Assessment assessment,
-            List<Competency> competencies,
-            Map<String, Competency> competencyMap,
-            int questionNumber,
-            Set<String> existingQuestionKeys,
-            int attempt
-    ) {
-
-        String competencyText =
-                competencies.stream()
-                        .filter(c -> c != null)
-                        .map(this::formatCompetency)
-                        .collect(
-                                Collectors.joining("\n")
-                        );
-
-        String previousQuestions =
-                buildPreviousQuestionsText(
-                        existingQuestionKeys
-                );
-
-        String retryInstruction;
-
-        switch (attempt) {
-
-            case 2:
-                retryInstruction =
-                        """
-                        This is a retry.
-                        Generate a completely different question.
-                        Do not reuse the wording or concept of a previous question.
-                        """;
-                break;
-
-            case 3:
-                retryInstruction =
-                        """
-                        This is retry number 3.
-                        Change the question angle.
-                        Test a different practical concept from the selected competency.
-                        Do not repeat any previous question.
-                        """;
-                break;
-
-            case 4:
-                retryInstruction =
-                        """
-                        This is retry number 4.
-                        Use a new technical scenario or example.
-                        Make the question clearly different from all previous questions.
-                        Return strictly valid JSON.
-                        """;
-                break;
-
-            case 5:
-                retryInstruction =
-                        """
-                        Final retry.
-                        Create a simple but completely new technical MCQ.
-                        Avoid all previous question wording and concepts.
-                        Output ONLY the JSON object.
-                        """;
-                break;
-
-            default:
-                retryInstruction =
-                        """
-                        Create a fresh question.
-                        """;
+        if (previousText.isEmpty()) {
+            previousText.append("None.");
         }
 
         return """
-                You are an MCQ question generator for the
-                CapacitiX employee skill assessment system.
+                Generate exactly %d distinct technical multiple-choice questions for CapacitiX.
 
-                Generate EXACTLY ONE question.
-
-                Assessment name:
-                %s
-
-                Target role:
-                %s
+                Assessment: %s
+                Target role: %s
 
                 Allowed competencies:
                 %s
 
-                Question number:
-                %d
-
-                Generation attempt:
-                %d
-
-                %s
-
-                IMPORTANT RULES:
-
-                1. Use ONLY one competency from the allowed list.
-                2. Use the exact competency name.
-                3. Generate a useful technical question.
-                4. Use simple English.
-                5. Test understanding, not memorization only.
-                6. Avoid duplicate questions.
-                7. Avoid questions with the same concept as previous questions.
-                8. Provide exactly four options.
-                9. optionA, optionB, optionC and optionD must contain text.
-                10. Only one option must be correct.
-                11. correctAnswer must be exactly A, B, C or D.
-                12. difficulty must be BEGINNER, INTERMEDIATE or ADVANCED.
-                13. marks must be exactly 1.
-                14. Keep explanation short.
-                15. Return ONLY one JSON object.
-                16. Do NOT use Markdown.
-                17. Do NOT write ```json.
-                18. Do NOT write any text before JSON.
-                19. Do NOT write any text after JSON.
-                20. Ensure all JSON strings are properly quoted.
-                21. Do not include newline characters inside JSON string values.
-
                 Previous questions to avoid:
                 %s
 
-                Return exactly this structure:
+                Rules:
+                - Use only the supplied competencies and their exact names.
+                - Use simple English and practical technical concepts.
+                - Every question must test a different concept.
+                - Include exactly four distinct options per question.
+                - correctAnswer must be A, B, C, or D.
+                - difficulty must be BEGINNER, INTERMEDIATE, or ADVANCED.
+                - marks must be 1.
+                - Keep explanations to one short sentence.
+                - Do not repeat any previous question.
+                - Return only valid JSON, without Markdown or extra text.
 
+                Return a JSON object with a "questions" array.
+                Every array item must follow this structure:
                 {
                   "competency": "Exact competency name",
                   "question": "Question text",
@@ -665,1227 +378,455 @@ public class AIQuestionGeneratorService {
                   "explanation": "Short explanation"
                 }
                 """.formatted(
+                count,
                 safe(assessment.getName()),
                 safe(assessment.getTargetRole()),
                 competencyText,
-                questionNumber,
-                attempt,
-                retryInstruction,
-                previousQuestions
+                previousText
         );
     }
 
-    // =========================================================
-    // PREVIOUS QUESTIONS
-    // =========================================================
+    private String callOllama(String prompt, int batchCount) {
+        int tokenLimit = Math.min(
+                1200,
+                Math.max(512, ollamaNumPredict)
+        );
 
-    private String buildPreviousQuestionsText(
-            Set<String> existingQuestionKeys
-    ) {
-
-        if (existingQuestionKeys == null
-                || existingQuestionKeys.isEmpty()) {
-
-            return "None.";
-        }
-
-        StringBuilder builder =
-                new StringBuilder();
-
-        int count = 0;
-
-        /*
-         * Send all generated questions when possible.
-         * For larger assessments, keep the prompt reasonable.
-         */
-        for (String key :
-                existingQuestionKeys) {
-
-            if (count >= 15) {
-                break;
-            }
-
-            builder.append("- ")
-                    .append(key)
-                    .append("\n");
-
-            count++;
-        }
-
-        return builder.toString();
-    }
-
-    // =========================================================
-    // CALL OLLAMA
-    // =========================================================
-
-    private String callOllama(
-            String prompt,
-            int attempt
-    ) {
-
-        String baseUrl =
-                removeTrailingSlash(
-                        ollamaBaseUrl
-                );
-
-        RestClient restClient =
-                RestClient.builder()
-                        .baseUrl(baseUrl)
-                        .requestFactory(
-                                createRequestFactory()
-                        )
-                        .build();
-
-        /*
-         * Increase temperature slightly on retries.
-         *
-         * Example:
-         * attempt 1 -> configured temperature
-         * attempt 2 -> +0.10
-         * attempt 3 -> +0.20
-         * ...
-         *
-         * This helps prevent llama3.2 from returning the
-         * same question repeatedly.
-         */
-        double retryTemperature =
-                Math.min(
-                        0.9,
-                        Math.max(
-                                0.0,
-                                ollamaTemperature
-                        ) + ((attempt - 1) * 0.10)
-                );
-
-        OllamaRequest request =
-                new OllamaRequest(
-                        ollamaModel,
-                        prompt,
-                        false,
-                        "json",
-                        new OllamaOptions(
-                                retryTemperature,
-                                ollamaNumPredict
-                        )
-                );
+        OllamaRequest request = new OllamaRequest(
+                ollamaModel,
+                prompt,
+                false,
+                "json",
+                new OllamaOptions(
+                        Math.max(0.0, Math.min(0.8, ollamaTemperature)),
+                        tokenLimit,
+                        1.1,
+                        0.9
+                ),
+                "10m"
+        );
 
         try {
+            OllamaResponse response = restClient.post()
+                    .uri("/api/generate")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .accept(MediaType.APPLICATION_JSON)
+                    .body(request)
+                    .retrieve()
+                    .body(OllamaResponse.class);
 
-            OllamaResponse response =
-                    restClient.post()
-                            .uri("/api/generate")
-                            .contentType(
-                                    MediaType.APPLICATION_JSON
-                            )
-                            .accept(
-                                    MediaType.APPLICATION_JSON
-                            )
-                            .body(request)
-                            .retrieve()
-                            .body(OllamaResponse.class);
-
-            if (response == null) {
-
-                throw new RuntimeException(
-                        "Ollama returned an empty response."
-                );
-            }
-
-            if (response.response() == null
+            if (response == null
+                    || response.response() == null
                     || response.response().isBlank()) {
-
-                throw new RuntimeException(
-                        "Ollama returned an empty AI response."
-                );
+                throw new RuntimeException("Ollama returned an empty response.");
             }
 
             return response.response();
 
         } catch (RestClientResponseException e) {
-
-            String body =
-                    e.getResponseBodyAsString();
-
-            String message =
-                    "Ollama returned HTTP "
-                            + e.getStatusCode().value()
-                            + " "
-                            + e.getStatusText();
-
-            if (body != null
-                    && !body.isBlank()) {
-
-                message +=
-                        ". Response: "
-                                + responsePreview(body);
-            }
-
             throw new RuntimeException(
-                    message,
+                    "Ollama HTTP error " + e.getStatusCode().value()
+                            + ": " + preview(e.getResponseBodyAsString()),
                     e
             );
-
         } catch (ResourceAccessException e) {
-
             throw new RuntimeException(
                     "Cannot connect to Ollama at "
-                            + baseUrl
-                            + ". Make sure Ollama is running "
-                            + "on port 11434.",
+                            + removeTrailingSlash(ollamaBaseUrl)
+                            + ". Make sure Ollama is running.",
                     e
             );
-
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
-
             throw new RuntimeException(
-                    "Ollama generation failed: "
-                            + safeExceptionMessage(e),
+                    "Ollama request failed: " + safeExceptionMessage(e),
                     e
             );
         }
     }
 
-    // =========================================================
-    // REQUEST FACTORY
-    // =========================================================
-
-    private org.springframework.http.client.ClientHttpRequestFactory
-    createRequestFactory() {
-
-        org.springframework.http.client
-                .SimpleClientHttpRequestFactory factory =
-                new org.springframework.http.client
-                        .SimpleClientHttpRequestFactory();
-
-        factory.setConnectTimeout(
-                Duration.ofSeconds(10)
-        );
-
-        factory.setReadTimeout(
-                Duration.ofMillis(ollamaTimeout)
-        );
-
-        return factory;
-    }
-
-    // =========================================================
-    // PARSE ONE QUESTION
-    // =========================================================
-
-    private GeneratedQuestion parseQuestion(
-            String response
-    ) {
-
+    private List<GeneratedQuestion> parseQuestions(String response) {
         try {
-
-            String json =
-                    cleanJson(response);
+            String json = cleanJson(response);
 
             if (json.isBlank()) {
-
-                throw new RuntimeException(
-                        "Empty JSON response."
-                );
+                throw new RuntimeException("AI returned empty JSON.");
             }
 
-            JsonNode root =
-                    objectMapper.readTree(json);
+            JsonNode root = objectMapper.readTree(json);
 
-            if (root == null
-                    || root.isNull()) {
-
-                throw new RuntimeException(
-                        "Empty JSON object."
-                );
+            if (root == null || root.isNull()) {
+                throw new RuntimeException("AI returned no JSON data.");
             }
 
-            /*
-             * Sometimes the model returns an array.
-             * Accept the first object.
-             */
+            JsonNode array;
+
             if (root.isArray()) {
-
-                if (root.isEmpty()) {
-
-                    throw new RuntimeException(
-                            "AI returned an empty array."
-                    );
-                }
-
-                root =
-                        root.get(0);
-            }
-
-            if (!root.isObject()) {
-
-                throw new RuntimeException(
-                        "AI response is not a JSON object."
-                );
-            }
-
-            GeneratedQuestion question =
-                    new GeneratedQuestion();
-
-            question.competency =
-                    firstText(
-                            root,
-                            "competency",
-                            "skill",
-                            "competencyName"
-                    );
-
-            question.question =
-                    firstText(
-                            root,
-                            "question",
-                            "questionText",
-                            "text"
-                    );
-
-            question.optionA =
-                    firstText(
-                            root,
-                            "optionA",
-                            "option_a",
-                            "A",
-                            "a"
-                    );
-
-            question.optionB =
-                    firstText(
-                            root,
-                            "optionB",
-                            "option_b",
-                            "B",
-                            "b"
-                    );
-
-            question.optionC =
-                    firstText(
-                            root,
-                            "optionC",
-                            "option_c",
-                            "C",
-                            "c"
-                    );
-
-            question.optionD =
-                    firstText(
-                            root,
-                            "optionD",
-                            "option_d",
-                            "D",
-                            "d"
-                    );
-
-            // -------------------------------------------------
-            // OPTIONS ARRAY SUPPORT
-            // -------------------------------------------------
-
-            JsonNode options =
-                    root.get("options");
-
-            if (options != null
-                    && options.isArray()
-                    && options.size() >= 4) {
-
-                if (!notBlank(question.optionA)) {
-                    question.optionA =
-                            nodeText(
-                                    options.get(0)
-                            );
-                }
-
-                if (!notBlank(question.optionB)) {
-                    question.optionB =
-                            nodeText(
-                                    options.get(1)
-                            );
-                }
-
-                if (!notBlank(question.optionC)) {
-                    question.optionC =
-                            nodeText(
-                                    options.get(2)
-                            );
-                }
-
-                if (!notBlank(question.optionD)) {
-                    question.optionD =
-                            nodeText(
-                                    options.get(3)
-                            );
-                }
-            }
-
-            question.correctAnswer =
-                    firstText(
-                            root,
-                            "correctAnswer",
-                            "correct_answer",
-                            "answer",
-                            "correctOption",
-                            "correct_option"
-                    );
-
-            question.difficulty =
-                    firstText(
-                            root,
-                            "difficulty",
-                            "level"
-                    );
-
-            question.explanation =
-                    firstText(
-                            root,
-                            "explanation",
-                            "reason"
-                    );
-
-            JsonNode marks =
-                    root.get("marks");
-
-            if (marks != null
-                    && marks.isNumber()) {
-
-                question.marks =
-                        marks.asInt();
-
+                array = root;
+            } else if (root.isObject() && root.has("questions")
+                    && root.get("questions").isArray()) {
+                array = root.get("questions");
+            } else if (root.isObject()) {
+                array = objectMapper.createArrayNode().add(root);
             } else {
-
-                question.marks = 1;
+                throw new RuntimeException("AI response has an unsupported JSON structure.");
             }
 
-            return question;
+            List<GeneratedQuestion> questions = new ArrayList<>();
+
+            for (JsonNode node : array) {
+                if (node == null || !node.isObject()) {
+                    continue;
+                }
+
+                GeneratedQuestion q = new GeneratedQuestion();
+
+                q.competency = firstText(node,
+                        "competency", "skill", "competencyName");
+
+                q.question = firstText(node,
+                        "question", "questionText", "text");
+
+                q.optionA = firstText(node, "optionA", "option_a", "A", "a");
+                q.optionB = firstText(node, "optionB", "option_b", "B", "b");
+                q.optionC = firstText(node, "optionC", "option_c", "C", "c");
+                q.optionD = firstText(node, "optionD", "option_d", "D", "d");
+
+                JsonNode options = node.get("options");
+
+                if (options != null && options.isArray()
+                        && options.size() >= 4) {
+                    if (!notBlank(q.optionA)) q.optionA = nodeText(options.get(0));
+                    if (!notBlank(q.optionB)) q.optionB = nodeText(options.get(1));
+                    if (!notBlank(q.optionC)) q.optionC = nodeText(options.get(2));
+                    if (!notBlank(q.optionD)) q.optionD = nodeText(options.get(3));
+                }
+
+                q.correctAnswer = firstText(node,
+                        "correctAnswer", "correct_answer",
+                        "answer", "correctOption", "correct_option");
+
+                q.difficulty = firstText(node, "difficulty", "level");
+                q.explanation = firstText(node, "explanation", "reason");
+
+                JsonNode marks = node.get("marks");
+                q.marks = marks != null && marks.canConvertToInt()
+                        ? marks.asInt()
+                        : 1;
+
+                questions.add(q);
+            }
+
+            return questions;
 
         } catch (Exception e) {
-
             throw new RuntimeException(
-                    "Unable to parse AI question. "
-                            + "Response: "
-                            + responsePreview(response),
+                    "Unable to parse AI questions: " + preview(response),
                     e
             );
         }
     }
 
-    // =========================================================
-    // TEXT FROM JSON
-    // =========================================================
-
-    private String text(
-            JsonNode node,
-            String field
-    ) {
-
-        if (node == null
-                || field == null) {
-
+    private String cleanJson(String response) {
+        if (!notBlank(response)) {
             return "";
         }
 
-        JsonNode value =
-                node.get(field);
+        String json = response.trim();
 
-        return nodeText(value);
-    }
-
-    private String firstText(
-            JsonNode node,
-            String... fields
-    ) {
-
-        if (node == null
-                || fields == null) {
-
-            return "";
-        }
-
-        for (String field : fields) {
-
-            String value =
-                    text(node, field);
-
-            if (notBlank(value)) {
-                return value;
-            }
-        }
-
-        return "";
-    }
-
-    private String nodeText(
-            JsonNode node
-    ) {
-
-        if (node == null
-                || node.isNull()) {
-
-            return "";
-        }
-
-        if (node.isTextual()) {
-
-            return node.asText().trim();
-        }
-
-        return node.toString().trim();
-    }
-
-    // =========================================================
-    // CLEAN JSON
-    // =========================================================
-
-    private String cleanJson(
-            String response
-    ) {
-
-        if (response == null
-                || response.isBlank()) {
-
-            return "";
-        }
-
-        String json =
-                response.trim();
-
-        // Remove Markdown fences.
         if (json.startsWith("```")) {
-
-            int firstNewLine =
-                    json.indexOf('\n');
-
-            if (firstNewLine >= 0) {
-
-                json =
-                        json.substring(
-                                firstNewLine + 1
-                        );
+            int newline = json.indexOf('\n');
+            if (newline >= 0) {
+                json = json.substring(newline + 1);
             }
 
-            int lastFence =
-                    json.lastIndexOf("```");
-
-            if (lastFence >= 0) {
-
-                json =
-                        json.substring(
-                                0,
-                                lastFence
-                        );
+            int fence = json.lastIndexOf("```");
+            if (fence >= 0) {
+                json = json.substring(0, fence);
             }
         }
 
-        json =
-                json.trim();
+        json = json.trim();
 
-        /*
-         * Sometimes Ollama may return a short explanation
-         * before the JSON object.
-         *
-         * Extract the JSON object.
-         */
-        int objectStart =
-                json.indexOf('{');
+        int objectStart = json.indexOf('{');
+        int objectEnd = json.lastIndexOf('}');
 
-        int objectEnd =
-                json.lastIndexOf('}');
-
-        if (objectStart >= 0
-                && objectEnd > objectStart) {
-
-            return json.substring(
-                    objectStart,
-                    objectEnd + 1
-            ).trim();
+        if (objectStart >= 0 && objectEnd > objectStart) {
+            return json.substring(objectStart, objectEnd + 1).trim();
         }
 
-        // Array fallback.
-        int arrayStart =
-                json.indexOf('[');
+        int arrayStart = json.indexOf('[');
+        int arrayEnd = json.lastIndexOf(']');
 
-        int arrayEnd =
-                json.lastIndexOf(']');
-
-        if (arrayStart >= 0
-                && arrayEnd > arrayStart) {
-
-            return json.substring(
-                    arrayStart,
-                    arrayEnd + 1
-            ).trim();
+        if (arrayStart >= 0 && arrayEnd > arrayStart) {
+            return json.substring(arrayStart, arrayEnd + 1).trim();
         }
 
         return json;
     }
 
-    // =========================================================
-    // FIND COMPETENCY
-    // =========================================================
-
-    private Competency findCompetency(
-            String aiCompetency,
-            Map<String, Competency> competencyMap
-    ) {
-
-        if (!notBlank(aiCompetency)) {
-            return null;
+    private boolean isValidQuestion(GeneratedQuestion q) {
+        if (q == null
+                || !notBlank(q.competency)
+                || !notBlank(q.question)
+                || !notBlank(q.optionA)
+                || !notBlank(q.optionB)
+                || !notBlank(q.optionC)
+                || !notBlank(q.optionD)
+                || !notBlank(q.correctAnswer)) {
+            return false;
         }
 
-        String normalizedAI =
-                normalize(aiCompetency);
-
-        // Exact match.
-        Competency exact =
-                competencyMap.get(
-                        normalizedAI
-                );
-
-        if (exact != null) {
-            return exact;
-        }
-
-        // Contains match.
-        for (Map.Entry<String, Competency> entry :
-                competencyMap.entrySet()) {
-
-            String known =
-                    entry.getKey();
-
-            if (normalizedAI.contains(known)
-                    || known.contains(normalizedAI)) {
-
-                return entry.getValue();
-            }
-        }
-
-        // Word match.
-        String[] aiWords =
-                normalizedAI.split("\\s+");
-
-        Competency bestMatch = null;
-
-        int bestScore = 0;
-
-        for (Map.Entry<String, Competency> entry :
-                competencyMap.entrySet()) {
-
-            String[] knownWords =
-                    entry.getKey().split("\\s+");
-
-            int score = 0;
-
-            for (String aiWord :
-                    aiWords) {
-
-                if (aiWord.length() < 3) {
-                    continue;
-                }
-
-                for (String knownWord :
-                        knownWords) {
-
-                    if (aiWord.equals(knownWord)) {
-                        score++;
-                    }
-                }
-            }
-
-            if (score > bestScore) {
-
-                bestScore = score;
-
-                bestMatch =
-                        entry.getValue();
-            }
-        }
-
-        return bestScore > 0
-                ? bestMatch
-                : null;
-    }
-
-    // =========================================================
-    // QUESTION KEY
-    // =========================================================
-
-    private String questionKey(
-            GeneratedQuestion question
-    ) {
-
-        if (question == null) {
-            return "";
-        }
-
-        return normalize(
-                question.competency
-        )
-                + "::"
-                + normalize(
-                question.question
+        List<String> options = List.of(
+                normalize(q.optionA),
+                normalize(q.optionB),
+                normalize(q.optionC),
+                normalize(q.optionD)
         );
+
+        return options.stream().distinct().count() == 4;
     }
 
-    // =========================================================
-    // VALIDATE QUESTION
-    // =========================================================
-
-    private boolean isValidQuestion(
-            GeneratedQuestion question
-    ) {
-
-        if (question == null) {
-            return false;
-        }
-
-        if (!notBlank(question.competency)) {
-            return false;
-        }
-
-        if (!notBlank(question.question)) {
-            return false;
-        }
-
-        if (!notBlank(question.optionA)) {
-            return false;
-        }
-
-        if (!notBlank(question.optionB)) {
-            return false;
-        }
-
-        if (!notBlank(question.optionC)) {
-            return false;
-        }
-
-        if (!notBlank(question.optionD)) {
-            return false;
-        }
-
-        if (!notBlank(question.correctAnswer)) {
-            return false;
-        }
-
-        /*
-         * Prevent duplicate option values.
-         */
-        if (sameText(
-                question.optionA,
-                question.optionB
-        )) {
-            return false;
-        }
-
-        if (sameText(
-                question.optionA,
-                question.optionC
-        )) {
-            return false;
-        }
-
-        if (sameText(
-                question.optionA,
-                question.optionD
-        )) {
-            return false;
-        }
-
-        if (sameText(
-                question.optionB,
-                question.optionC
-        )) {
-            return false;
-        }
-
-        if (sameText(
-                question.optionB,
-                question.optionD
-        )) {
-            return false;
-        }
-
-        if (sameText(
-                question.optionC,
-                question.optionD
-        )) {
-            return false;
-        }
-
-        return true;
-    }
-
-    // =========================================================
-    // NORMALIZE ANSWER
-    // =========================================================
-
-    private String normalizeAnswer(
-            String answer,
-            GeneratedQuestion question
-    ) {
-
-        if (answer == null
-                || answer.isBlank()) {
-
+    private String normalizeAnswer(String answer, GeneratedQuestion q) {
+        if (!notBlank(answer)) {
             return "";
         }
 
-        String value =
-                answer.trim();
+        String value = answer.trim();
+        String upper = value.toUpperCase(Locale.ROOT);
 
-        String upper =
-                value.toUpperCase(
-                        Locale.ROOT
-                );
-
-        // -----------------------------------------------------
-        // Direct A/B/C/D
-        // -----------------------------------------------------
-
-        if (upper.equals("A")
-                || upper.matches(
-                "^A[\\s\\.\\):\\-].*"
-        )
-                || upper.startsWith("OPTION A")
-                || upper.startsWith("ANSWER A")
-                || upper.startsWith("ANSWER: A")) {
-
-            return "A";
+        if (upper.matches("^(A|B|C|D)$")) {
+            return upper;
         }
 
-        if (upper.equals("B")
-                || upper.matches(
-                "^B[\\s\\.\\):\\-].*"
-        )
-                || upper.startsWith("OPTION B")
-                || upper.startsWith("ANSWER B")
-                || upper.startsWith("ANSWER: B")) {
+        if (upper.matches("^OPTION\\s*A.*") || upper.matches("^ANSWER:?\\s*A.*")) return "A";
+        if (upper.matches("^OPTION\\s*B.*") || upper.matches("^ANSWER:?\\s*B.*")) return "B";
+        if (upper.matches("^OPTION\\s*C.*") || upper.matches("^ANSWER:?\\s*C.*")) return "C";
+        if (upper.matches("^OPTION\\s*D.*") || upper.matches("^ANSWER:?\\s*D.*")) return "D";
 
-            return "B";
-        }
-
-        if (upper.equals("C")
-                || upper.matches(
-                "^C[\\s\\.\\):\\-].*"
-        )
-                || upper.startsWith("OPTION C")
-                || upper.startsWith("ANSWER C")
-                || upper.startsWith("ANSWER: C")) {
-
-            return "C";
-        }
-
-        if (upper.equals("D")
-                || upper.matches(
-                "^D[\\s\\.\\):\\-].*"
-        )
-                || upper.startsWith("OPTION D")
-                || upper.startsWith("ANSWER D")
-                || upper.startsWith("ANSWER: D")) {
-
-            return "D";
-        }
-
-        // -----------------------------------------------------
-        // Numeric answer support
-        //
-        // 0 -> A
-        // 1 -> B
-        // 2 -> C
-        // 3 -> D
-        // -----------------------------------------------------
-
-        switch (upper) {
-
-            case "0":
-                return "A";
-
-            case "1":
-                return "B";
-
-            case "2":
-                return "C";
-
-            case "3":
-                return "D";
-
-            default:
-                break;
-        }
-
-        // -----------------------------------------------------
-        // Complete option text
-        // -----------------------------------------------------
-
-        if (question != null) {
-
-            if (sameText(
-                    value,
-                    question.optionA
-            )) {
-                return "A";
-            }
-
-            if (sameText(
-                    value,
-                    question.optionB
-            )) {
-                return "B";
-            }
-
-            if (sameText(
-                    value,
-                    question.optionC
-            )) {
-                return "C";
-            }
-
-            if (sameText(
-                    value,
-                    question.optionD
-            )) {
-                return "D";
-            }
-        }
+        if (sameText(value, q.optionA)) return "A";
+        if (sameText(value, q.optionB)) return "B";
+        if (sameText(value, q.optionC)) return "C";
+        if (sameText(value, q.optionD)) return "D";
 
         return "";
     }
 
-    // =========================================================
-    // VALIDATE ANSWER
-    // =========================================================
-
-    private boolean isValidCorrectAnswer(
-            String answer
-    ) {
-
+    private boolean isValidCorrectAnswer(String answer) {
         return "A".equals(answer)
                 || "B".equals(answer)
                 || "C".equals(answer)
                 || "D".equals(answer);
     }
 
-    // =========================================================
-    // NORMALIZE DIFFICULTY
-    // =========================================================
+    private String questionKey(GeneratedQuestion q) {
+        return normalize(q.competency) + "::" + normalize(q.question);
+    }
 
-    private String normalizeDifficulty(
-            String difficulty
+    private Competency findCompetency(
+            String aiCompetency,
+            Map<String, Competency> competencyMap
     ) {
+        if (!notBlank(aiCompetency)) {
+            return null;
+        }
 
+        String key = normalize(aiCompetency);
+
+        Competency exact = competencyMap.get(key);
+        if (exact != null) {
+            return exact;
+        }
+
+        for (Map.Entry<String, Competency> entry : competencyMap.entrySet()) {
+            String known = entry.getKey();
+
+            if (key.contains(known) || known.contains(key)) {
+                return entry.getValue();
+            }
+        }
+
+        String[] words = key.split("\\s+");
+        Competency best = null;
+        int bestScore = 0;
+
+        for (Map.Entry<String, Competency> entry : competencyMap.entrySet()) {
+            int score = 0;
+
+            for (String word : words) {
+                if (word.length() >= 3
+                        && entry.getKey().contains(word)) {
+                    score++;
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                best = entry.getValue();
+            }
+        }
+
+        return bestScore > 0 ? best : null;
+    }
+
+    private String normalizeDifficulty(String difficulty) {
         if (!notBlank(difficulty)) {
             return "INTERMEDIATE";
         }
 
-        String value =
-                difficulty
-                        .trim()
-                        .toUpperCase(
-                                Locale.ROOT
-                        );
-
-        if ("BEGINNER".equals(value)
-                || "EASY".equals(value)) {
-
-            return "BEGINNER";
-        }
-
-        if ("ADVANCED".equals(value)
-                || "HARD".equals(value)) {
-
-            return "ADVANCED";
-        }
-
-        return "INTERMEDIATE";
+        return switch (difficulty.trim().toUpperCase(Locale.ROOT)) {
+            case "BEGINNER", "EASY" -> "BEGINNER";
+            case "ADVANCED", "HARD" -> "ADVANCED";
+            default -> "INTERMEDIATE";
+        };
     }
-
-    // =========================================================
-    // VALIDATE INPUT
-    // =========================================================
 
     private void validateInput(
             Assessment assessment,
             List<Competency> competencies
     ) {
-
         if (assessment == null) {
-
-            throw new RuntimeException(
-                    "Assessment is required."
-            );
+            throw new IllegalArgumentException("Assessment is required.");
         }
 
-        if (competencies == null
-                || competencies.isEmpty()) {
-
-            throw new RuntimeException(
+        if (competencies == null || competencies.isEmpty()) {
+            throw new IllegalArgumentException(
                     "Please select at least one competency."
             );
         }
 
         if (assessment.getQuestionCount() == null
-                || assessment.getQuestionCount() <= 0) {
-
-            throw new RuntimeException(
-                    "Question count must be greater than 0."
-            );
-        }
-
-        if (assessment.getQuestionCount() > 50) {
-
-            throw new RuntimeException(
-                    "Question count cannot be greater than 50."
+                || assessment.getQuestionCount() <= 0
+                || assessment.getQuestionCount() > 50) {
+            throw new IllegalArgumentException(
+                    "Question count must be between 1 and 50."
             );
         }
     }
 
-    // =========================================================
-    // FORMAT COMPETENCY
-    // =========================================================
+    private String firstText(JsonNode node, String... fields) {
+        for (String field : fields) {
+            JsonNode value = node.get(field);
 
-    private String formatCompetency(
-            Competency competency
-    ) {
+            if (value != null && !value.isNull()) {
+                String text = nodeText(value);
 
-        return "- "
-                + safe(competency.getName())
-                + " | Category: "
-                + safe(competency.getCategory())
-                + " | Level: "
-                + safe(competency.getLevel())
-                + " | Description: "
-                + safe(competency.getDescription());
+                if (notBlank(text)) {
+                    return text;
+                }
+            }
+        }
+
+        return "";
     }
 
-    // =========================================================
-    // NORMALIZE TEXT
-    // =========================================================
+    private String nodeText(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return "";
+        }
 
-    private String normalize(
-            String value
-    ) {
+        return node.isTextual()
+                ? node.asText().trim()
+                : node.toString().trim();
+    }
 
+    private String normalize(String value) {
         if (value == null) {
             return "";
         }
 
-        return value
-                .trim()
+        return value.trim()
                 .toLowerCase(Locale.ROOT)
-                .replaceAll(
-                        "[^a-z0-9\\s]",
-                        " "
-                )
-                .replaceAll(
-                        "\\s+",
-                        " "
-                )
+                .replaceAll("[^a-z0-9\\s]", " ")
+                .replaceAll("\\s+", " ")
                 .trim();
     }
 
-    // =========================================================
-    // COMPARE TEXT
-    // =========================================================
-
-    private boolean sameText(
-            String first,
-            String second
-    ) {
-
-        if (!notBlank(first)
-                || !notBlank(second)) {
-
-            return false;
-        }
-
-        return normalize(first)
-                .equals(
-                        normalize(second)
-                );
+    private boolean sameText(String first, String second) {
+        return notBlank(first)
+                && notBlank(second)
+                && normalize(first).equals(normalize(second));
     }
 
-    // =========================================================
-    // NOT BLANK
-    // =========================================================
-
-    private boolean notBlank(
-            String value
-    ) {
-
-        return value != null
-                && !value.trim().isEmpty();
+    private boolean notBlank(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
-    // =========================================================
-    // SAFE
-    // =========================================================
-
-    private String safe(
-            String value
-    ) {
-
-        return value == null
-                || value.isBlank()
-                ? "Not specified"
-                : value.trim();
+    private String safe(String value) {
+        return notBlank(value) ? value.trim() : "Not specified";
     }
 
-    // =========================================================
-    // SAFE NULLABLE
-    // =========================================================
-
-    private String safeNullable(
-            String value
-    ) {
-
-        if (!notBlank(value)) {
-            return null;
-        }
-
-        return value.trim();
+    private String safeNullable(String value) {
+        return notBlank(value) ? value.trim() : null;
     }
 
-    // =========================================================
-    // REMOVE TRAILING SLASH
-    // =========================================================
-
-    private String removeTrailingSlash(
-            String url
-    ) {
-
+    private String removeTrailingSlash(String url) {
         if (!notBlank(url)) {
             return "http://localhost:11434";
         }
 
-        String value =
-                url.trim();
+        String result = url.trim();
 
-        while (value.endsWith("/")) {
-
-            value =
-                    value.substring(
-                            0,
-                            value.length() - 1
-                    );
+        while (result.endsWith("/")) {
+            result = result.substring(0, result.length() - 1);
         }
 
-        return value;
+        return result;
     }
 
-    // =========================================================
-    // SAFE EXCEPTION
-    // =========================================================
-
-    private String safeExceptionMessage(
-            Exception exception
-    ) {
-
-        if (exception == null) {
-            return "Unknown error";
+    private String safeExceptionMessage(Exception e) {
+        if (e == null || !notBlank(e.getMessage())) {
+            return e == null ? "Unknown error" : e.getClass().getSimpleName();
         }
 
-        String message =
-                exception.getMessage();
-
-        if (!notBlank(message)) {
-
-            return exception
-                    .getClass()
-                    .getSimpleName();
-        }
-
-        return message;
+        return e.getMessage();
     }
 
-    // =========================================================
-    // RESPONSE PREVIEW
-    // =========================================================
-
-    private String responsePreview(
-            String response
-    ) {
-
-        if (!notBlank(response)) {
+    private String preview(String value) {
+        if (!notBlank(value)) {
             return "[empty response]";
         }
 
-        String cleaned =
-                response
-                        .replace("\n", " ")
-                        .replace("\r", " ")
-                        .trim();
+        String result = value.replace('\n', ' ').replace('\r', ' ').trim();
 
-        int maxLength = 800;
-
-        if (cleaned.length() > maxLength) {
-
-            return cleaned.substring(
-                    0,
-                    maxLength
-            ) + "...";
-        }
-
-        return cleaned;
+        return result.length() > 500
+                ? result.substring(0, 500) + "..."
+                : result;
     }
-
-    // =========================================================
-    // OLLAMA REQUEST
-    // =========================================================
 
     private record OllamaRequest(
             String model,
             String prompt,
             boolean stream,
             String format,
-            OllamaOptions options
-    ) {
-    }
-
-    // =========================================================
-    // OLLAMA OPTIONS
-    // =========================================================
+            OllamaOptions options,
+            String keep_alive
+    ) {}
 
     private record OllamaOptions(
             double temperature,
-            int num_predict
-    ) {
-    }
-
-    // =========================================================
-    // OLLAMA RESPONSE
-    // =========================================================
+            int num_predict,
+            double repeat_penalty,
+            double top_p
+    ) {}
 
     private record OllamaResponse(
             String model,
             String response,
             boolean done
-    ) {
-    }
-
-    // =========================================================
-    // GENERATED QUESTION
-    // =========================================================
+    ) {}
 
     private static class GeneratedQuestion {
-
         public String competency;
-
         public String question;
-
         public String optionA;
-
         public String optionB;
-
         public String optionC;
-
         public String optionD;
-
         public String correctAnswer;
-
         public String difficulty;
-
         public int marks = 1;
-
         public String explanation;
     }
 }

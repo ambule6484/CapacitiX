@@ -1,15 +1,19 @@
+
 package com.capacitix.service;
 
 import com.capacitix.entity.User;
 import com.capacitix.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -22,67 +26,56 @@ public class CustomUserDetailsService implements UserDetailsService {
     // =========================================================
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
         if (email == null || email.trim().isEmpty()) {
-
             throw new UsernameNotFoundException(
                     "Email is required for login"
             );
         }
 
-        String loginEmail = email.trim();
+        String loginEmail = email.trim().toLowerCase(Locale.ROOT);
 
-        User user = userRepository
-                .findByEmail(loginEmail)
+        User user = userRepository.findByEmail(loginEmail)
                 .orElseThrow(() ->
                         new UsernameNotFoundException(
-                                "User not found with email: " + loginEmail
+                                "Invalid email or password"
                         )
                 );
 
-        /*
-         * Current CapacitiX roles:
-         *
-         * ADMIN
-         * ORGANIZATION
-         * TRAINER
-         * EMPLOYEE
-         */
+        // =====================================================
+        // VALIDATE USER ROLE
+        // =====================================================
+
         User.Role role = user.getRole();
 
         if (role == null) {
-
             throw new UsernameNotFoundException(
-                    "User role is not configured: " + loginEmail
+                    "User role is not configured"
             );
         }
 
-        /*
-         * Spring Security expects authorities such as:
-         *
-         * ROLE_ADMIN
-         * ROLE_ORGANIZATION
-         * ROLE_TRAINER
-         * ROLE_EMPLOYEE
-         */
-        SimpleGrantedAuthority authority =
-                new SimpleGrantedAuthority(
-                        "ROLE_" + role.name()
-                );
+        // =====================================================
+        // SPRING SECURITY AUTHORITY
+        // =====================================================
 
-        /*
-         * The 'enabled' value comes from the users table.
-         *
-         * If Admin disables an employee/trainer,
-         * Spring Security will prevent that account from logging in.
-         */
+        SimpleGrantedAuthority authority =
+                new SimpleGrantedAuthority("ROLE_" + role.name());
+
+        // =====================================================
+        // BUILD USER DETAILS
+        // =====================================================
+
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())
                 .password(user.getPassword())
                 .authorities(List.of(authority))
                 .disabled(!user.isEnabled())
+                .accountExpired(false)
+                .accountLocked(false)
+                .credentialsExpired(false)
                 .build();
     }
 }

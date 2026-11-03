@@ -1,3 +1,4 @@
+
 package com.capacitix.controller;
 
 import com.capacitix.entity.PracticalTask;
@@ -22,7 +23,6 @@ import java.util.List;
  * =========================================================
  *
  * Handles:
- *
  * Dashboard
  * Employees
  * Skill Gaps
@@ -32,32 +32,6 @@ import java.util.List;
  * Reports
  * Profile
  * Settings
- *
- * =========================================================
- *
- * PRACTICAL TASK WORKFLOW
- *
- * Employee
- *      ↓
- * Start Task
- *      ↓
- * Practice
- *      ↓
- * Submit Solution
- *      ↓
- * SUBMITTED
- *      ↓
- * Trainer Review
- *      ↓
- * ┌─────────────────────────────┐
- * │                             │
- * │ APPROVE                     │ NEEDS IMPROVEMENT
- * │   ↓                         │        ↓
- * │ COMPLETED                   │ Employee revises
- * │   ↓                         │        ↓
- * │ Competency Update           │ Resubmit
- * │                             │
- * └─────────────────────────────┘
  *
  * =========================================================
  */
@@ -84,33 +58,14 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        List<User> employees = getAssignedEmployees(trainer);
 
-
-        // =====================================================
-        // EMPLOYEE STATISTICS
-        // =====================================================
-
-        model.addAttribute(
-                "totalTrainees",
-                employees.size()
-        );
-
-        model.addAttribute(
-                "totalEmployees",
-                employees.size()
-        );
-
-
-        // =====================================================
-        // ASSESSMENT STATISTICS
-        // =====================================================
+        model.addAttribute("totalTrainees", employees.size());
+        model.addAttribute("totalEmployees", employees.size());
 
         model.addAttribute(
                 "totalAssessments",
@@ -142,110 +97,53 @@ public class TrainerController {
                 assessmentService.getPendingAssessments()
         );
 
-
-        // =====================================================
-        // LEARNING / TRAINING
-        // =====================================================
-
-        model.addAttribute(
-                "activeTrainees",
-                0
-        );
-
-        model.addAttribute(
-                "completedTrainees",
-                0
-        );
-
-        model.addAttribute(
-                "averageProgress",
-                0
-        );
-
-
-        // =====================================================
-        // PRACTICAL TASK STATISTICS
-        // =====================================================
+        model.addAttribute("activeTrainees", 0);
+        model.addAttribute("completedTrainees", 0);
+        model.addAttribute("averageProgress", 0);
 
         long pendingTaskReviews =
-                practicalTaskService
-                        .countPendingTrainerReviews(trainer);
+                practicalTaskService.countPendingTrainerReviews(trainer);
 
         long completedTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.COMPLETED
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.COMPLETED
+                );
 
         long improvementTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.NEEDS_IMPROVEMENT
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.NEEDS_IMPROVEMENT
+                );
 
         long activeTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.IN_PROGRESS
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.IN_PROGRESS
+                );
 
         long pendingTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.PENDING
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.PENDING
+                );
 
         long submittedTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.SUBMITTED
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.SUBMITTED
+                );
 
         long totalTasks =
-                practicalTaskService
-                        .countTasksForTrainer(trainer);
+                practicalTaskService.countTasksForTrainer(trainer);
 
-
-        model.addAttribute(
-                "pendingTaskReviews",
-                pendingTaskReviews
-        );
-
-        model.addAttribute(
-                "completedTasks",
-                completedTasks
-        );
-
-        model.addAttribute(
-                "improvementTasks",
-                improvementTasks
-        );
-
-        model.addAttribute(
-                "activeTasks",
-                activeTasks
-        );
-
-        model.addAttribute(
-                "pendingTasks",
-                pendingTasks
-        );
-
-        model.addAttribute(
-                "submittedTasks",
-                submittedTasks
-        );
-
-        model.addAttribute(
-                "totalTasks",
-                totalTasks
-        );
-
+        model.addAttribute("pendingTaskReviews", pendingTaskReviews);
+        model.addAttribute("completedTasks", completedTasks);
+        model.addAttribute("improvementTasks", improvementTasks);
+        model.addAttribute("activeTasks", activeTasks);
+        model.addAttribute("pendingTasks", pendingTasks);
+        model.addAttribute("submittedTasks", submittedTasks);
+        model.addAttribute("totalTasks", totalTasks);
 
         return "trainer/dashboard";
     }
@@ -261,35 +159,16 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        List<User> employees = getAssignedEmployees(trainer);
 
-
-        model.addAttribute(
-                "trainees",
-                employees
-        );
-
-        model.addAttribute(
-                "employees",
-                employees
-        );
-
-        model.addAttribute(
-                "totalTrainees",
-                employees.size()
-        );
-
-        model.addAttribute(
-                "totalEmployees",
-                employees.size()
-        );
-
+        model.addAttribute("trainees", employees);
+        model.addAttribute("employees", employees);
+        model.addAttribute("totalTrainees", employees.size());
+        model.addAttribute("totalEmployees", employees.size());
 
         return "trainer/my-trainees";
     }
@@ -305,46 +184,19 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        List<User> employees = getAssignedEmployees(trainer);
 
+        model.addAttribute("employees", employees);
+        model.addAttribute("trainees", employees);
+        model.addAttribute("totalTrainees", employees.size());
+        model.addAttribute("totalEmployees", employees.size());
 
-        model.addAttribute(
-                "employees",
-                employees
-        );
-
-        model.addAttribute(
-                "trainees",
-                employees
-        );
-
-        model.addAttribute(
-                "totalTrainees",
-                employees.size()
-        );
-
-        model.addAttribute(
-                "totalEmployees",
-                employees.size()
-        );
-
-
-        model.addAttribute(
-                "traineesWithGaps",
-                0
-        );
-
-        model.addAttribute(
-                "totalSkillGaps",
-                0
-        );
-
+        model.addAttribute("traineesWithGaps", 0);
+        model.addAttribute("totalSkillGaps", 0);
 
         return "trainer/skill-gap";
     }
@@ -360,174 +212,81 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
+        List<User> loadedEmployees = getAssignedEmployees(trainer);
 
-        // =====================================================
-        // ASSIGNED EMPLOYEES
-        // =====================================================
+        final List<User> employees = loadedEmployees == null
+                ? Collections.emptyList()
+                : loadedEmployees;
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        model.addAttribute("employees", employees);
+        model.addAttribute("trainees", employees);
 
-        if (employees == null) {
-            employees = Collections.emptyList();
-        }
+        List<PracticalTask> loadedTasks =
+                practicalTaskService.getTrainerTasks(trainer);
 
+        final List<PracticalTask> tasks = loadedTasks == null
+                ? Collections.emptyList()
+                : loadedTasks;
 
-        model.addAttribute(
-                "employees",
-                employees
-        );
-
-        model.addAttribute(
-                "trainees",
-                employees
-        );
-
-
-        // =====================================================
-        // ACTUAL PRACTICAL TASKS
-        // =====================================================
-
-        List<PracticalTask> tasks =
-                practicalTaskService
-                        .getTrainerTasks(trainer);
-
-        if (tasks == null) {
-            tasks = Collections.emptyList();
-        }
-
-
-        model.addAttribute(
-                "tasks",
-                tasks
-        );
-
-        model.addAttribute(
-                "practicalTasks",
-                tasks
-        );
-
-
-        // =====================================================
-        // TASK COUNTS
-        // =====================================================
+        model.addAttribute("tasks", tasks);
+        model.addAttribute("practicalTasks", tasks);
 
         long totalTasks =
-                practicalTaskService
-                        .countTasksForTrainer(trainer);
-
+                practicalTaskService.countTasksForTrainer(trainer);
 
         long pendingTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.PENDING
-                        );
-
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.PENDING
+                );
 
         long activeTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.IN_PROGRESS
-                        );
-
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.IN_PROGRESS
+                );
 
         long submittedTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.SUBMITTED
-                        );
-
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.SUBMITTED
+                );
 
         long improvementTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.NEEDS_IMPROVEMENT
-                        );
-
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.NEEDS_IMPROVEMENT
+                );
 
         long completedTasks =
-                practicalTaskService
-                        .countTasksForTrainerByStatus(
-                                trainer,
-                                PracticalTask.TaskStatus.COMPLETED
-                        );
+                practicalTaskService.countTasksForTrainerByStatus(
+                        trainer,
+                        PracticalTask.TaskStatus.COMPLETED
+                );
 
+        List<PracticalTaskSubmission> loadedReviews =
+                practicalTaskService.getPendingTrainerReviews(trainer);
 
-        // =====================================================
-        // PENDING TRAINER REVIEWS
-        // =====================================================
+        final List<PracticalTaskSubmission> pendingReviews =
+                loadedReviews == null
+                        ? Collections.emptyList()
+                        : loadedReviews;
 
-        List<PracticalTaskSubmission> pendingReviews =
-                practicalTaskService
-                        .getPendingTrainerReviews(trainer);
+        long pendingTaskReviews = pendingReviews.size();
 
-        if (pendingReviews == null) {
-            pendingReviews = Collections.emptyList();
-        }
-
-
-        long pendingTaskReviews =
-                pendingReviews.size();
-
-
-        // =====================================================
-        // MODEL
-        // =====================================================
-
-        model.addAttribute(
-                "totalTasks",
-                totalTasks
-        );
-
-        model.addAttribute(
-                "pendingTasks",
-                pendingTasks
-        );
-
-        model.addAttribute(
-                "activeTasks",
-                activeTasks
-        );
-
-        model.addAttribute(
-                "submittedTasks",
-                submittedTasks
-        );
-
-        model.addAttribute(
-                "improvementTasks",
-                improvementTasks
-        );
-
-        model.addAttribute(
-                "completedTasks",
-                completedTasks
-        );
-
-        model.addAttribute(
-                "pendingTaskReviews",
-                pendingTaskReviews
-        );
-
-        model.addAttribute(
-                "pendingReviews",
-                pendingReviews
-        );
-
-        model.addAttribute(
-                "hasTasks",
-                !tasks.isEmpty()
-        );
-
+        model.addAttribute("totalTasks", totalTasks);
+        model.addAttribute("pendingTasks", pendingTasks);
+        model.addAttribute("activeTasks", activeTasks);
+        model.addAttribute("submittedTasks", submittedTasks);
+        model.addAttribute("improvementTasks", improvementTasks);
+        model.addAttribute("completedTasks", completedTasks);
+        model.addAttribute("pendingTaskReviews", pendingTaskReviews);
+        model.addAttribute("pendingReviews", pendingReviews);
+        model.addAttribute("hasTasks", !tasks.isEmpty());
 
         return "trainer/practical-tasks";
     }
@@ -535,62 +294,33 @@ public class TrainerController {
 
     // =========================================================
     // VIEW PRACTICAL TASK SUBMISSION
-    //
-    // URL:
-    // /trainer/practical-tasks/review/{submissionId}
+    // URL: /trainer/practical-tasks/review/{submissionId}
     // =========================================================
 
-    @GetMapping(
-            "/practical-tasks/review/{submissionId}"
-    )
+    @GetMapping("/practical-tasks/review/{submissionId}")
     public String reviewPracticalTask(
             @PathVariable Long submissionId,
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
-
+        User trainer = getLoggedInTrainer(authentication);
 
         PracticalTaskSubmission submission =
-                practicalTaskService
-                        .getTrainerSubmission(
-                                submissionId,
-                                trainer
+                practicalTaskService.getTrainerSubmission(
+                        submissionId,
+                        trainer
+                ).orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Practical task submission not found or access denied."
                         )
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Practical task submission not found or access denied."
-                                )
-                        );
+                );
 
+        addTrainerDetails(model, trainer);
 
-        addTrainerDetails(
-                model,
-                trainer
-        );
-
-
-        model.addAttribute(
-                "trainer",
-                trainer
-        );
-
-        model.addAttribute(
-                "submission",
-                submission
-        );
-
-        model.addAttribute(
-                "task",
-                submission.getPracticalTask()
-        );
-
-        model.addAttribute(
-                "employee",
-                submission.getEmployee()
-        );
-
+        model.addAttribute("trainer", trainer);
+        model.addAttribute("submission", submission);
+        model.addAttribute("task", submission.getPracticalTask());
+        model.addAttribute("employee", submission.getEmployee());
 
         return "trainer/practical-task-review";
     }
@@ -600,23 +330,14 @@ public class TrainerController {
     // APPROVE PRACTICAL TASK
     // =========================================================
 
-    @PostMapping(
-            "/practical-tasks/review/{submissionId}/approve"
-    )
+    @PostMapping("/practical-tasks/review/{submissionId}/approve")
     public String approvePracticalTask(
             @PathVariable Long submissionId,
-
-            @RequestParam(
-                    name = "feedback",
-                    required = false
-            )
+            @RequestParam(name = "feedback", required = false)
             String feedback,
-
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
-
+        User trainer = getLoggedInTrainer(authentication);
 
         practicalTaskService.approveTask(
                 submissionId,
@@ -624,9 +345,7 @@ public class TrainerController {
                 feedback
         );
 
-
-        return "redirect:/trainer/practical-tasks"
-                + "?approved=true";
+        return "redirect:/trainer/practical-tasks?approved=true";
     }
 
 
@@ -634,31 +353,19 @@ public class TrainerController {
     // REQUEST IMPROVEMENT
     // =========================================================
 
-    @PostMapping(
-            "/practical-tasks/review/{submissionId}/improve"
-    )
+    @PostMapping("/practical-tasks/review/{submissionId}/improve")
     public String requestImprovement(
             @PathVariable Long submissionId,
-
-            @RequestParam(
-                    name = "feedback"
-            )
-            String feedback,
-
+            @RequestParam(name = "feedback") String feedback,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
-
-        if (feedback == null
-                || feedback.trim().isEmpty()) {
-
+        if (feedback == null || feedback.trim().isEmpty()) {
             return "redirect:/trainer/practical-tasks/review/"
                     + submissionId
                     + "?error=feedback-required";
         }
-
 
         practicalTaskService.requestImprovement(
                 submissionId,
@@ -666,27 +373,13 @@ public class TrainerController {
                 feedback
         );
 
-
-        return "redirect:/trainer/practical-tasks"
-                + "?improvementRequested=true";
+        return "redirect:/trainer/practical-tasks?improvementRequested=true";
     }
 
 
     // =========================================================
     // VIEW PRACTICAL TASK
-    //
-    // URL:
-    // /trainer/practical-tasks/{taskId}
-    //
-    // IMPORTANT:
-    //
-    // This loads BOTH:
-    //
-    // 1. Practical task
-    // 2. Employee submission
-    //
-    // This allows the trainer task-details page to display
-    // the employee's submitted solution.
+    // URL: /trainer/practical-tasks/{taskId}
     // =========================================================
 
     @GetMapping("/practical-tasks/{taskId}")
@@ -695,112 +388,40 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
-
-
-        // =====================================================
-        // LOAD TASK
-        // =====================================================
+        User trainer = getLoggedInTrainer(authentication);
 
         PracticalTask task =
-                practicalTaskService
-                        .getTrainerTask(
-                                taskId,
-                                trainer
+                practicalTaskService.getTrainerTask(
+                        taskId,
+                        trainer
+                ).orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Practical task not found or access denied."
                         )
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Practical task not found or access denied."
-                                )
-                        );
-
-
-        // =====================================================
-        // LOAD EMPLOYEE SUBMISSION
-        // =====================================================
+                );
 
         PracticalTaskSubmission submission =
-                practicalTaskService
-                        .getTrainerSubmissionForTask(
-                                taskId,
-                                trainer
-                        )
-                        .orElse(null);
+                practicalTaskService.getTrainerSubmissionForTask(
+                        taskId,
+                        trainer
+                ).orElse(null);
 
+        addTrainerDetails(model, trainer);
 
-        // =====================================================
-        // TRAINER DETAILS
-        // =====================================================
-
-        addTrainerDetails(
-                model,
-                trainer
-        );
-
-
-        model.addAttribute(
-                "trainer",
-                trainer
-        );
-
-
-        // =====================================================
-        // TASK
-        // =====================================================
-
-        model.addAttribute(
-                "task",
-                task
-        );
-
-
-        // =====================================================
-        // EMPLOYEE
-        // =====================================================
-
-        model.addAttribute(
-                "employee",
-                task.getEmployee()
-        );
-
-
-        // =====================================================
-        // LEARNING PATH
-        // =====================================================
-
-        model.addAttribute(
-                "learningPathItem",
-                task.getLearningPathItem()
-        );
-
-        model.addAttribute(
-                "trainingModule",
-                task.getTrainingModule()
-        );
-
-
-        // =====================================================
-        // EMPLOYEE SUBMISSION
-        // =====================================================
-
-        model.addAttribute(
-                "submission",
-                submission
-        );
-
-        model.addAttribute(
-                "hasSubmission",
-                submission != null
-        );
-
+        model.addAttribute("trainer", trainer);
+        model.addAttribute("task", task);
+        model.addAttribute("employee", task.getEmployee());
+        model.addAttribute("learningPathItem", task.getLearningPathItem());
+        model.addAttribute("trainingModule", task.getTrainingModule());
+        model.addAttribute("submission", submission);
+        model.addAttribute("hasSubmission", submission != null);
 
         return "trainer/practical-task-details";
     }
 
 
     // =========================================================
-    // PROGRESS
+    // TRAINER PROGRESS
     // URL: /trainer/progress
     // =========================================================
 
@@ -809,51 +430,102 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        List<User> loadedEmployees = getAssignedEmployees(trainer);
 
+        final List<User> employees = loadedEmployees == null
+                ? Collections.emptyList()
+                : loadedEmployees;
 
-        model.addAttribute(
-                "employees",
-                employees
-        );
+        List<PracticalTask> loadedTasks =
+                practicalTaskService.getTrainerTasks(trainer);
 
-        model.addAttribute(
-                "trainees",
-                employees
-        );
+        final List<PracticalTask> tasks = loadedTasks == null
+                ? Collections.emptyList()
+                : loadedTasks;
 
-        model.addAttribute(
-                "totalTrainees",
-                employees.size()
-        );
+        long activeTrainees = employees.stream()
+                .filter(employee -> tasks.stream().anyMatch(task ->
+                        task.getEmployee() != null
+                                && task.getEmployee().getId() != null
+                                && employee.getId() != null
+                                && task.getEmployee().getId()
+                                        .equals(employee.getId())
+                                && (task.getStatus()
+                                        == PracticalTask.TaskStatus.IN_PROGRESS
+                                    || task.getStatus()
+                                        == PracticalTask.TaskStatus.SUBMITTED
+                                    || task.getStatus()
+                                        == PracticalTask.TaskStatus.NEEDS_IMPROVEMENT)
+                ))
+                .count();
 
-        model.addAttribute(
-                "totalEmployees",
-                employees.size()
-        );
+        long completedTrainees = employees.stream()
+                .filter(employee -> tasks.stream().anyMatch(task ->
+                        task.getEmployee() != null
+                                && task.getEmployee().getId() != null
+                                && employee.getId() != null
+                                && task.getEmployee().getId()
+                                        .equals(employee.getId())
+                                && task.getStatus()
+                                        == PracticalTask.TaskStatus.COMPLETED
+                ))
+                .count();
 
+        double averageProgress = employees.isEmpty()
+                ? 0.0
+                : employees.stream()
+                        .mapToInt(employee -> {
+                            List<PracticalTask> employeeTasks =
+                                    tasks.stream()
+                                            .filter(task ->
+                                                    task.getEmployee() != null
+                                                            && task.getEmployee().getId() != null
+                                                            && employee.getId() != null
+                                                            && task.getEmployee().getId()
+                                                                    .equals(employee.getId())
+                                            )
+                                            .toList();
 
-        model.addAttribute(
-                "activeTrainees",
-                0
-        );
+                            if (employeeTasks.isEmpty()) {
+                                return 0;
+                            }
 
-        model.addAttribute(
-                "completedTrainees",
-                0
-        );
+                            return (int) Math.round(
+                                    employeeTasks.stream()
+                                            .mapToInt(task -> {
+                                                if (task.getStatus()
+                                                        == PracticalTask.TaskStatus.COMPLETED) {
+                                                    return 100;
+                                                }
 
-        model.addAttribute(
-                "averageProgress",
-                0
-        );
+                                                Integer progress =
+                                                        task.getProgressPercentage();
 
+                                                return progress == null
+                                                        ? 0
+                                                        : Math.max(
+                                                                0,
+                                                                Math.min(100, progress)
+                                                        );
+                                            })
+                                            .average()
+                                            .orElse(0.0)
+                            );
+                        })
+                        .average()
+                        .orElse(0.0);
+
+        model.addAttribute("employees", employees);
+        model.addAttribute("trainees", employees);
+        model.addAttribute("totalTrainees", employees.size());
+        model.addAttribute("totalEmployees", employees.size());
+        model.addAttribute("activeTrainees", activeTrainees);
+        model.addAttribute("completedTrainees", completedTrainees);
+        model.addAttribute("averageProgress", Math.round(averageProgress));
 
         return "trainer/progress";
     }
@@ -869,50 +541,24 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        List<User> employees =
-                getAssignedEmployees(trainer);
+        List<User> employees = getAssignedEmployees(trainer);
 
-
-        model.addAttribute(
-                "employees",
-                employees
-        );
-
-        model.addAttribute(
-                "trainees",
-                employees
-        );
-
-        model.addAttribute(
-                "totalTrainees",
-                employees.size()
-        );
-
-        model.addAttribute(
-                "totalEmployees",
-                employees.size()
-        );
-
-        model.addAttribute(
-                "totalReports",
-                0
-        );
+        model.addAttribute("employees", employees);
+        model.addAttribute("trainees", employees);
+        model.addAttribute("totalTrainees", employees.size());
+        model.addAttribute("totalEmployees", employees.size());
+        model.addAttribute("totalReports", 0);
 
         model.addAttribute(
                 "completedAssessments",
                 assessmentService.getCompletedAssessments()
         );
 
-        model.addAttribute(
-                "averageProgress",
-                0
-        );
-
+        model.addAttribute("averageProgress", 0);
 
         return "trainer/reports";
     }
@@ -928,16 +574,11 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        model.addAttribute(
-                "trainer",
-                trainer
-        );
-
+        model.addAttribute("trainer", trainer);
 
         return "trainer/profile";
     }
@@ -953,16 +594,11 @@ public class TrainerController {
             Model model,
             Authentication authentication) {
 
-        User trainer =
-                getLoggedInTrainer(authentication);
+        User trainer = getLoggedInTrainer(authentication);
 
         addTrainerDetails(model, trainer);
 
-        model.addAttribute(
-                "trainer",
-                trainer
-        );
-
+        model.addAttribute("trainer", trainer);
 
         return "trainer/settings";
     }
@@ -972,19 +608,21 @@ public class TrainerController {
     // GET ASSIGNED EMPLOYEES
     // =========================================================
 
-    private List<User> getAssignedEmployees(
-            User trainer) {
+    private List<User> getAssignedEmployees(User trainer) {
 
         if (trainer == null) {
             return Collections.emptyList();
         }
 
-
-        return userRepository
-                .findByTrainerAndRoleOrderByFullNameAsc(
+        List<User> employees =
+                userRepository.findByTrainerAndRoleOrderByFullNameAsc(
                         trainer,
                         User.Role.EMPLOYEE
                 );
+
+        return employees == null
+                ? Collections.emptyList()
+                : employees;
     }
 
 
@@ -992,8 +630,7 @@ public class TrainerController {
     // GET LOGGED-IN TRAINER
     // =========================================================
 
-    private User getLoggedInTrainer(
-            Authentication authentication) {
+    private User getLoggedInTrainer(Authentication authentication) {
 
         if (authentication == null
                 || !authentication.isAuthenticated()) {
@@ -1003,47 +640,33 @@ public class TrainerController {
             );
         }
 
+        String email = authentication.getName();
 
-        String email =
-                authentication.getName();
-
-
-        if (email == null
-                || email.trim().isEmpty()) {
-
+        if (email == null || email.trim().isEmpty()) {
             throw new RuntimeException(
                     "Trainer email not found"
             );
         }
 
-
         User trainer =
-                userRepository
-                        .findByEmail(email.trim())
+                userRepository.findByEmail(email.trim())
                         .orElseThrow(() ->
                                 new RuntimeException(
-                                        "Trainer not found: "
-                                                + email
+                                        "Trainer not found: " + email
                                 )
                         );
 
-
-        if (trainer.getRole()
-                != User.Role.TRAINER) {
-
+        if (trainer.getRole() != User.Role.TRAINER) {
             throw new RuntimeException(
                     "Access denied: User is not a trainer"
             );
         }
 
-
         if (!trainer.isEnabled()) {
-
             throw new RuntimeException(
                     "Trainer account is disabled"
             );
         }
-
 
         return trainer;
     }
@@ -1057,53 +680,30 @@ public class TrainerController {
             Model model,
             User trainer) {
 
-        String userName =
-                "Trainer";
-
-        String userInitial =
-                "T";
-
+        String userName = "Trainer";
+        String userInitial = "T";
 
         if (trainer != null) {
 
-            String fullName =
-                    trainer.getFullName();
+            String fullName = trainer.getFullName();
 
+            if (fullName != null && !fullName.trim().isEmpty()) {
 
-            if (fullName != null
-                    && !fullName.trim().isEmpty()) {
+                fullName = fullName.trim();
 
-                fullName =
-                        fullName.trim();
+                userName = fullName;
 
-                userName =
-                        fullName;
-
-                userInitial =
-                        fullName
-                                .substring(0, 1)
-                                .toUpperCase();
+                userInitial = fullName
+                        .substring(0, 1)
+                        .toUpperCase();
             }
         }
 
-
-        model.addAttribute(
-                "userName",
-                userName
-        );
-
-        model.addAttribute(
-                "userInitial",
-                userInitial
-        );
-
+        model.addAttribute("userName", userName);
+        model.addAttribute("userInitial", userInitial);
 
         if (trainer != null) {
-
-            model.addAttribute(
-                    "trainer",
-                    trainer
-            );
+            model.addAttribute("trainer", trainer);
         }
     }
 }
