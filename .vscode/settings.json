@@ -9,5 +9,7 @@
             "path": "C:\\Program Files\\Eclipse Adoptium\\jdk-25.0.2.10-hotspot",
             "default": true
         }
-    ]
+    ],
+    "files.autoSave": "afterDelay",
+    "files.autoSaveDelay": 1000
 }
