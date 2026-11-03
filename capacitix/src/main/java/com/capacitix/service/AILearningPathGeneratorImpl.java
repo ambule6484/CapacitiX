@@ -80,7 +80,11 @@ public class AILearningPathGeneratorImpl
         }
 
         // -----------------------------------------------------
+<<<<<<< HEAD
         // Generate using AI / 
+=======
+        // Generate using AI / Ollama
+>>>>>>> personal/main
         // -----------------------------------------------------
 
         LearningPathResponse response =

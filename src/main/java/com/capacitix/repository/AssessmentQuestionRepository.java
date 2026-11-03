@@ -11,69 +11,79 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Repository for managing assessment questions.
+ *
+ * Supports:
+ * - Fetching questions by assessment
+ * - Fetching questions by competency
+ * - Fetching active questions
+ * - Counting questions
+ * - Deleting questions by assessment
+ */
 public interface AssessmentQuestionRepository
         extends JpaRepository<AssessmentQuestion, Long> {
 
-    /*
-     * Get all questions of an assessment
-     * with assessment and competency loaded.
-     */
+    // =========================================================
+    // GET ALL QUESTIONS OF AN ASSESSMENT
+    // =========================================================
+
     @EntityGraph(attributePaths = {"assessment", "competency"})
     List<AssessmentQuestion> findByAssessmentOrderByQuestionOrderAsc(
             Assessment assessment
     );
 
-    /*
-     * Get questions using Assessment ID.
-     */
+    // =========================================================
+    // GET QUESTIONS BY ASSESSMENT ID
+    // =========================================================
+
     @EntityGraph(attributePaths = {"assessment", "competency"})
     List<AssessmentQuestion> findByAssessmentIdOrderByQuestionOrderAsc(
             Long assessmentId
     );
 
-    /*
-     * Get questions belonging to a particular competency.
-     */
+    // =========================================================
+    // GET QUESTIONS BY COMPETENCY
+    // =========================================================
+
     @EntityGraph(attributePaths = {"assessment", "competency"})
     List<AssessmentQuestion> findByCompetencyOrderByQuestionOrderAsc(
             Competency competency
     );
 
-    /*
-     * Get questions of a particular competency
-     * using competency ID.
-     */
+    // =========================================================
+    // GET QUESTIONS BY COMPETENCY ID
+    // =========================================================
+
     @EntityGraph(attributePaths = {"assessment", "competency"})
     List<AssessmentQuestion> findByCompetencyIdOrderByQuestionOrderAsc(
             Long competencyId
     );
 
-    /*
-     * Get only active questions of an assessment.
-     */
+    // =========================================================
+    // GET ACTIVE QUESTIONS OF AN ASSESSMENT
+    // =========================================================
+
     @EntityGraph(attributePaths = {"assessment", "competency"})
-    List<AssessmentQuestion>
-    findByAssessmentAndActiveTrueOrderByQuestionOrderAsc(
+    List<AssessmentQuestion> findByAssessmentAndActiveTrueOrderByQuestionOrderAsc(
             Assessment assessment
     );
 
-    /*
-     * Count questions in an assessment.
-     */
+    // =========================================================
+    // COUNT QUESTIONS
+    // =========================================================
+
     long countByAssessment(Assessment assessment);
 
-    /*
-     * Count active questions in an assessment.
-     */
-    long countByAssessmentAndActiveTrue(
-            Assessment assessment
-    );
+    long countByAssessmentAndActiveTrue(Assessment assessment);
 
-    /*
-     * Delete all questions belonging to an assessment.
-     *
-     * Explicit transaction is important because Spring Data
-     * derived delete operations may call EntityManager.remove().
+    // =========================================================
+    // DELETE QUESTIONS BY ASSESSMENT
+    // =========================================================
+
+    /**
+     * Explicit transaction ensures the derived delete operation
+     * executes within a transaction.
      */
     @Transactional
     void deleteByAssessment(Assessment assessment);

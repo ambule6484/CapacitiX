@@ -2,12 +2,15 @@
 package com.capacitix.repository;
 
 import com.capacitix.entity.User;
+
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
+@Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
     // =========================================================
@@ -44,13 +47,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByRole(User.Role role);
 
     /*
-     * Fetch assigned trainer along with each employee.
-     *
-     * Required by admin/employees.html because the page accesses:
-     * employee.trainer.fullName
-     * employee.trainer.trainerId
-     *
-     * Prevents LazyInitializationException.
+     * Fetch trainer along with employees.
+     * Prevents LazyInitializationException in admin employees page.
      */
 
     @EntityGraph(attributePaths = "trainer")
@@ -78,7 +76,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
 
     // =========================================================
-    // FIND PARTICULAR EMPLOYEE ASSIGNED TO TRAINER
+    // FIND EMPLOYEE ASSIGNED TO TRAINER
     // =========================================================
 
     Optional<User> findByIdAndTrainerAndRole(
