@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#4f46e5">
+<title>Invitation Error | Capacitix</title>
+
+<style>
+/* ========== 1. TOKENS ========== */
+:root{--bg:#f4f6fb;--text:#172033;--muted:#667085;--line:#e6e9f0;--brand:#4f46e5;--radius:22px;--shadow:0 12px 30px rgba(15,23,42,.08);--ease:cubic-bezier(.22,.8,.2,1)}
+
+/* ========== 2. GLOBAL ========== */
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{min-height:100%}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:"Segoe UI",system-ui,Arial,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden;background:radial-gradient(circle at 88% 4%,rgba(99,91,255,.14),transparent 26rem),radial-gradient(circle at 12% 80%,rgba(20,184,166,.10),transparent 24rem),var(--bg)}
+a{text-decoration:none;color:inherit}
+:focus-visible{outline:3px solid #a5b4fc;outline-offset:2px;border-radius:10px}
+
+/* ========== 3. ANIMATIONS ========== */
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes pulseRing{0%{box-shadow:0 0 0 0 rgba(239,68,68,.35)}100%{box-shadow:0 0 0 16px rgba(239,68,68,0)}}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-14px,10px)}}
+@keyframes logoShine{0%,35%{transform:translateX(-100%) rotate(15deg)}65%,100%{transform:translateX(100%) rotate(15deg)}}
+@keyframes brandText{from{background-position:0% center}to{background-position:250% center}}
+
+/* ========== 4. BRAND ========== */
+.brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:22px;animation:rise .6s var(--ease) both}
+.logo-mark{position:relative;isolation:isolate;overflow:hidden;width:43px;height:43px;display:grid;place-items:center;border-radius:14px;color:#fff;font-weight:800;font-size:20px;background:linear-gradient(135deg,#6366f1 0%,#4f46e5 45%,#14b8a6 100%);box-shadow:0 8px 25px rgba(99,102,241,.35),inset 0 1px 0 rgba(255,255,255,.28);animation:float 4s ease-in-out infinite}
+.logo-mark span{position:relative;z-index:2}
+.logo-mark::before{content:"";position:absolute;inset:-50%;z-index:1;background:linear-gradient(120deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-100%);animation:logoShine 4s ease-in-out infinite}
+.logo-text{font-size:24px;font-weight:750;letter-spacing:-.6px;background:linear-gradient(90deg,#4f46e5,#0f766e,#4f46e5);background-size:250% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:brandText 6s linear infinite}
+
+/* ========== 5. CARD ========== */
+.container{width:100%;max-width:520px}
+.card{position:relative;overflow:hidden;padding:40px 36px 30px;border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(160deg,#fff 55%,#f8f8ff);box-shadow:0 20px 50px rgba(15,23,42,.10);text-align:center;animation:rise .7s var(--ease) .08s both}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:4px;background:linear-gradient(90deg,#ef4444,#f59e0b)}
+.card::after{content:"";position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,rgba(239,68,68,.10),transparent 70%);pointer-events:none;animation:drift 9s ease-in-out infinite}
+.card>*{position:relative;z-index:1}
+
+.icon{width:76px;height:76px;margin:0 auto 22px;display:grid;place-items:center;border:1px solid #fecaca;border-radius:50%;background:linear-gradient(135deg,#fef2f2,#fff7ed);color:#dc2626;font-size:34px;font-weight:800;animation:pulseRing 2s ease-out infinite}
+
+h1{margin-bottom:10px;font-size:28px;letter-spacing:-.8px}
+.subtitle{max-width:380px;margin:0 auto 24px;color:var(--muted);font-size:14px;line-height:1.7}
+
+/* ========== 6. ERROR BOX ========== */
+.error-box{margin-bottom:18px;padding:15px 17px;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:14px;background:linear-gradient(90deg,#fef2f2,#fff7f7);box-shadow:0 8px 20px rgba(239,68,68,.08);color:#991b1b;font-size:14px;line-height:1.6;text-align:left}
+.error-title{margin-bottom:4px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#b91c1c}
+.error-message{font-weight:600;word-break:break-word}
+
+/* ========== 7. HELP BOX ========== */
+.help-box{margin-bottom:26px;padding:18px;border:1px solid #e0e7ff;border-radius:16px;background:linear-gradient(135deg,#f5f3ff,#eefcf9);text-align:left}
+.help-box h3{margin-bottom:12px;color:#4338ca;font-size:14px}
+.steps{list-style:none;display:grid;gap:10px}
+.steps li{display:flex;align-items:flex-start;gap:12px;color:var(--muted);font-size:13px;line-height:1.6}
+.steps b{flex:none;width:24px;height:24px;display:grid;place-items:center;border-radius:8px;background:#fff;color:var(--brand);font-size:12px;box-shadow:0 3px 8px rgba(79,70,229,.12)}
+
+/* ========== 8. BUTTON ========== */
+.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 26px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff;font-size:14px;font-weight:650;box-shadow:0 8px 20px rgba(79,70,229,.25);transition:transform .25s var(--ease),box-shadow .25s ease}
+.button::after{content:"→";transition:transform .2s}
+.button:hover{transform:translateY(-3px);box-shadow:0 14px 28px rgba(79,70,229,.34)}
+.button:hover::after{transform:translateX(4px)}
+.button:active{transform:translateY(-1px) scale(.98)}
+
+.footer{margin-top:24px;padding-top:16px;border-top:1px dashed var(--line);color:#98a2b3;font-size:12px}
+
+/* ========== 9. RESPONSIVE ========== */
+@media(max-width:520px){
+  body{padding:16px}
+  .card{padding:32px 20px 24px;border-radius:18px}
+  h1{font-size:23px}
+  .button{width:100%}
+}
+
+/* ========== 10. REDUCED MOTION ========== */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- BRAND -->
+    <div class="brand">
+        <div class="logo-mark"><span>C</span></div>
+        <div class="logo-text">Capacitix</div>
+    </div>
+
+    <div class="card" role="alert">
+
+        <!-- ERROR ICON -->
+        <div class="icon" aria-hidden="true">!</div>
+
+        <!-- TITLE -->
+        <h1>Invitation Not Available</h1>
+
+        <p class="subtitle">We could not process your Capacitix Student invitation.</p>
+
+        <!-- ERROR MESSAGE -->
+        <div class="error-box">
+            <div class="error-title">What happened?</div>
+            <div class="error-message"
+                 th:text="${errorMessage}">
+                This invitation link is invalid or has expired.
+            </div>
+        </div>
+
+        <!-- HELP -->
+        <div class="help-box">
+            <h3>What should I do?</h3>
+            <ul class="steps">
+                <li><b>1</b><span>Contact your organization administrator.</span></li>
+                <li><b>2</b><span>Ask them to send you a new Student invitation.</span></li>
+                <li><b>3</b><span>Use the new link soon. Invitation links are valid for a limited time and can only be used once.</span></li>
+            </ul>
+        </div>
+
+        <!-- LOGIN BUTTON -->
+        <a href="/login" class="button">Go to Login</a>
+
+        <!-- FOOTER -->
+        <div class="footer">Capacitix &copy; 2026</div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

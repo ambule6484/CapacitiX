@@ -1,0 +1,4527 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Review AI-generated competency assessments and assign them to your employees">
+<meta name="theme-color" content="#4f46e5">
+
+<title>Assessments | Capacitix</title>
+
+<style>
+
+:root{
+    --primary:#4f46e5;
+    --primary-2:#6366f1;
+    --primary-dark:#312e81;
+    --teal:#14b8a6;
+    --teal-dark:#0f766e;
+    --success-2:#10b981;
+    --warning-2:#f97316;
+    --danger-2:#ef4444;
+
+    --bg:#f4f6fb;
+    --ink:#172033;
+    --muted:#667085;
+    --line:#e6e9f0;
+    --sidebar:#0b1220;
+
+    --sh-sm:0 5px 18px rgba(16,24,40,.055);
+    --sh:0 14px 38px rgba(16,24,40,.12);
+
+    --ease:cubic-bezier(.22,.8,.2,1);
+
+    --side:265px;
+    --r:18px;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html,
+body{
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+
+    background:
+        radial-gradient(circle at 85% 5%,rgba(99,102,241,.10),transparent 25rem),
+        radial-gradient(circle at 12% 75%,rgba(20,184,166,.07),transparent 24rem),
+        var(--bg);
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+button,
+input,
+select{
+    font:inherit;
+}
+
+h1,
+h2,
+h3{
+    font-weight:800;
+}
+
+
+/* =========================================================
+   MOTION
+   ========================================================= */
+
+@keyframes fadeUp{
+    from{
+        opacity:0;
+        transform:translateY(18px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes pop{
+    0%{
+        opacity:0;
+        transform:translateY(24px) scale(.94);
+    }
+    60%{
+        opacity:1;
+        transform:translateY(-4px) scale(1.01);
+    }
+    100%{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes slideIn{
+    from{
+        opacity:0;
+        transform:translateX(-30px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes dropIn{
+    from{
+        opacity:0;
+        transform:translateY(-20px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@keyframes floaty{
+    0%,100%{
+        transform:translateY(0);
+    }
+    50%{
+        transform:translateY(-4px);
+    }
+}
+
+@keyframes shine{
+    from{
+        transform:translateX(-120%) skewX(-18deg);
+    }
+    to{
+        transform:translateX(260%) skewX(-18deg);
+    }
+}
+
+@keyframes drift{
+    0%,100%{
+        transform:translate(0,0);
+    }
+    50%{
+        transform:translate(10px,-12px);
+    }
+}
+
+@keyframes pulseBadge{
+    0%,100%{
+        box-shadow:0 0 0 0 rgba(239,68,68,.45);
+    }
+    50%{
+        box-shadow:0 0 0 6px rgba(239,68,68,0);
+    }
+}
+
+@keyframes ring{
+    0%,100%{
+        transform:rotate(0);
+    }
+    25%{
+        transform:rotate(14deg);
+    }
+    75%{
+        transform:rotate(-12deg);
+    }
+}
+
+@keyframes grow{
+    from{
+        width:0;
+    }
+}
+
+@keyframes sparkle{
+    0%,100%{
+        transform:scale(1) rotate(0);
+    }
+    50%{
+        transform:scale(1.3) rotate(20deg);
+    }
+}
+
+@keyframes rip{
+    to{
+        transform:scale(4);
+        opacity:0;
+    }
+}
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.sidebar{
+    position:fixed;
+    inset:0 auto 0 0;
+    width:var(--side);
+    height:100vh;
+    z-index:1100;
+
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+
+    color:#fff;
+
+    background:
+        radial-gradient(circle at 80% 8%,rgba(99,102,241,.22),transparent 13rem),
+        radial-gradient(circle at 10% 95%,rgba(20,184,166,.12),transparent 12rem),
+        linear-gradient(180deg,var(--sidebar),#0e1728);
+
+    box-shadow:10px 0 40px rgba(15,23,42,.13);
+
+    transition:transform .35s var(--ease);
+    animation:slideIn .6s var(--ease) both;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:22px 24px 14px;
+}
+
+.brand-mark{
+    position:relative;
+    overflow:hidden;
+
+    width:42px;
+    height:42px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:13px;
+
+    font-weight:900;
+    font-size:20px;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-2),
+        #8b5cf6 50%,
+        var(--teal)
+    );
+
+    box-shadow:0 12px 30px rgba(99,102,241,.38);
+
+    animation:floaty 5s ease-in-out infinite;
+}
+
+.brand-mark::after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    width:40%;
+
+    background:linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,.35),
+        transparent
+    );
+
+    animation:shine 5s ease-in-out infinite;
+}
+
+.brand-name{
+    font-size:22px;
+    font-weight:850;
+    letter-spacing:-.7px;
+
+    background:linear-gradient(
+        90deg,
+        #fff,
+        #c7c4ff 60%,
+        #8ff0e2
+    );
+
+    -webkit-background-clip:text;
+    background-clip:text;
+    -webkit-text-fill-color:transparent;
+}
+
+.nav{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+
+    padding:0 14px 12px;
+
+    scrollbar-width:thin;
+    scrollbar-color:#3b4560 transparent;
+}
+
+.menu-label{
+    padding:16px 12px 8px;
+
+    color:#7f8ba3;
+
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.8px;
+}
+
+.menu{
+    list-style:none;
+}
+
+.menu li{
+    margin:4px 0;
+}
+
+.menu a{
+    position:relative;
+    overflow:hidden;
+
+    min-height:46px;
+
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:10px 12px;
+
+    border:1px solid transparent;
+    border-radius:13px;
+
+    color:#b8c1d1;
+
+    font-size:13px;
+    font-weight:600;
+
+    transition:all .25s var(--ease);
+}
+
+.menu a::before{
+    content:"";
+
+    position:absolute;
+    inset:0 auto 0 0;
+
+    width:3px;
+
+    transform:scaleY(0);
+
+    background:linear-gradient(
+        180deg,
+        var(--primary-2),
+        var(--teal)
+    );
+
+    transition:transform .25s var(--ease);
+}
+
+.menu a:hover{
+    color:#fff;
+    background:rgba(255,255,255,.07);
+    transform:translateX(4px);
+}
+
+.menu a.active{
+    color:#fff;
+
+    background:
+        linear-gradient(
+            100deg,
+            rgba(99,102,241,.30),
+            rgba(20,184,166,.11)
+        );
+
+    border-color:rgba(255,255,255,.06);
+
+    box-shadow:0 6px 20px rgba(79,70,229,.22);
+}
+
+.menu a.active::before,
+.menu a:hover::before{
+    transform:scaleY(.65);
+}
+
+.icon{
+    width:23px;
+    flex:0 0 23px;
+
+    display:grid;
+    place-items:center;
+
+    color:#8d99ad;
+
+    font-size:16px;
+
+    transition:transform .25s,color .25s;
+}
+
+.menu a:hover .icon,
+.menu a.active .icon{
+    color:#fff;
+    transform:scale(1.18) rotate(-6deg);
+}
+
+.sidebar-bottom{
+    padding:10px 14px 16px;
+    border-top:1px solid rgba(255,255,255,.07);
+}
+
+.logout button{
+    width:100%;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+
+    padding:11px;
+
+    cursor:pointer;
+
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:12px;
+
+    background:rgba(255,255,255,.035);
+
+    color:#c5cbd6;
+
+    font-size:12px;
+    font-weight:700;
+
+    transition:.25s;
+}
+
+.logout button:hover{
+    background:rgba(239,68,68,.14);
+    color:#fff;
+    border-color:rgba(239,68,68,.3);
+}
+
+.overlay{
+    position:fixed;
+    inset:0;
+    z-index:1050;
+
+    background:rgba(15,23,42,.45);
+
+    opacity:0;
+    visibility:hidden;
+
+    transition:.25s;
+}
+
+.overlay.show{
+    opacity:1;
+    visibility:visible;
+}
+
+
+/* =========================================================
+   MAIN + HEADER
+   ========================================================= */
+
+.main{
+    margin-left:var(--side);
+
+    height:100vh;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    scroll-behavior:smooth;
+
+    scrollbar-width:thin;
+    scrollbar-color:#c5cbd8 transparent;
+}
+
+.no-scroll .main{
+    overflow:hidden;
+}
+
+.header{
+    position:sticky;
+    top:0;
+    z-index:900;
+
+    min-height:78px;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:20px;
+
+    padding:14px 32px;
+
+    background:rgba(255,255,255,.82);
+
+    border-bottom:1px solid var(--line);
+
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+
+    animation:dropIn .6s var(--ease) both;
+}
+
+.header-left,
+.header-right,
+.profile{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.mobile-menu{
+    display:none;
+
+    width:42px;
+    height:42px;
+
+    place-items:center;
+
+    border:1px solid var(--line);
+    border-radius:12px;
+
+    background:#fff;
+
+    cursor:pointer;
+
+    font-size:19px;
+}
+
+.header-title{
+    font-size:21px;
+    font-weight:850;
+    letter-spacing:-.5px;
+}
+
+.header-subtitle{
+    margin-top:3px;
+    color:var(--muted);
+    font-size:12px;
+}
+
+.header-btn{
+    position:relative;
+
+    width:42px;
+    height:42px;
+
+    display:grid;
+    place-items:center;
+
+    border:1px solid var(--line);
+    border-radius:12px;
+
+    background:#fff;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+    transition:.25s;
+}
+
+.header-btn:hover{
+    transform:translateY(-2px);
+    box-shadow:var(--sh-sm);
+}
+
+.header-btn:hover .bell{
+    animation:ring .6s ease 1;
+}
+
+.bell{
+    display:inline-block;
+    transform-origin:top center;
+}
+
+.badge{
+    position:absolute;
+
+    top:-5px;
+    right:-5px;
+
+    min-width:19px;
+    height:19px;
+
+    padding:0 5px;
+
+    display:grid;
+    place-items:center;
+
+    border:2px solid #fff;
+    border-radius:99px;
+
+    background:var(--danger-2);
+
+    color:#fff;
+
+    font-size:10px;
+    font-weight:800;
+
+    animation:pulseBadge 2.4s ease-in-out 3;
+}
+
+.avatar{
+    width:42px;
+    height:42px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:14px;
+
+    color:#fff;
+
+    font-size:13px;
+    font-weight:850;
+
+    background:linear-gradient(
+        135deg,
+        var(--primary-2),
+        var(--teal)
+    );
+
+    box-shadow:0 8px 20px rgba(79,70,229,.24);
+}
+
+.name{
+    font-size:12.5px;
+    font-weight:800;
+}
+
+.role-name{
+    margin-top:2px;
+    color:var(--muted);
+    font-size:11px;
+}
+
+.content{
+    width:min(1500px,100%);
+    margin:0 auto;
+    padding:28px 32px 56px;
+}
+
+
+/* =========================================================
+   FLASH
+   ========================================================= */
+
+.flash{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+
+    padding:13px 16px;
+    margin-bottom:18px;
+
+    border-radius:14px;
+
+    font-size:12.5px;
+    font-weight:600;
+
+    animation:fadeUp .4s var(--ease) both;
+}
+
+.flash.ok{
+    background:#ecfdf3;
+    border:1px solid #abefc6;
+    color:#067647;
+}
+
+.flash.err{
+    background:#fef3f2;
+    border:1px solid #fecdca;
+    color:#b42318;
+}
+
+.flash button{
+    margin-left:auto;
+    border:0;
+    background:none;
+    color:inherit;
+    cursor:pointer;
+}
+
+
+/* =========================================================
+   HERO
+   ========================================================= */
+
+.hero{
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:28px;
+
+    padding:30px 34px;
+    margin-bottom:22px;
+
+    border-radius:24px;
+
+    color:#fff;
+
+    background:
+        linear-gradient(
+            120deg,
+            var(--primary-dark),
+            var(--primary) 48%,
+            var(--teal-dark) 110%
+        );
+
+    box-shadow:0 18px 45px rgba(49,46,129,.26);
+
+    animation:fadeUp .6s var(--ease) both;
+}
+
+.hero::before,
+.hero::after{
+    content:"";
+    position:absolute;
+    border-radius:50%;
+    pointer-events:none;
+}
+
+.hero::before{
+    width:320px;
+    height:320px;
+
+    right:-80px;
+    top:-140px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(255,255,255,.2),
+            transparent 68%
+        );
+
+    animation:drift 9s ease-in-out infinite;
+}
+
+.hero::after{
+    width:220px;
+    height:220px;
+
+    left:38%;
+    bottom:-130px;
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(20,184,166,.38),
+            transparent 70%
+        );
+
+    animation:drift 11s ease-in-out infinite reverse;
+}
+
+.hero-copy{
+    position:relative;
+    z-index:1;
+    max-width:700px;
+}
+
+.hero-badge{
+    display:inline-block;
+
+    padding:5px 11px;
+    margin-bottom:14px;
+
+    border:1px solid rgba(255,255,255,.22);
+    border-radius:8px;
+
+    background:rgba(255,255,255,.12);
+
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:1.1px;
+}
+
+.hero h2{
+    font-size:30px;
+    letter-spacing:-.8px;
+    line-height:1.15;
+}
+
+.hero p{
+    margin-top:10px;
+
+    font-size:13.5px;
+    line-height:1.65;
+
+    color:rgba(255,255,255,.84);
+}
+
+.hero-cta{
+    margin-top:20px;
+
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.hero-summary-wrap{
+    position:relative;
+    z-index:1;
+
+    display:flex;
+    align-items:center;
+
+    gap:18px;
+
+    flex:none;
+}
+
+.hero-ring{
+    position:relative;
+
+    width:116px;
+    height:116px;
+
+    border-radius:50%;
+
+    display:grid;
+    place-items:center;
+
+    background:
+        conic-gradient(
+            #8ff0e2 calc(var(--pct) * 1%),
+            rgba(255,255,255,.18) 0
+        );
+
+    box-shadow:0 0 30px rgba(143,240,226,.25);
+}
+
+.hero-ring::before{
+    content:"";
+
+    position:absolute;
+    inset:10px;
+
+    border-radius:50%;
+
+    background:linear-gradient(
+        135deg,
+        #3a3794,
+        #1f4f64
+    );
+}
+
+.hero-ring-value{
+    position:relative;
+
+    text-align:center;
+
+    font-size:24px;
+    font-weight:850;
+}
+
+.hero-ring-value small{
+    display:block;
+
+    font-size:9.5px;
+    font-weight:700;
+    letter-spacing:.8px;
+
+    color:rgba(255,255,255,.7);
+}
+
+.hero-summary{
+    font-size:12px;
+    line-height:1.8;
+    color:rgba(255,255,255,.85);
+}
+
+.hero-summary strong{
+    color:#fff;
+    font-size:14px;
+}
+
+
+/* =========================================================
+   STATS
+   ========================================================= */
+
+.stats-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+
+    gap:16px;
+
+    margin-bottom:22px;
+}
+
+.stat-card{
+    --accent:var(--primary-2);
+
+    position:relative;
+    overflow:hidden;
+
+    padding:20px;
+
+    background:#fff;
+
+    border:1px solid var(--line);
+    border-radius:var(--r);
+
+    box-shadow:var(--sh-sm);
+
+    animation:pop .7s var(--ease) both;
+
+    transition:
+        transform .3s var(--ease),
+        box-shadow .3s;
+}
+
+.stat-card::before{
+    content:"";
+
+    position:absolute;
+    inset:0 0 auto;
+
+    height:3px;
+
+    background:var(--accent);
+
+    transform-origin:left;
+
+    animation:grow .9s .3s var(--ease) both;
+}
+
+.stat-card:nth-child(2){
+    --accent:var(--teal);
+    animation-delay:.08s;
+}
+
+.stat-card:nth-child(3){
+    --accent:var(--success-2);
+    animation-delay:.16s;
+}
+
+.stat-card:nth-child(4){
+    --accent:var(--warning-2);
+    animation-delay:.24s;
+}
+
+.stat-card:hover{
+    transform:translateY(-5px);
+    box-shadow:var(--sh);
+}
+
+.stat-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+.stat-label{
+    color:var(--muted);
+    font-size:12px;
+    font-weight:700;
+}
+
+.stat-icon{
+    width:40px;
+    height:40px;
+
+    border-radius:12px;
+
+    display:grid;
+    place-items:center;
+
+    font-size:16px;
+
+    color:var(--accent);
+
+    background:color-mix(
+        in srgb,
+        var(--accent) 12%,
+        #fff
+    );
+
+    transition:transform .3s var(--ease);
+}
+
+.stat-card:hover .stat-icon{
+    transform:scale(1.15) rotate(-8deg);
+}
+
+.stat-value{
+    margin-top:10px;
+
+    font-size:30px;
+    font-weight:850;
+    letter-spacing:-.8px;
+
+    font-variant-numeric:tabular-nums;
+}
+
+.stat-info{
+    margin-top:4px;
+
+    font-size:11.5px;
+
+    color:var(--muted);
+}
+
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.card{
+    background:#fff;
+
+    border:1px solid var(--line);
+    border-radius:var(--r);
+
+    box-shadow:var(--sh-sm);
+
+    overflow:hidden;
+
+    animation:fadeUp .6s .1s var(--ease) both;
+}
+
+.card + .card{
+    margin-top:20px;
+}
+
+.card-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    flex-wrap:wrap;
+
+    gap:16px;
+
+    padding:20px 24px;
+
+    border-bottom:1px solid var(--line);
+
+    background:linear-gradient(
+        90deg,
+        #fff,
+        #f8f9ff
+    );
+}
+
+.card-title{
+    font-size:16px;
+    font-weight:850;
+}
+
+.card-desc{
+    margin-top:4px;
+
+    font-size:12px;
+
+    color:var(--muted);
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    flex-wrap:wrap;
+
+    gap:12px;
+
+    padding:16px 24px;
+
+    border-bottom:1px solid var(--line);
+}
+
+.search-box{
+    position:relative;
+
+    flex:1 1 260px;
+    max-width:380px;
+}
+
+.search-box svg{
+    position:absolute;
+
+    left:12px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    width:15px;
+    height:15px;
+
+    color:#98a2b3;
+
+    pointer-events:none;
+}
+
+.search-box input{
+    width:100%;
+    height:40px;
+
+    padding:0 34px 0 36px;
+
+    font-size:12.5px;
+    color:var(--ink);
+
+    border:1px solid var(--line);
+    border-radius:11px;
+
+    background:#f8fafc;
+
+    outline:0;
+
+    transition:.2s;
+}
+
+.search-box input:focus{
+    border-color:#b9b4ff;
+
+    background:#fff;
+
+    box-shadow:0 0 0 4px rgba(79,70,229,.11);
+}
+
+.search-clear{
+    position:absolute;
+
+    right:6px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    width:26px;
+    height:26px;
+
+    border:0;
+    border-radius:8px;
+
+    background:transparent;
+
+    color:#98a2b3;
+
+    cursor:pointer;
+
+    display:none;
+}
+
+.search-box.has-value .search-clear{
+    display:block;
+}
+
+.toolbar-right{
+    display:flex;
+    align-items:center;
+
+    gap:10px;
+
+    flex-wrap:wrap;
+}
+
+.select{
+    height:38px;
+
+    padding:0 30px 0 12px;
+
+    border:1px solid var(--line);
+    border-radius:10px;
+
+    background:#fff;
+
+    color:#344054;
+
+    font-size:12px;
+    font-weight:600;
+
+    cursor:pointer;
+    outline:0;
+}
+
+.select:focus{
+    border-color:#b9b4ff;
+    box-shadow:0 0 0 4px rgba(79,70,229,.11);
+}
+
+.seg{
+    display:inline-flex;
+
+    padding:3px;
+
+    border:1px solid var(--line);
+    border-radius:11px;
+
+    background:#f8fafc;
+}
+
+.seg button{
+    height:30px;
+
+    padding:0 12px;
+
+    border:0;
+    border-radius:8px;
+
+    background:transparent;
+
+    color:var(--muted);
+
+    font-size:11.5px;
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:.25s var(--ease);
+}
+
+.seg button.on{
+    background:#fff;
+    color:var(--primary);
+
+    box-shadow:0 3px 10px rgba(79,70,229,.15);
+}
+
+.result-count{
+    padding:14px 24px 0;
+
+    font-size:12px;
+    color:var(--muted);
+    font-weight:600;
+}
+
+
+/* =========================================================
+   ASSESSMENT CARDS
+   ========================================================= */
+
+.a-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(auto-fill,minmax(310px,1fr));
+
+    gap:18px;
+
+    padding:16px 24px 26px;
+}
+
+.a-card{
+    --tone:var(--primary-2);
+    --rx:0deg;
+    --ry:0deg;
+
+    position:relative;
+    overflow:hidden;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:12px;
+
+    padding:20px 20px 18px;
+
+    border:1px solid var(--line);
+    border-radius:16px;
+
+    background:#fff;
+
+    transform:
+        perspective(900px)
+        rotateX(var(--rx))
+        rotateY(var(--ry));
+
+    animation:pop .65s var(--ease) both;
+
+    animation-delay:calc(var(--i) * 60ms);
+
+    transition:
+        box-shadow .3s,
+        border-color .3s,
+        transform .15s ease-out;
+}
+
+.a-card::before{
+    content:"";
+
+    position:absolute;
+
+    inset:0 auto 0 0;
+
+    width:4px;
+
+    background:var(--tone);
+}
+
+.a-card::after{
+    content:"";
+
+    position:absolute;
+
+    top:0;
+    bottom:0;
+    left:0;
+
+    width:35%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(99,102,241,.10),
+            transparent
+        );
+
+    transform:
+        translateX(-130%)
+        skewX(-18deg);
+
+    pointer-events:none;
+}
+
+.a-card:hover{
+    box-shadow:var(--sh);
+    border-color:#cfd0ff;
+}
+
+.a-card:hover::after{
+    animation:shine .9s var(--ease) 1;
+}
+
+.a-card.status-assigned{
+    --tone:var(--warning-2);
+}
+
+.a-card.status-completed{
+    --tone:var(--success-2);
+}
+
+.a-card.status-cancelled{
+    --tone:var(--danger-2);
+}
+
+.a-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:8px;
+
+    flex-wrap:wrap;
+}
+
+.a-title{
+    font-size:15px;
+    font-weight:800;
+    line-height:1.3;
+
+    overflow-wrap:anywhere;
+}
+
+.a-desc{
+    font-size:12px;
+    line-height:1.55;
+
+    color:var(--muted);
+
+    display:-webkit-box;
+    -webkit-line-clamp:3;
+    -webkit-box-orient:vertical;
+
+    overflow:hidden;
+
+    min-height:3.1em;
+}
+
+.a-tags{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+}
+
+.type-tag{
+    display:inline-block;
+
+    padding:4px 9px;
+
+    border-radius:7px;
+
+    background:#f8fafc;
+
+    border:1px solid #edf0f4;
+
+    color:#64748b;
+
+    font-size:10.5px;
+    font-weight:700;
+}
+
+.ai-tag{
+    display:inline-flex;
+    align-items:center;
+
+    gap:5px;
+
+    padding:4px 8px;
+
+    border-radius:7px;
+
+    background:#eef2ff;
+
+    border:1px solid #ddd6fe;
+
+    color:var(--primary);
+
+    font-size:9.5px;
+    font-weight:800;
+}
+
+.ai-tag i{
+    font-style:normal;
+
+    display:inline-block;
+
+    animation:sparkle 2.6s ease-in-out infinite;
+}
+
+.q-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    font-size:11.5px;
+    color:var(--muted);
+    font-weight:600;
+}
+
+.q-row strong{
+    color:var(--ink);
+    font-size:14px;
+}
+
+.q-bar{
+    height:6px;
+
+    border-radius:99px;
+
+    background:#eef0f6;
+
+    overflow:hidden;
+}
+
+.q-bar span{
+    display:block;
+
+    height:100%;
+
+    width:var(--w,0%);
+
+    border-radius:inherit;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary-2),
+            var(--teal)
+        );
+
+    animation:grow 1s .35s var(--ease) both;
+}
+
+.a-actions{
+    display:flex;
+
+    gap:8px;
+
+    margin-top:auto;
+
+    padding-top:4px;
+}
+
+.a-actions .btn{
+    flex:1;
+}
+
+.a-card.is-hidden{
+    display:none;
+}
+
+.a-grid.list{
+    grid-template-columns:1fr;
+}
+
+.a-grid.list .a-card{
+    flex-direction:row;
+    align-items:center;
+    gap:22px;
+}
+
+.a-grid.list .a-main{
+    flex:1;
+    min-width:0;
+}
+
+.a-grid.list .a-desc{
+    min-height:0;
+    -webkit-line-clamp:2;
+}
+
+.a-grid.list .q-wrap{
+    width:180px;
+    flex:none;
+}
+
+.a-grid.list .a-actions{
+    margin:0;
+    width:190px;
+    flex:none;
+}
+
+.a-main{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status{
+    display:inline-flex;
+    align-items:center;
+
+    gap:6px;
+
+    padding:5px 10px;
+
+    border-radius:8px;
+
+    font-size:10px;
+    font-weight:800;
+
+    letter-spacing:.4px;
+
+    white-space:nowrap;
+
+    text-transform:uppercase;
+}
+
+.status::before{
+    content:"";
+
+    width:6px;
+    height:6px;
+
+    border-radius:50%;
+
+    background:currentColor;
+}
+
+.status.generated,
+.status.in_progress{
+    background:#eef2ff;
+    color:#4338ca;
+}
+
+.status.assigned{
+    background:#fff4ed;
+    color:#c2410c;
+}
+
+.status.completed{
+    background:#ecfdf3;
+    color:#067647;
+}
+
+.status.cancelled{
+    background:#fef3f2;
+    color:#b42318;
+}
+
+.status.unknown{
+    background:#f2f4f7;
+    color:#475467;
+}
+
+.status.in_progress::before,
+.status.assigned::before{
+    animation:pulseBadge 2s infinite;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.btn{
+    position:relative;
+    overflow:hidden;
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:8px;
+
+    height:38px;
+
+    padding:0 16px;
+
+    border:1px solid #d0d5dd;
+    border-radius:10px;
+
+    background:#fff;
+
+    color:#344054;
+
+    font-size:12px;
+    font-weight:700;
+
+    cursor:pointer;
+
+    transition:
+        transform .2s var(--ease),
+        box-shadow .2s,
+        border-color .2s,
+        color .2s;
+}
+
+.btn:hover{
+    transform:translateY(-2px);
+
+    border-color:#c7c4ff;
+
+    color:var(--primary);
+
+    box-shadow:0 8px 16px rgba(79,70,229,.1);
+}
+
+.btn:active{
+    transform:scale(.97);
+}
+
+.btn-primary{
+    color:#fff;
+
+    border-color:transparent;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary-2),
+            var(--primary)
+        );
+
+    box-shadow:0 6px 14px rgba(79,70,229,.26);
+}
+
+.btn-primary:hover{
+    color:#fff;
+
+    border-color:transparent;
+
+    box-shadow:0 10px 22px rgba(79,70,229,.36);
+}
+
+.btn-secondary{
+    background:#f6faf9;
+
+    border-color:#d3ebe7;
+
+    color:var(--teal-dark);
+}
+
+.btn-secondary:hover{
+    color:var(--teal-dark);
+    border-color:#99d9d0;
+}
+
+.btn-sm{
+    height:34px;
+    padding:0 13px;
+    font-size:11.5px;
+}
+
+.btn-white{
+    background:#fff;
+    color:var(--primary-dark);
+    border-color:#fff;
+}
+
+.btn-white:hover{
+    color:var(--primary);
+    border-color:#fff;
+}
+
+.btn-light{
+    background:rgba(255,255,255,.14);
+
+    border-color:rgba(255,255,255,.28);
+
+    color:#fff;
+}
+
+.btn-light:hover{
+    background:rgba(255,255,255,.22);
+    color:#fff;
+    border-color:rgba(255,255,255,.4);
+    box-shadow:none;
+}
+
+.ripple{
+    position:absolute;
+
+    border-radius:50%;
+
+    background:rgba(255,255,255,.5);
+
+    transform:scale(0);
+
+    animation:rip .6s ease-out forwards;
+
+    pointer-events:none;
+}
+
+.na{
+    color:#98a2b3;
+    font-size:12px;
+}
+
+
+/* =========================================================
+   WORKFLOW
+   ========================================================= */
+
+.flow{
+    display:grid;
+
+    grid-template-columns:repeat(6,1fr);
+
+    gap:14px;
+
+    padding:24px;
+
+    counter-reset:s;
+
+    position:relative;
+}
+
+.flow li{
+    list-style:none;
+
+    position:relative;
+
+    padding-top:6px;
+}
+
+.flow li::before{
+    content:"";
+
+    position:absolute;
+
+    top:22px;
+    left:44px;
+    right:-14px;
+
+    height:2px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary-2),
+            var(--teal)
+        );
+
+    opacity:.3;
+
+    transform-origin:left;
+
+    transform:scaleX(0);
+
+    transition:
+        transform .8s var(--ease)
+        calc(var(--i) * .15s + .3s);
+}
+
+.flow li:last-child::before{
+    display:none;
+}
+
+.flow.in li::before{
+    transform:scaleX(1);
+}
+
+.step-num{
+    width:32px;
+    height:32px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:50%;
+
+    color:#fff;
+
+    font-size:12px;
+    font-weight:800;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary-2),
+            var(--teal)
+        );
+
+    box-shadow:0 6px 14px rgba(79,70,229,.25);
+
+    margin-bottom:10px;
+}
+
+.step-title{
+    font-size:13px;
+    font-weight:800;
+}
+
+.step-text{
+    margin-top:4px;
+
+    font-size:11.5px;
+    line-height:1.55;
+
+    color:var(--muted);
+}
+
+.reveal{
+    opacity:0;
+
+    transform:translateY(16px);
+
+    transition:
+        opacity .6s var(--ease),
+        transform .6s var(--ease);
+
+    transition-delay:
+        calc(var(--i,0) * 80ms);
+}
+
+.reveal.in{
+    opacity:1;
+    transform:none;
+}
+
+
+/* =========================================================
+   ASSIGNED TABLE
+   ========================================================= */
+
+.table-wrap{
+    margin:16px 24px 24px;
+
+    max-height:560px;
+
+    overflow:auto;
+
+    border:1px solid var(--line);
+    border-radius:14px;
+
+    scrollbar-width:thin;
+}
+
+table{
+    width:100%;
+    min-width:860px;
+
+    border-collapse:separate;
+    border-spacing:0;
+}
+
+thead th{
+    position:sticky;
+    top:0;
+    z-index:3;
+
+    padding:13px 16px;
+
+    text-align:left;
+    white-space:nowrap;
+
+    font-size:10.5px;
+    font-weight:800;
+
+    letter-spacing:.8px;
+
+    text-transform:uppercase;
+
+    color:#475467;
+
+    background:
+        linear-gradient(
+            180deg,
+            #f3f4ff,
+            #eef0f7
+        );
+
+    border-bottom:1px solid var(--line);
+}
+
+tbody td{
+    padding:14px 16px;
+
+    vertical-align:middle;
+
+    font-size:13px;
+
+    color:#344054;
+
+    border-bottom:1px solid #f0f2f5;
+
+    background:inherit;
+}
+
+tbody tr{
+    background:#fff;
+
+    transition:
+        background .2s,
+        transform .2s;
+}
+
+tbody tr:nth-child(even){
+    background:#fafbff;
+}
+
+tbody tr:hover{
+    background:#f3f4ff;
+}
+
+tbody tr:last-child td{
+    border-bottom:0;
+}
+
+.col-action{
+    position:sticky;
+    right:0;
+    z-index:2;
+
+    text-align:right;
+    white-space:nowrap;
+
+    background:inherit;
+
+    box-shadow:
+        -8px 0 14px -10px
+        rgba(16,24,40,.12);
+}
+
+thead .col-action{
+    z-index:4;
+}
+
+.row-title{
+    font-weight:800;
+    color:var(--ink);
+}
+
+.row-desc{
+    margin-top:3px;
+
+    font-size:11.5px;
+    color:var(--muted);
+
+    line-height:1.5;
+
+    display:-webkit-box;
+
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+
+    overflow:hidden;
+}
+
+.employee-name{
+    font-weight:700;
+}
+
+.employee-empty{
+    color:#98a2b3;
+    font-size:12px;
+}
+
+.score{
+    display:flex;
+    align-items:center;
+
+    gap:10px;
+
+    min-width:120px;
+}
+
+.score .q-bar{
+    flex:1;
+}
+
+.score strong{
+    font-size:12.5px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.empty-state{
+    padding:60px 20px;
+
+    text-align:center;
+}
+
+.empty-icon{
+    width:68px;
+    height:68px;
+
+    margin:0 auto 18px;
+
+    display:grid;
+    place-items:center;
+
+    border-radius:20px;
+
+    font-size:28px;
+
+    color:var(--primary);
+
+    background:
+        linear-gradient(
+            135deg,
+            #eef2ff,
+            #e7f7fb
+        );
+
+    animation:floaty 3s ease-in-out infinite;
+}
+
+.empty-title{
+    font-size:16px;
+    font-weight:850;
+}
+
+.empty-text{
+    margin:7px auto 18px;
+
+    max-width:560px;
+
+    font-size:12.5px;
+
+    color:var(--muted);
+
+    line-height:1.6;
+}
+
+
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
+
+.notification-panel{
+    position:fixed;
+
+    right:25px;
+    top:72px;
+
+    width:min(350px,calc(100vw - 30px));
+
+    max-height:70vh;
+
+    overflow-y:auto;
+
+    z-index:1200;
+
+    padding:15px;
+
+    border:1px solid var(--line);
+    border-radius:18px;
+
+    background:rgba(255,255,255,.97);
+
+    backdrop-filter:blur(18px);
+
+    box-shadow:
+        0 20px 55px
+        rgba(16,24,40,.16);
+
+    opacity:0;
+    visibility:hidden;
+
+    transform:
+        translateY(-10px)
+        scale(.98);
+
+    transition:all .25s var(--ease);
+}
+
+.notification-panel.show{
+    opacity:1;
+    visibility:visible;
+
+    transform:none;
+}
+
+.notification-head{
+    display:flex;
+
+    justify-content:space-between;
+    align-items:center;
+
+    margin-bottom:10px;
+}
+
+.notification-head strong{
+    font-size:13px;
+}
+
+.notification-head button{
+    border:0;
+    background:none;
+
+    cursor:pointer;
+
+    color:var(--muted);
+
+    padding:4px 6px;
+}
+
+.notice{
+    display:flex;
+
+    gap:10px;
+
+    padding:11px 8px;
+
+    border-radius:11px;
+
+    transition:.2s;
+}
+
+.notice:hover{
+    background:#f7f8fc;
+}
+
+.notice-dot{
+    width:8px;
+    height:8px;
+
+    margin-top:5px;
+
+    flex:0 0 8px;
+
+    border-radius:50%;
+
+    background:var(--primary-2);
+}
+
+.notice p{
+    font-size:11.5px;
+    line-height:1.45;
+
+    color:var(--muted);
+}
+
+.notice strong{
+    color:var(--ink);
+}
+
+.caught-up{
+    padding:18px 8px;
+
+    text-align:center;
+}
+
+.caught-up strong{
+    display:block;
+
+    font-size:13px;
+
+    margin-bottom:4px;
+}
+
+.caught-up p{
+    font-size:11.5px;
+    color:var(--muted);
+}
+
+:focus-visible{
+    outline:3px solid rgba(79,70,229,.45);
+    outline-offset:2px;
+    border-radius:10px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media(max-width:1200px){
+
+    .content{
+        padding:26px 24px 46px;
+    }
+
+    .header{
+        padding:14px 24px;
+    }
+
+    .stats-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .flow{
+        grid-template-columns:repeat(3,1fr);
+    }
+
+    .flow li:nth-child(3)::before{
+        display:none;
+    }
+}
+
+@media(max-width:1000px){
+
+    .hero{
+        flex-direction:column;
+        align-items:flex-start;
+    }
+
+    .a-grid.list .a-card{
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .a-grid.list .q-wrap,
+    .a-grid.list .a-actions{
+        width:100%;
+    }
+}
+
+@media(max-width:800px){
+
+    :root{
+        --side:0px;
+    }
+
+    .sidebar{
+        width:265px;
+
+        transform:translateX(-105%);
+
+        animation:none;
+    }
+
+    .sidebar.open{
+        transform:none;
+    }
+
+    .mobile-menu{
+        display:grid;
+    }
+
+    .header{
+        padding:12px 18px;
+    }
+}
+
+@media(max-width:560px){
+
+    .header-subtitle,
+    .name,
+    .role-name{
+        display:none;
+    }
+
+    .content{
+        padding:18px 14px 36px;
+    }
+
+    .hero{
+        padding:22px 18px;
+        border-radius:20px;
+    }
+
+    .hero h2{
+        font-size:23px;
+    }
+
+    .card-header,
+    .toolbar{
+        padding:16px;
+    }
+
+    .a-grid{
+        padding:14px 16px 20px;
+        grid-template-columns:1fr;
+    }
+
+    .table-wrap{
+        margin:12px 16px 18px;
+    }
+
+    .search-box{
+        max-width:none;
+        flex-basis:100%;
+    }
+
+    .flow{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .hero-summary-wrap{
+        width:100%;
+    }
+}
+
+@media(max-width:430px){
+
+    .stats-grid{
+        grid-template-columns:1fr;
+    }
+
+    .flow{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(prefers-reduced-motion:reduce){
+
+    *,
+    *::before,
+    *::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        animation-delay:0ms !important;
+
+        transition-duration:.01ms !important;
+        transition-delay:0ms !important;
+
+        scroll-behavior:auto !important;
+    }
+
+    .reveal{
+        opacity:1;
+        transform:none;
+    }
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="overlay" id="overlay"></div>
+
+
+<!-- =========================================================
+     SIDEBAR
+     ========================================================= -->
+
+<aside class="sidebar" id="sidebar" aria-label="Trainer navigation">
+
+    <div class="brand">
+        <div class="brand-mark" aria-hidden="true">C</div>
+        <div class="brand-name">Capacitix</div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Trainer menu">
+
+        <div class="menu-label">TRAINER</div>
+
+        <ul class="menu">
+
+            <li>
+                <a href="/trainer/dashboard">
+                    <span class="icon" aria-hidden="true">⌂</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/employees">
+                    <span class="icon" aria-hidden="true">●</span>
+                    <span>My Employees</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/skill-gaps">
+                    <span class="icon" aria-hidden="true">△</span>
+                    <span>Skill Gaps</span>
+                </a>
+            </li>
+            <li>
+                <a href="/trainer/learning-resources">
+                    <span class="icon" aria-hidden="true">▣</span>
+                    <span>Learning Resources</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/assessments"
+                   class="active"
+                   aria-current="page">
+                    <span class="icon" aria-hidden="true">✓</span>
+                    <span>Assessments</span>
+                </a>
+            </li>
+
+            
+
+            
+
+        </ul>
+
+
+        <div class="menu-label">PROGRESS</div>
+
+        <ul class="menu">
+            <li>
+                <a href="/trainer/practical-tasks">
+                    <span class="icon" aria-hidden="true">◈</span>
+                    <span>Practical Tasks</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/progress">
+                    <span class="icon" aria-hidden="true">↗</span>
+                    <span>Progress</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/reports">
+                    <span class="icon" aria-hidden="true">▤</span>
+                    <span>Reports</span>
+                </a>
+            </li>
+
+        </ul>
+
+
+        <div class="menu-label">ACCOUNT</div>
+
+        <ul class="menu">
+
+            <li>
+                <a href="/trainer/profile">
+                    <span class="icon" aria-hidden="true">●</span>
+                    <span>My Profile</span>
+                </a>
+            </li>
+
+            <li>
+                <a href="/trainer/settings">
+                    <span class="icon" aria-hidden="true">⚙</span>
+                    <span>Settings</span>
+                </a>
+            </li>
+
+        </ul>
+
+    </nav>
+
+
+    <div class="sidebar-bottom">
+
+        <div class="logout">
+
+            <form th:action="@{/logout}" method="post">
+
+                <button type="submit">
+                    <span aria-hidden="true">↪</span>
+                    <span>Logout</span>
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+<main class="main" id="main">
+
+
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
+
+<header class="header">
+
+    <div class="header-left">
+
+        <button
+            class="mobile-menu"
+            id="mobileMenu"
+            type="button"
+            aria-label="Open menu"
+            aria-controls="sidebar"
+            aria-expanded="false">
+            ☰
+        </button>
+
+        <div>
+
+            <h1 class="header-title">
+                Assessments
+            </h1>
+
+            <div class="header-subtitle">
+                Review AI-generated assessments and assign them to your employees
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="header-right">
+
+        <button
+            class="header-btn"
+            id="notificationBtn"
+            type="button"
+            aria-label="Notifications"
+            aria-expanded="false"
+            aria-controls="notificationPanel">
+
+            <span class="bell" aria-hidden="true">🔔</span>
+
+            <span
+                class="badge"
+                th:if="${notifications != null and !notifications.isEmpty()}"
+                th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">
+                0
+            </span>
+
+        </button>
+
+
+        <div class="profile">
+
+            <div
+                class="avatar"
+                th:text="${userInitial != null and !userInitial.isBlank() ? userInitial : 'T'}">
+                T
+            </div>
+
+            <div>
+
+                <div
+                    class="name"
+                    th:text="${userName != null and !userName.isBlank() ? userName : 'Trainer'}">
+                    Trainer
+                </div>
+
+                <div class="role-name">
+                    Trainer
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<section class="content" id="content">
+
+
+<!-- =========================================================
+     FLASH MESSAGES
+     ========================================================= -->
+
+<div
+    class="flash ok"
+    role="status"
+    th:if="${success != null and !success.isBlank()}">
+
+    <span aria-hidden="true">✓</span>
+
+    <span th:text="${success}">
+        Done
+    </span>
+
+    <button
+        type="button"
+        data-dismiss
+        aria-label="Dismiss">
+        ✕
+    </button>
+
+</div>
+
+
+<div
+    class="flash err"
+    role="alert"
+    th:if="${error != null and !error.isBlank()}">
+
+    <span aria-hidden="true">!</span>
+
+    <span th:text="${error}">
+        Something went wrong
+    </span>
+
+    <button
+        type="button"
+        data-dismiss
+        aria-label="Dismiss">
+        ✕
+    </button>
+
+</div>
+
+
+<!-- =========================================================
+     HERO
+     ========================================================= -->
+
+<div class="hero">
+
+    <div class="hero-copy">
+
+        <span class="hero-badge">
+            TRAINER ASSESSMENT CENTER
+        </span>
+
+        <h2>
+            Manage Competency Assessments
+        </h2>
+
+        <p>
+            Review AI-generated assessments based on
+            organization-required competencies and assign
+            them to the employees you train. Track progress
+            and results after assignment.
+        </p>
+
+        <div class="hero-cta">
+
+            <a href="#availableCard"
+               class="btn btn-white">
+                Browse Assessments
+            </a>
+
+            <a href="/trainer/employees"
+               class="btn btn-light">
+                View My Employees
+            </a>
+
+            <a href="/trainer/skill-gaps"
+               class="btn btn-light">
+                View Skill Gaps
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <div class="hero-summary-wrap">
+
+        <div
+            class="hero-ring"
+            id="heroRing"
+            style="--pct:0"
+
+            th:with="pct=${assignedCount != null and assignedCount > 0 and completedCount != null ? (completedCount * 100 / assignedCount) : 0}"
+
+            th:attr="data-pct=${pct}"
+
+            role="img"
+
+            th:aria-label="${pct + '% of assigned assessments completed'}">
+
+            <div class="hero-ring-value">
+
+                <span id="ringNumber">
+                    0
+                </span>%
+
+                <small>
+                    COMPLETE
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <div class="hero-summary">
+
+            <strong
+                th:text="${(completedCount != null ? completedCount : 0) + ' of ' + (assignedCount != null ? assignedCount : 0)}">
+                0 of 0
+            </strong>
+
+            <br>
+
+            assigned assessments completed
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     STATS
+     ========================================================= -->
+
+<div class="stats-grid">
+
+
+    <div class="stat-card">
+
+        <div class="stat-top">
+
+            <div class="stat-label">
+                Available
+            </div>
+
+            <div class="stat-icon" aria-hidden="true">
+                ✦
+            </div>
+
+        </div>
+
+        <div
+            class="stat-value count"
+            th:text="${availableCount != null ? availableCount : 0}">
+            0
+        </div>
+
+        <div class="stat-info">
+            AI-generated and ready to assign
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-top">
+
+            <div class="stat-label">
+                Assigned
+            </div>
+
+            <div class="stat-icon" aria-hidden="true">
+                ◆
+            </div>
+
+        </div>
+
+        <div
+            class="stat-value count"
+            th:text="${assignedCount != null ? assignedCount : 0}">
+            0
+        </div>
+
+        <div class="stat-info">
+            Assigned to your employees
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-top">
+
+            <div class="stat-label">
+                Completed
+            </div>
+
+            <div class="stat-icon" aria-hidden="true">
+                ✓
+            </div>
+
+        </div>
+
+        <div
+            class="stat-value count"
+            th:text="${completedCount != null ? completedCount : 0}">
+            0
+        </div>
+
+        <div class="stat-info">
+            Completed by employees
+        </div>
+
+    </div>
+
+
+    <div class="stat-card">
+
+        <div class="stat-top">
+
+            <div class="stat-label">
+                Pending
+            </div>
+
+            <div class="stat-icon" aria-hidden="true">
+                ◷
+            </div>
+
+        </div>
+
+        <div
+            class="stat-value count"
+            th:text="${pendingCount != null ? pendingCount : 0}">
+            0
+        </div>
+
+        <div class="stat-info">
+            Waiting for Students action
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     AVAILABLE ASSESSMENTS
+     ========================================================= -->
+
+<div class="card" id="availableCard">
+
+
+    <div class="card-header">
+
+        <div>
+
+            <h2 class="card-title">
+                Available Assessments
+            </h2>
+
+            <div class="card-desc">
+                Review each AI-generated assessment, then assign it to an employee.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- TOOLBAR -->
+
+    <div
+        class="toolbar"
+        th:if="${availableAssessments != null and !availableAssessments.isEmpty()}">
+
+        <div
+            class="search-box"
+            id="availableSearchBox">
+
+            <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                aria-hidden="true">
+
+                <circle
+                    cx="9"
+                    cy="9"
+                    r="6">
+                </circle>
+
+                <path d="M14 14l4 4"></path>
+
+            </svg>
+
+
+            <label
+                for="assessmentSearch"
+                style="position:absolute;left:-999px">
+                Search assessments
+            </label>
+
+
+            <input
+                type="search"
+                id="assessmentSearch"
+                placeholder="Search by name or competency (press /)"
+                autocomplete="off">
+
+
+            <button
+                type="button"
+                class="search-clear"
+                id="searchClear"
+                aria-label="Clear search">
+                ✕
+            </button>
+
+        </div>
+
+
+        <div class="toolbar-right">
+
+            <label
+                for="sortSelect"
+                style="position:absolute;left:-999px">
+                Sort assessments
+            </label>
+
+            <select
+                class="select"
+                id="sortSelect">
+
+                <option value="default">
+                    Sort: Default
+                </option>
+
+                <option value="name">
+                    Name (A–Z)
+                </option>
+
+                <option value="questions">
+                    Most questions
+                </option>
+
+            </select>
+
+
+            <div
+                class="seg"
+                role="group"
+                aria-label="View mode">
+
+                <button
+                    type="button"
+                    class="on"
+                    data-view="grid">
+                    Cards
+                </button>
+
+                <button
+                    type="button"
+                    data-view="list">
+                    List
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- RESULT COUNT -->
+
+    <div
+        class="result-count"
+        id="resultCount"
+        aria-live="polite"
+        th:if="${availableAssessments != null and !availableAssessments.isEmpty()}">
+    </div>
+
+
+    <!-- =====================================================
+         IMPORTANT:
+         Assessment.java DOES NOT have competency.
+         It has targetRole.
+         ===================================================== -->
+
+    <div
+        class="a-grid"
+        id="assessmentGrid"
+        th:if="${availableAssessments != null and !availableAssessments.isEmpty()}">
+
+
+       <article
+    class="a-card"
+
+    th:each="a, iter : ${availableAssessments}"
+
+    th:with="
+        st=${a.status != null ? #strings.toLowerCase(#strings.toString(a.status)) : 'unknown'},
+        qCount=${questionCounts != null ? questionCounts.get(a.id) : 0}
+    "
+
+    th:classappend="${'status-' + st}"
+
+    th:style="${'--i:' + iter.index}"
+
+    th:data-name="${#strings.toLowerCase(a.name != null ? a.name : '')}"
+
+    th:data-description="${#strings.toLowerCase(a.description != null ? a.description : '')}"
+
+    th:data-competency="${#strings.toLowerCase(a.targetRole != null ? a.targetRole : '')}"
+
+    th:data-questions="${qCount != null ? qCount : 0}"
+
+    th:data-index="${iter.index}">
+
+
+    <div class="a-main">
+
+        <div class="a-top">
+
+            <span class="ai-tag">
+                <i>✦</i>
+                AI GENERATED
+            </span>
+
+            <span
+                class="status"
+                th:classappend="${st}"
+                th:text="${a.status != null
+                    ? #strings.replace(#strings.toString(a.status), '_', ' ')
+                    : 'UNKNOWN'}">
+                GENERATED
+            </span>
+
+        </div>
+
+
+        <h3
+            class="a-title"
+            th:text="${a.name != null and !a.name.isBlank()
+                ? a.name
+                : 'AI Competency Assessment'}">
+            AI Competency Assessment
+        </h3>
+
+
+        <p
+            class="a-desc"
+            th:text="${a.description != null and !a.description.isBlank()
+                ? a.description
+                : 'Review the questions to confirm they match the target competency.'}">
+            Description
+        </p>
+
+
+        <div class="a-tags">
+
+            <span
+                class="type-tag"
+                th:if="${a.targetRole != null and !a.targetRole.isBlank()}"
+                th:text="${a.targetRole}">
+                Java
+            </span>
+
+            <span
+                class="type-tag"
+                th:unless="${a.targetRole != null and !a.targetRole.isBlank()}">
+                Organization Required Skill
+            </span>
+
+            <span
+                class="type-tag"
+                th:if="${a.type != null}"
+                th:text="${a.type}">
+                SKILL
+            </span>
+
+        </div>
+
+    </div>
+
+
+    <div class="q-wrap">
+
+        <div class="q-row">
+
+            <span>
+                Questions
+            </span>
+
+            <strong
+                th:text="${qCount != null ? qCount : 0}">
+                0
+            </strong>
+
+        </div>
+
+        <div
+            class="q-bar"
+            style="margin-top:7px">
+
+            <span class="q-fill"></span>
+
+        </div>
+
+    </div>
+
+
+    <div class="a-actions">
+
+        <a
+            class="btn btn-secondary btn-sm"
+            th:href="@{/trainer/assessments/{id}(id=${a.id})}">
+            View
+        </a>
+
+        <a
+            class="btn btn-primary btn-sm"
+            th:href="@{/trainer/assessments/{id}/assign(id=${a.id})}">
+            Assign
+        </a>
+
+    </div>
+
+</article>
+
+    </div>
+
+
+    <!-- SEARCH EMPTY -->
+
+    <div
+        class="empty-state"
+        id="noSearchResults"
+        style="display:none">
+
+        <div
+            class="empty-icon"
+            aria-hidden="true">
+            ⌕
+        </div>
+
+        <div class="empty-title">
+            No assessments match
+        </div>
+
+        <div class="empty-text">
+            Try another assessment name, target competency, or skill.
+        </div>
+
+    </div>
+
+
+    <!-- NO AVAILABLE ASSESSMENTS -->
+
+    <div
+        class="empty-state"
+        th:if="${availableAssessments == null or availableAssessments.isEmpty()}">
+
+        <div
+            class="empty-icon"
+            aria-hidden="true">
+            ✓
+        </div>
+
+        <div class="empty-title">
+            No assessments available
+        </div>
+
+        <div class="empty-text">
+            New AI-generated assessments from organization-required
+            competencies will appear here.
+        </div>
+
+        <a
+            href="/trainer/employees"
+            class="btn btn-primary">
+            View My Employees
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     WORKFLOW
+     ========================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <div>
+
+            <h2
+                class="card-title"
+                id="flowTitle">
+
+                Assessment Workflow
+
+            </h2>
+
+            <div class="card-desc">
+                From AI generation to a personalized learning path.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <ol
+        class="flow"
+        id="flow">
+
+
+        <li
+            class="reveal"
+            style="--i:0">
+
+            <div class="step-num">
+                1
+            </div>
+
+            <div class="step-title">
+                AI generates
+            </div>
+
+            <div class="step-text">
+                Questions are built from organization-required competencies.
+            </div>
+
+        </li>
+
+
+        <li
+            class="reveal"
+            style="--i:1">
+
+            <div class="step-num">
+                2
+            </div>
+
+            <div class="step-title">
+                You review
+            </div>
+
+            <div class="step-text">
+                Check that the assessment matches the target competency.
+            </div>
+
+        </li>
+
+
+        <li
+            class="reveal"
+            style="--i:2">
+
+            <div class="step-num">
+                3
+            </div>
+
+            <div class="step-title">
+                Assign
+            </div>
+
+            <div class="step-text">
+                Pick one of your employees and send the assessment.
+            </div>
+
+        </li>
+
+
+        <li
+            class="reveal"
+            style="--i:3">
+
+            <div class="step-num">
+                4
+            </div>
+
+            <div class="step-title">
+                Students completes
+            </div>
+
+            <div class="step-text">
+                The Students answers and submits the attempt.
+            </div>
+
+        </li>
+
+
+        <li
+            class="reveal"
+            style="--i:4">
+
+            <div class="step-num">
+                5
+            </div>
+
+            <div class="step-title">
+                Gaps identified
+            </div>
+
+            <div class="step-text">
+                Results show strengths and areas to improve.
+            </div>
+
+        </li>
+
+
+        <li
+            class="reveal"
+            style="--i:5">
+
+            <div class="step-num">
+                6
+            </div>
+
+            <div class="step-title">
+                Learning path
+            </div>
+
+            <div class="step-text">
+                Skill gaps shape the employee's personalized learning path.
+            </div>
+
+        </li>
+
+    </ol>
+
+</div>
+
+
+<!-- =========================================================
+     ASSIGNED ASSESSMENTS
+     ========================================================= -->
+
+<div class="card">
+
+    <div class="card-header">
+
+        <div>
+
+            <h2 class="card-title">
+                Assigned Assessments
+            </h2>
+
+            <div class="card-desc">
+                Track assessments you have assigned to your employees.
+            </div>
+
+        </div>
+
+
+        <a
+            href="/trainer/assessments/assigned"
+            class="btn btn-secondary btn-sm">
+
+            View All Assigned
+
+        </a>
+
+    </div>
+
+
+    <div
+        class="table-wrap"
+        th:if="${trainerAssignments != null and !trainerAssignments.isEmpty()}">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Assessment
+                    </th>
+
+                    <th>
+                        Employee
+                    </th>
+
+                    <th>
+                        Assigned
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Score
+                    </th>
+
+                    <th class="col-action">
+                        Action
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                <tr
+                    th:each="assignment : ${trainerAssignments}"
+                    class="reveal">
+
+
+                    <td>
+
+                        <div
+                            class="row-title"
+
+                            th:text="${assignment.assessment != null and assignment.assessment.name != null ? assignment.assessment.name : 'Assessment'}">
+
+                            Assessment
+
+                        </div>
+
+
+                        <div
+                            class="row-desc"
+
+                            th:if="${assignment.assessment != null and assignment.assessment.description != null and !assignment.assessment.description.isBlank()}"
+
+                            th:text="${assignment.assessment.description}">
+
+                            Description
+
+                        </div>
+
+                    </td>
+
+
+                    <td>
+
+                        <span
+                            class="employee-name"
+
+                            th:if="${assignment.employee != null and assignment.employee.fullName != null}"
+
+                            th:text="${assignment.employee.fullName}">
+
+                            Students
+
+                        </span>
+
+
+                        <span
+                            class="employee-empty"
+
+                            th:unless="${assignment.employee != null and assignment.employee.fullName != null}">
+
+                            Not assigned
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <span
+                            th:if="${assignment.assignedAt != null}"
+
+                            th:text="${#temporals.format(assignment.assignedAt, 'dd MMM yyyy')}">
+
+                            01 Jan 2026
+
+                        </span>
+
+
+                        <span
+                            class="na"
+                            th:unless="${assignment.assignedAt != null}">
+
+                            —
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <span
+                            class="status"
+
+                            th:with="st=${assignment.status != null ? #strings.toLowerCase(#strings.toString(assignment.status)) : 'unknown'}"
+
+                            th:classappend="${st}"
+
+                            th:text="${assignment.status != null ? #strings.replace(#strings.toString(assignment.status), '_', ' ') : 'UNKNOWN'}">
+
+                            ASSIGNED
+
+                        </span>
+
+                    </td>
+
+
+                    <td>
+
+                        <div
+                            class="score"
+                            th:if="${assignment.score != null}">
+
+                            <div class="q-bar">
+
+                                <span
+                                    class="q-fill"
+                                    th:data-w="${assignment.score}">
+                                </span>
+
+                            </div>
+
+
+                            <strong
+                                th:text="${assignment.score + '%'}">
+
+                                0%
+
+                            </strong>
+
+                        </div>
+
+
+                        <span
+                            class="na"
+                            th:unless="${assignment.score != null}">
+
+                            Not completed
+
+                        </span>
+
+                    </td>
+
+
+                    <td class="col-action">
+
+                        <a
+                            class="btn btn-secondary btn-sm"
+
+                            th:href="@{/trainer/assessments/assigned/{id}(id=${assignment.id})}">
+
+                            View
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <div
+        class="empty-state"
+
+        th:if="${trainerAssignments == null or trainerAssignments.isEmpty()}">
+
+        <div
+            class="empty-icon"
+            aria-hidden="true">
+            ◆
+        </div>
+
+        <div class="empty-title">
+            No assessments assigned yet
+        </div>
+
+        <div class="empty-text">
+            Assign an AI-generated assessment to one of your
+            employees and it will appear here for progress tracking.
+        </div>
+
+        <a
+            href="#availableCard"
+            class="btn btn-primary">
+
+            Choose an Assessment
+
+        </a>
+
+    </div>
+
+</div>
+
+
+</section>
+
+</main>
+
+
+<!-- =========================================================
+     NOTIFICATIONS
+     ========================================================= -->
+
+<div
+    class="notification-panel"
+    id="notificationPanel"
+    role="dialog"
+    aria-label="Notifications">
+
+    <div class="notification-head">
+
+        <strong>
+            Notifications
+        </strong>
+
+        <button
+            id="closeNotifications"
+            type="button"
+            aria-label="Close notifications">
+
+            ✕
+
+        </button>
+
+    </div>
+
+
+    <div
+        class="notice"
+
+        th:if="${notifications != null}"
+
+        th:each="n : ${notifications}">
+
+        <span class="notice-dot"></span>
+
+        <p>
+
+            <strong th:text="${n.title}">
+                Title
+            </strong>
+
+            <br>
+
+            <span th:text="${n.message}">
+                Message
+            </span>
+
+        </p>
+
+    </div>
+
+
+    <div
+        class="caught-up"
+
+        th:if="${notifications == null or notifications.isEmpty()}">
+
+        <strong>
+            You're all caught up
+        </strong>
+
+        <p>
+            New AI-generated assessments and trainer updates will appear here.
+        </p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+const reduce =
+    matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+const sidebar = $('#sidebar');
+const overlay = $('#overlay');
+const menuBtn = $('#mobileMenu');
+
+function setSidebar(open){
+
+    sidebar.classList.toggle('open', open);
+
+    overlay.classList.toggle('show', open);
+
+    document.body.classList.toggle('no-scroll', open);
+
+    menuBtn.setAttribute(
+        'aria-expanded',
+        String(open)
+    );
+}
+
+menuBtn.addEventListener(
+    'click',
+    () => setSidebar(!sidebar.classList.contains('open'))
+);
+
+overlay.addEventListener(
+    'click',
+    () => setSidebar(false)
+);
+
+$$('.menu a').forEach(link => {
+
+    link.addEventListener('click', () => {
+
+        if(innerWidth <= 800){
+            setSidebar(false);
+        }
+
+    });
+
+});
+
+addEventListener('resize', () => {
+
+    if(innerWidth > 800){
+        setSidebar(false);
+    }
+
+});
+
+
+/* =========================================================
+   NOTIFICATIONS
+   ========================================================= */
+
+const nBtn = $('#notificationBtn');
+const nPanel = $('#notificationPanel');
+
+function setPanel(open){
+
+    nPanel.classList.toggle('show', open);
+
+    nBtn.setAttribute(
+        'aria-expanded',
+        String(open)
+    );
+}
+
+nBtn.addEventListener('click', event => {
+
+    event.stopPropagation();
+
+    setPanel(
+        !nPanel.classList.contains('show')
+    );
+
+});
+
+$('#closeNotifications').addEventListener(
+    'click',
+    () => setPanel(false)
+);
+
+document.addEventListener('click', event => {
+
+    if(
+        !nPanel.contains(event.target) &&
+        !nBtn.contains(event.target)
+    ){
+        setPanel(false);
+    }
+
+});
+
+
+/* =========================================================
+   FLASH MESSAGES
+   ========================================================= */
+
+$$('.flash [data-dismiss]').forEach(button => {
+
+    button.addEventListener('click', () => {
+
+        const flash = button.closest('.flash');
+
+        flash.style.transition =
+            'opacity .2s, transform .2s';
+
+        flash.style.opacity = '0';
+
+        flash.style.transform =
+            'translateY(-6px)';
+
+        setTimeout(
+            () => flash.remove(),
+            200
+        );
+
+    });
+
+});
+
+setTimeout(() => {
+
+    $$('.flash.ok [data-dismiss]')
+        .forEach(button => button.click());
+
+}, 6000);
+
+
+/* =========================================================
+   COUNT UP
+   ========================================================= */
+
+$$('.count').forEach(element => {
+
+    const text = element.textContent.trim();
+
+    const target = parseInt(text, 10);
+
+    if(
+        reduce ||
+        isNaN(target) ||
+        target === 0
+    ){
+        return;
+    }
+
+    const start = performance.now();
+
+    function tick(now){
+
+        const progress =
+            Math.min(
+                (now - start) / 900,
+                1
+            );
+
+        element.textContent =
+            Math.round(
+                target *
+                (1 - Math.pow(1 - progress, 3))
+            );
+
+        if(progress < 1){
+
+            requestAnimationFrame(tick);
+
+        }else{
+
+            element.textContent = text;
+
+        }
+
+    }
+
+    requestAnimationFrame(tick);
+
+});
+
+
+/* =========================================================
+   HERO RING
+   ========================================================= */
+
+(() => {
+
+    const ring = $('#heroRing');
+    const number = $('#ringNumber');
+
+    if(!ring || !number){
+        return;
+    }
+
+    const target =
+        Math.max(
+            0,
+            Math.min(
+                100,
+                parseFloat(ring.dataset.pct) || 0
+            )
+        );
+
+
+    if(reduce || target === 0){
+
+        ring.style.setProperty(
+            '--pct',
+            target
+        );
+
+        number.textContent =
+            Math.round(target);
+
+        return;
+    }
+
+
+    const start = performance.now();
+
+    function animate(now){
+
+        const progress =
+            Math.min(
+                (now - start) / 1200,
+                1
+            );
+
+        const value =
+            target *
+            (1 - Math.pow(1 - progress, 3));
+
+
+        ring.style.setProperty(
+            '--pct',
+            value
+        );
+
+        number.textContent =
+            Math.round(value);
+
+
+        if(progress < 1){
+
+            requestAnimationFrame(animate);
+
+        }
+
+    }
+
+    requestAnimationFrame(animate);
+
+})();
+
+
+/* =========================================================
+   QUESTION BARS
+   ========================================================= */
+
+(() => {
+
+    const cards = $$('.a-card');
+
+    if(!cards.length){
+        return;
+    }
+
+
+    const max =
+        Math.max(
+            1,
+            ...cards.map(
+                card =>
+                    Number(card.dataset.questions) || 0
+            )
+        );
+
+
+    cards.forEach(card => {
+
+        const fill =
+            card.querySelector('.q-fill');
+
+        if(!fill){
+            return;
+        }
+
+
+        const questions =
+            Number(card.dataset.questions) || 0;
+
+
+        const width =
+            Math.max(
+                6,
+                (questions / max) * 100
+            );
+
+
+        fill.style.setProperty(
+            '--w',
+            width + '%'
+        );
+
+    });
+
+
+    $$('.score .q-fill').forEach(fill => {
+
+        const score =
+            Number(fill.dataset.w) || 0;
+
+        fill.style.setProperty(
+            '--w',
+            Math.min(100, score) + '%'
+        );
+
+    });
+
+})();
+
+
+/* =========================================================
+   SEARCH / SORT / VIEW
+   ========================================================= */
+
+(() => {
+
+    const grid = $('#assessmentGrid');
+    const input = $('#assessmentSearch');
+
+    if(!grid || !input){
+        return;
+    }
+
+
+    const cards =
+        $$('.a-card', grid);
+
+    const box =
+        $('#availableSearchBox');
+
+    const select =
+        $('#sortSelect');
+
+    const count =
+        $('#resultCount');
+
+    const none =
+        $('#noSearchResults');
+
+
+    function sortCards(){
+
+        const mode =
+            select.value;
+
+
+        const sorted =
+            [...cards].sort((a,b) => {
+
+                if(mode === 'name'){
+
+                    return a.dataset.name
+                        .localeCompare(
+                            b.dataset.name
+                        );
+
+                }
+
+
+                if(mode === 'questions'){
+
+                    return (
+                        Number(b.dataset.questions || 0)
+                        -
+                        Number(a.dataset.questions || 0)
+                    );
+
+                }
+
+
+                return (
+                    Number(a.dataset.index || 0)
+                    -
+                    Number(b.dataset.index || 0)
+                );
+
+            });
+
+
+        sorted.forEach(card =>
+            grid.appendChild(card)
+        );
+
+    }
+
+
+    function filterCards(){
+
+        const query =
+            input.value
+                .trim()
+                .toLowerCase();
+
+
+        let shown = 0;
+
+
+        cards.forEach(card => {
+
+            /*
+             * IMPORTANT:
+             * data-competency now contains targetRole.
+             */
+
+            const searchableText =
+                [
+                    card.dataset.name || '',
+                    card.dataset.description || '',
+                    card.dataset.competency || ''
+                ]
+                .join(' ')
+                .toLowerCase();
+
+
+            const match =
+                !query ||
+                searchableText.includes(query);
+
+
+            card.classList.toggle(
+                'is-hidden',
+                !match
+            );
+
+
+            if(match){
+
+                shown++;
+
+                card.style.animation = 'none';
+
+                void card.offsetHeight;
+
+                card.style.animation = '';
+
+            }
+
+        });
+
+
+        box.classList.toggle(
+            'has-value',
+            query.length > 0
+        );
+
+
+        if(count){
+
+            count.textContent =
+                shown === cards.length
+                    ? cards.length +
+                      (
+                          cards.length === 1
+                              ? ' assessment'
+                              : ' assessments'
+                      )
+                    : 'Showing ' +
+                      shown +
+                      ' of ' +
+                      cards.length;
+
+        }
+
+
+        grid.style.display =
+            shown ? '' : 'none';
+
+
+        if(none){
+
+            none.style.display =
+                shown ? 'none' : 'block';
+
+        }
+
+    }
+
+
+    input.addEventListener(
+        'input',
+        filterCards
+    );
+
+
+    $('#searchClear').addEventListener(
+        'click',
+        () => {
+
+            input.value = '';
+
+            filterCards();
+
+            input.focus();
+
+        }
+    );
+
+
+    select.addEventListener(
+        'change',
+        () => {
+
+            sortCards();
+
+            filterCards();
+
+        }
+    );
+
+
+    $$('.seg button').forEach(button => {
+
+        button.addEventListener(
+            'click',
+            () => {
+
+                $$('.seg button').forEach(
+                    item =>
+                        item.classList.toggle(
+                            'on',
+                            item === button
+                        )
+                );
+
+
+                grid.classList.toggle(
+                    'list',
+                    button.dataset.view === 'list'
+                );
+
+            }
+        );
+
+    });
+
+
+    filterCards();
+
+
+    /* =====================================================
+       3D CARD TILT
+       ===================================================== */
+
+    if(
+        !reduce &&
+        matchMedia('(hover:hover)').matches
+    ){
+
+        cards.forEach(card => {
+
+            card.addEventListener(
+                'pointermove',
+                event => {
+
+                    if(
+                        grid.classList.contains('list')
+                    ){
+                        return;
+                    }
+
+
+                    const rect =
+                        card.getBoundingClientRect();
+
+
+                    const x =
+                        (event.clientX - rect.left)
+                        / rect.width;
+
+
+                    const y =
+                        (event.clientY - rect.top)
+                        / rect.height;
+
+
+                    card.style.setProperty(
+                        '--ry',
+                        ((x - .5) * 6) + 'deg'
+                    );
+
+
+                    card.style.setProperty(
+                        '--rx',
+                        ((.5 - y) * 6) + 'deg'
+                    );
+
+                }
+            );
+
+
+            card.addEventListener(
+                'pointerleave',
+                () => {
+
+                    card.style.setProperty(
+                        '--rx',
+                        '0deg'
+                    );
+
+                    card.style.setProperty(
+                        '--ry',
+                        '0deg'
+                    );
+
+                }
+            );
+
+        });
+
+    }
+
+})();
+
+
+/* =========================================================
+   BUTTON RIPPLE
+   ========================================================= */
+
+document.addEventListener('click', event => {
+
+    const button =
+        event.target.closest('.btn');
+
+
+    if(!button || reduce){
+        return;
+    }
+
+
+    const rect =
+        button.getBoundingClientRect();
+
+
+    const size =
+        Math.max(
+            rect.width,
+            rect.height
+        ) / 6;
+
+
+    const ripple =
+        document.createElement('span');
+
+
+    ripple.className = 'ripple';
+
+
+    ripple.style.cssText =
+        'width:' +
+        size +
+        'px;height:' +
+        size +
+        'px;left:' +
+        (event.clientX - rect.left - size / 2) +
+        'px;top:' +
+        (event.clientY - rect.top - size / 2) +
+        'px';
+
+
+    button.appendChild(ripple);
+
+
+    setTimeout(
+        () => ripple.remove(),
+        600
+    );
+
+});
+
+
+/* =========================================================
+   SCROLL REVEAL
+   ========================================================= */
+
+(() => {
+
+    const items =
+        $$('.reveal');
+
+    const flow =
+        $('#flow');
+
+
+    if(
+        !('IntersectionObserver' in window) ||
+        reduce
+    ){
+
+        items.forEach(
+            item =>
+                item.classList.add('in')
+        );
+
+        if(flow){
+            flow.classList.add('in');
+        }
+
+        return;
+
+    }
+
+
+    const observer =
+        new IntersectionObserver(
+            entries => {
+
+                entries.forEach(entry => {
+
+                    if(entry.isIntersecting){
+
+                        entry.target.classList.add('in');
+
+                        observer.unobserve(
+                            entry.target
+                        );
+
+                    }
+
+                });
+
+            },
+            {
+                root:$('#main'),
+                threshold:.15
+            }
+        );
+
+
+    items.forEach(
+        item =>
+            observer.observe(item)
+    );
+
+
+    if(flow){
+
+        observer.observe(flow);
+
+    }
+
+})();
+
+
+/* =========================================================
+   KEYBOARD SHORTCUTS
+   ========================================================= */
+
+document.addEventListener(
+    'keydown',
+    event => {
+
+        const input =
+            $('#assessmentSearch');
+
+
+        const tag =
+            (document.activeElement || {}).tagName;
+
+
+        /* Press / to search */
+
+        if(
+            event.key === '/' &&
+            input &&
+            !/INPUT|TEXTAREA|SELECT/.test(tag)
+        ){
+
+            event.preventDefault();
+
+            input.focus();
+
+        }
+
+
+        /* Escape */
+
+        if(event.key === 'Escape'){
+
+            setPanel(false);
+
+            setSidebar(false);
+
+
+            if(
+                input &&
+                document.activeElement === input &&
+                input.value
+            ){
+
+                input.value = '';
+
+                input.dispatchEvent(
+                    new Event('input')
+                );
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+
+</body>
+</html>

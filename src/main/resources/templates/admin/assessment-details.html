@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Assessment Details | Capacitix">
+<title>Assessment Details | Capacitix</title>
+
+<style>
+:root {
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-soft: #eef2ff;
+    --primary-line: #c7d2fe;
+    --teal: #0d9488;
+
+    --bg: #f3f5fa;
+    --surface: #ffffff;
+    --text: #172033;
+    --muted: #667085;
+    --faint: #98a2b3;
+    --line: #e6e9f0;
+
+    --ok: #16a34a;
+    --warn: #d97706;
+    --bad: #dc2626;
+
+    --radius: 18px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 3px 10px rgba(16,24,40,.05);
+    --shadow: 0 16px 36px rgba(15,23,42,.10);
+    --ease: cubic-bezier(.2,.8,.2,1);
+    --t: .22s;
+
+    --font: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+
+    --scrollbar-width: 8px;
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: #8f9ab5;
+    --scrollbar-thumb-hover: #6f7b9c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: var(--font);
+    color: var(--text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at 6% 4%, rgba(79,70,229,.09), transparent 30%),
+        radial-gradient(circle at 94% 14%, rgba(13,148,136,.09), transparent 26%),
+        var(--bg);
+}
+
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; }
+:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; border-radius: 8px; }
+
+.ico {
+    width: 1.15em; height: 1.15em;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+::-webkit-scrollbar { width: var(--scrollbar-width); height: var(--scrollbar-width); }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 999px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: content-box; }
+
+/* ---------- Keyframes ---------- */
+@keyframes pageIn    { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes slideUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes pulse     { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.85); } }
+@keyframes heroFloat { 0%,100% { transform: translate(0,0); } 50% { transform: translate(-14px,14px); } }
+@keyframes shimmer   { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes ringPulse { 0% { box-shadow: 0 0 0 0 rgba(99,102,241,.4); } 100% { box-shadow: 0 0 0 14px rgba(99,102,241,0); } }
+@keyframes dotPing   { 0% { box-shadow: 0 0 0 0 rgba(79,70,229,.45); } 100% { box-shadow: 0 0 0 10px rgba(79,70,229,0); } }
+@keyframes sparkle   { 0%,100% { transform: rotate(0) scale(1); } 50% { transform: rotate(14deg) scale(1.2); } }
+
+.page {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 32px 64px;
+    animation: pageIn .45s ease both;
+}
+
+/* =====================================================
+   HERO
+===================================================== */
+.hero {
+    position: relative; overflow: hidden;
+    padding: 30px 32px; margin-bottom: 22px;
+    border-radius: 22px; color: #fff;
+    background: linear-gradient(135deg, #131c36, #262366 52%, #115e59);
+    box-shadow: 0 18px 44px rgba(23,31,56,.2);
+    animation: slideUp .5s ease both;
+}
+.hero::before {
+    content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+    background: rgba(99,102,241,.28); right: -90px; top: -160px;
+    animation: heroFloat 9s ease-in-out infinite;
+}
+.hero::after {
+    content: ""; position: absolute; width: 180px; height: 180px; border-radius: 50%;
+    background: rgba(20,184,166,.18); right: 210px; bottom: -120px;
+    animation: heroFloat 10s ease-in-out infinite reverse;
+}
+.hero-inner {
+    position: relative; z-index: 2;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 24px;
+}
+.hero-main { min-width: 0; }
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 30px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.14);
+    color: #dcdaff; font-size: 12px; font-weight: 600; margin-bottom: 12px;
+}
+.live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #2dd4bf; box-shadow: 0 0 0 5px rgba(45,212,191,.16);
+    animation: pulse 2s infinite;
+}
+.hero h1 {
+    font-size: clamp(24px, 3vw, 32px); line-height: 1.2;
+    letter-spacing: -.6px; font-weight: 750; margin-bottom: 10px;
+    overflow-wrap: anywhere;
+}
+.hero p { max-width: 720px; color: #bcc4d8; font-size: 13.5px; line-height: 1.7; }
+
+.hero-meta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.hero-pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 13px; border-radius: 30px;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+    font-size: 12px; font-weight: 700; letter-spacing: .02em;
+    backdrop-filter: blur(6px);
+}
+.hero-pill .ico { width: 14px; height: 14px; }
+.hero-pill.ai .ico { animation: sparkle 2.4s ease-in-out infinite; color: #fde68a; }
+
+.back {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 42px; padding: 9px 16px;
+    border-radius: 12px; font-size: 13px; font-weight: 650;
+    background: #fff; color: var(--primary);
+    box-shadow: 0 10px 25px rgba(0,0,0,.16);
+    transition: transform var(--t), box-shadow var(--t);
+    white-space: nowrap;
+}
+.back .ico { transition: transform var(--t); }
+.back:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,.22); }
+.back:hover .ico { transform: translateX(-4px); }
+
+/* =====================================================
+   STATS
+===================================================== */
+.stats {
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 16px; margin-bottom: 22px;
+}
+.stat {
+    position: relative; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow-sm);
+    animation: slideUp .55s ease both;
+    transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+}
+.stat::before {
+    content: ""; position: absolute; width: 120px; height: 120px; border-radius: 50%;
+    right: -60px; top: -60px; background: var(--tone-soft);
+    transition: transform .35s;
+}
+.stat:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--tone-line); }
+.stat:hover::before { transform: scale(1.5); }
+.stat-icon {
+    width: 42px; height: 42px; display: grid; place-items: center;
+    border-radius: 12px; margin-bottom: 14px; font-size: 20px;
+    background: var(--tone-soft); color: var(--tone);
+    transition: transform .3s;
+}
+.stat:hover .stat-icon { transform: rotate(-6deg) scale(1.08); }
+.stat-label { color: var(--muted); font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.stat-value {
+    margin-top: 6px; font-size: 28px; font-weight: 800; letter-spacing: -.6px; line-height: 1.2;
+    font-variant-numeric: tabular-nums; color: var(--tone); overflow-wrap: anywhere;
+}
+.stat-value small { font-size: 15px; font-weight: 700; color: var(--faint); }
+
+.tone-indigo { --tone: #4f46e5; --tone-soft: #eef2ff; --tone-line: #c7d2fe; }
+.tone-teal   { --tone: #0d9488; --tone-soft: #ccfbf1; --tone-line: #99f6e4; }
+.tone-amber  { --tone: #d97706; --tone-soft: #fef3c7; --tone-line: #fde68a; }
+.tone-pink   { --tone: #be185d; --tone-soft: #fce7f3; --tone-line: #fbcfe8; }
+
+/* =====================================================
+   GRID + CARDS
+===================================================== */
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 20px; }
+
+.card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: slideUp .55s ease both;
+    transition: box-shadow var(--t), transform var(--t);
+}
+.card:hover { box-shadow: var(--shadow); }
+.card.full { grid-column: 1 / -1; }
+
+.card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 18px 22px; border-bottom: 1px solid #eef0f4;
+}
+.card-title { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.card-icon {
+    width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center; font-size: 19px;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff); color: var(--primary);
+}
+.card-header h2 { font-size: 16px; font-weight: 700; }
+.card-header p  { color: var(--muted); font-size: 12.5px; margin-top: 1px; }
+.card-body { padding: 22px; }
+
+/* ---------- Information ---------- */
+.info-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.info-item {
+    padding: 13px 14px; border-radius: 14px;
+    background: #f8faff; border: 1px solid #eef0f8;
+    transition: transform var(--t), border-color var(--t), background var(--t);
+}
+.info-item:hover { transform: translateY(-2px); border-color: var(--primary-line); background: #f3f5ff; }
+.info-item label {
+    display: block; color: var(--muted); font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px;
+}
+.info-item strong { display: block; font-size: 14px; color: var(--text); overflow-wrap: anywhere; }
+
+.description { color: #475467; font-size: 14px; line-height: 1.8; }
+
+/* ---------- Badges ---------- */
+.badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 11.5px; font-weight: 800; letter-spacing: .03em;
+    background: #f2f4f7; color: #475467;
+}
+.badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.st-generated  { background: #eef2ff; color: #4338ca; }
+.st-assigned   { background: #ecfdf3; color: #15803d; }
+.st-pending    { background: #fffbeb; color: #b45309; }
+.st-active,
+.st-in_progress{ background: #fff7ed; color: #c2410c; }
+.st-active::before { animation: pulse 1.6s infinite; }
+.st-completed  { background: #dcfce7; color: #047857; }
+.badge.ai      { background: #ecfeff; color: #0f766e; }
+.badge.manual  { background: #f2f4f7; color: #475467; }
+
+/* ---------- Employee ---------- */
+.employee { display: flex; align-items: center; gap: 16px; }
+.employee-avatar {
+    width: 62px; height: 62px; flex-shrink: 0; border-radius: 20px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #6366f1, #14b8a6);
+    color: #fff; font-size: 21px; font-weight: 800;
+    box-shadow: 0 10px 24px rgba(99,102,241,.32);
+    animation: ringPulse 2.6s infinite;
+}
+.employee-name { font-size: 17px; font-weight: 750; letter-spacing: -.2px; overflow-wrap: anywhere; }
+.employee-id {
+    display: inline-block; margin-top: 6px; padding: 4px 10px; border-radius: 8px;
+    background: #f4f6fa; border: 1px solid #e8ebf1;
+    color: #344054; font-size: 12px; font-weight: 650;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.unassigned {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px; border-radius: 14px;
+    background: #fffbeb; border: 1px dashed #fcd34d;
+}
+.unassigned .ua-icon {
+    width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center; background: #fef3c7; color: #b45309; font-size: 19px;
+}
+.unassigned p { color: #92400e; font-size: 13px; line-height: 1.65; margin-top: 8px; }
+
+/* ---------- Result ---------- */
+.result { display: grid; grid-template-columns: 170px 1fr; gap: 24px; align-items: center; }
+.gauge { position: relative; width: 170px; height: 170px; }
+.gauge svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.gauge-track { fill: none; stroke: #eef0f6; stroke-width: 12; }
+.gauge-fill {
+    fill: none; stroke: url(#gaugeGrad); stroke-width: 12; stroke-linecap: round;
+    transition: stroke-dashoffset 1.6s var(--ease);
+}
+.gauge-center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.gauge-value { font-size: 34px; font-weight: 800; letter-spacing: -1px; line-height: 1; font-variant-numeric: tabular-nums; }
+.gauge-label { margin-top: 5px; color: var(--muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+
+.score-text { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.score-points { font-size: 30px; font-weight: 800; letter-spacing: -.5px; font-variant-numeric: tabular-nums; margin-bottom: 12px; }
+.score-points small { font-size: 15px; color: var(--faint); font-weight: 700; }
+
+.score-bar { height: 10px; border-radius: 99px; background: #eef0f6; overflow: hidden; }
+.score-bar span {
+    position: relative; display: block; height: 100%; width: 0; border-radius: 99px;
+    transition: width 1.2s var(--ease);
+}
+.score-bar span::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    background-size: 200% 100%; animation: shimmer 2.4s linear infinite;
+}
+.fill-red    { background: linear-gradient(90deg, #f97316, #ef4444); }
+.fill-yellow { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.fill-green  { background: linear-gradient(90deg, #10b981, #22c55e); }
+
+.verdict {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    padding: 5px 12px; border-radius: 20px; font-size: 11.5px; font-weight: 800;
+}
+.verdict.good     { background: #dcfce7; color: #166534; }
+.verdict.moderate { background: #fef3c7; color: #92400e; }
+.verdict.critical { background: #fee2e2; color: #b91c1c; }
+
+/* ---------- Timeline ---------- */
+.timeline { position: relative; display: grid; gap: 0; padding-left: 4px; }
+.step { position: relative; display: flex; gap: 16px; padding-bottom: 20px; }
+.step:last-child { padding-bottom: 0; }
+.step::before {
+    content: ""; position: absolute; left: 13px; top: 28px; bottom: -2px; width: 2px;
+    background: #e3e7ef;
+}
+.step:last-child::before { display: none; }
+.step.done::before { background: linear-gradient(180deg, #6366f1, #14b8a6); }
+
+.step-dot {
+    width: 28px; height: 28px; flex-shrink: 0; border-radius: 50%;
+    display: grid; place-items: center; z-index: 1;
+    background: #fff; border: 2px solid #d0d5dd; color: #98a2b3;
+    transition: transform var(--t);
+}
+.step-dot .ico { width: 14px; height: 14px; }
+.step.done .step-dot {
+    background: linear-gradient(135deg, #6366f1, #14b8a6);
+    border-color: transparent; color: #fff;
+    animation: dotPing 2.6s infinite;
+}
+.step:hover .step-dot { transform: scale(1.12); }
+
+.step-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.step-date { font-size: 14px; font-weight: 700; color: var(--text); margin-top: 2px; }
+.step-date.empty { color: var(--faint); font-weight: 600; }
+
+/* ---------- Actions ---------- */
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.actions form { margin: 0; }
+.btn {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    min-height: 44px; padding: 10px 20px; border-radius: 12px;
+    font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid transparent;
+    transition: transform var(--t), box-shadow var(--t), background var(--t), border-color var(--t), color var(--t);
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+    background: linear-gradient(135deg, #6366f1, var(--primary-dark)); color: #fff;
+    box-shadow: 0 8px 20px rgba(79,70,229,.28);
+}
+.btn-primary:hover { box-shadow: 0 12px 26px rgba(79,70,229,.36); }
+.btn-success {
+    background: linear-gradient(135deg, #10b981, #0d9488); color: #fff;
+    box-shadow: 0 8px 20px rgba(13,148,136,.28);
+}
+.btn-success:hover { box-shadow: 0 12px 26px rgba(13,148,136,.36); }
+.btn-secondary { background: #fff; color: #344054; border-color: #d0d5dd; }
+.btn-secondary:hover { border-color: var(--primary-line); color: var(--primary); background: var(--primary-soft); box-shadow: 0 8px 18px rgba(15,23,42,.08); }
+.btn .ico { transition: transform var(--t); }
+.btn-secondary:hover .ico { transform: translateX(-3px); }
+.btn-primary:hover .ico, .btn-success:hover .ico { transform: scale(1.15); }
+
+.action-hint { color: var(--muted); font-size: 12.5px; }
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+@media (max-width: 1000px) {
+    .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .grid { grid-template-columns: 1fr; }
+    .card.full { grid-column: auto; }
+}
+@media (max-width: 700px) {
+    .page { padding: 18px 16px 48px; }
+    .hero { padding: 22px; border-radius: 18px; }
+    .hero-inner { flex-direction: column; }
+    .back { width: 100%; justify-content: center; }
+    .result { grid-template-columns: 1fr; justify-items: center; text-align: center; }
+    .result > div:last-child { width: 100%; }
+}
+@media (max-width: 520px) {
+    .stats { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; }
+    .card-header { padding: 16px 18px; }
+    .card-body { padding: 18px; }
+    .employee { align-items: flex-start; }
+    .btn { width: 100%; }
+    .actions form { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="i-back" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c.7-3.9 3.7-6 7.5-6s6.8 2.1 7.5 6"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></symbol>
+<symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><path d="m6.3 6.3 2.4 2.4M15.3 15.3l2.4 2.4M6.3 17.7l2.4-2.4M15.3 8.7l2.4-2.4"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1 1-1.1 1.8"/><path d="M12 17h.01"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+<symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 7 5-3 5 3-1.5-7"/></symbol>
+<symbol id="i-tag" viewBox="0 0 24 24"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9-9-9Z"/><circle cx="8" cy="8" r="1.4"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="m22 2-11 11"/><path d="m22 2-7 20-4-9-9-4 20-7Z"/></symbol>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8L7 4Z"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4.5"/><path d="M12 17h.01"/></symbol>
+</defs>
+</svg>
+
+<div class="page">
+
+    <!-- ================= HERO ================= -->
+    <div class="hero">
+        <div class="hero-inner">
+
+            <div class="hero-main">
+                <div class="hero-badge">
+                    <span class="live-dot"></span>
+                    Learning &amp; Assessment
+                </div>
+
+                <h1 th:text="${assessment.name != null ? assessment.name : 'Assessment'}">Assessment Name</h1>
+
+                <p th:text="${assessment.description != null and !#strings.isEmpty(assessment.description)
+                              ? assessment.description
+                              : 'No description provided for this assessment.'}">
+                    Assessment description
+                </p>
+
+                <div class="hero-meta">
+
+                    <span class="hero-pill" th:if="${assessment.status != null}">
+                        <svg class="ico"><use href="#i-bolt"/></svg>
+                        <span th:text="${assessment.status}">GENERATED</span>
+                    </span>
+
+                    <span class="hero-pill" th:if="${assessment.type != null}">
+                        <svg class="ico"><use href="#i-tag"/></svg>
+                        <span th:text="${assessment.type}">SKILL</span>
+                    </span>
+
+                    <span class="hero-pill ai" th:if="${assessment.aiGenerated == true}">
+                        <svg class="ico"><use href="#i-sparkle"/></svg>
+                        AI Generated
+                    </span>
+
+                </div>
+            </div>
+
+            <a th:href="@{/admin/assessments}" class="back">
+                <svg class="ico"><use href="#i-back"/></svg>
+                Back to Assessments
+            </a>
+
+        </div>
+    </div>
+
+    <!-- ================= STATS ================= -->
+    <div class="stats">
+
+        <div class="stat tone-indigo">
+            <div class="stat-icon"><svg class="ico"><use href="#i-target"/></svg></div>
+            <div class="stat-label">Result</div>
+            <div class="stat-value">
+                <span data-count
+                      th:attr="data-value=${assessment.percentage != null ? assessment.percentage : 0}"
+                      th:text="${assessment.percentage != null ? assessment.percentage : 0}">0</span><small>%</small>
+            </div>
+        </div>
+
+        <div class="stat tone-teal">
+            <div class="stat-icon"><svg class="ico"><use href="#i-award"/></svg></div>
+            <div class="stat-label">Points</div>
+            <div class="stat-value">
+                <span th:text="${assessment.score != null ? assessment.score : 0}">0</span>
+                <small>/ <span th:text="${assessment.maxScore != null ? assessment.maxScore : 100}">100</span></small>
+            </div>
+        </div>
+
+        <div class="stat tone-amber">
+            <div class="stat-icon"><svg class="ico"><use href="#i-help"/></svg></div>
+            <div class="stat-label">Questions</div>
+            <div class="stat-value">
+                <span data-count
+                      th:attr="data-value=${assessment.questionCount != null ? assessment.questionCount : 0}"
+                      th:text="${assessment.questionCount != null ? assessment.questionCount : 0}">0</span>
+            </div>
+        </div>
+
+        <div class="stat tone-pink">
+            <div class="stat-icon"><svg class="ico"><use href="#i-bolt"/></svg></div>
+            <div class="stat-label">Status</div>
+            <div class="stat-value" style="font-size:20px;"
+                 th:text="${assessment.status != null ? assessment.status : '—'}">GENERATED</div>
+        </div>
+
+    </div>
+
+    <!-- ================= GRID ================= -->
+    <div class="grid">
+
+        <!-- ===== ASSESSMENT INFORMATION ===== -->
+        <div class="card" style="animation-delay:.05s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-info"/></svg></div>
+                    <div>
+                        <h2>Assessment Information</h2>
+                        <p>Core details of this assessment</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="info-grid">
+
+                    <div class="info-item">
+                        <label>Assessment ID</label>
+                        <strong th:text="${assessment.id}">1</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Type</label>
+                        <strong th:text="${assessment.type != null ? assessment.type : '—'}">SKILL</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Target Role</label>
+                        <strong th:text="${assessment.targetRole != null and !#strings.isEmpty(assessment.targetRole)
+                                           ? assessment.targetRole
+                                           : 'Not specified'}">Java Backend Developer</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Questions</label>
+                        <strong th:text="${assessment.questionCount != null ? assessment.questionCount : 0}">10</strong>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Generation Type</label>
+                        <strong>
+                            <span class="badge ai" th:if="${assessment.aiGenerated == true}">AI Generated</span>
+                            <span class="badge manual" th:unless="${assessment.aiGenerated == true}">Manual</span>
+                        </strong>
+                    </div>
+
+                    <div class="info-item">
+                        <label>Status</label>
+                        <strong>
+                            <span class="badge"
+                                  th:if="${assessment.status != null}"
+                                  th:classappend="${'st-' + #strings.toLowerCase(assessment.status.toString())}"
+                                  th:text="${assessment.status}">GENERATED</span>
+                            <span th:unless="${assessment.status != null}">—</span>
+                        </strong>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== ASSIGNED EMPLOYEE ===== -->
+        <div class="card" style="animation-delay:.1s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-user"/></svg></div>
+                    <div>
+                        <h2>Assigned Students</h2>
+                        <p>Who this assessment is assigned to</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <div class="employee" th:if="${assessment.employee != null}">
+
+                    <div class="employee-avatar"
+                         th:text="${assessment.employee.fullName != null and !#strings.isEmpty(#strings.trim(assessment.employee.fullName))
+                                    ? #strings.toUpperCase(#strings.substring(#strings.trim(assessment.employee.fullName), 0, 1))
+                                    : 'E'}">E</div>
+
+                    <div>
+                        <div class="employee-name"
+                             th:text="${assessment.employee.fullName != null ? assessment.employee.fullName : 'Employee'}">
+                            Student Name
+                        </div>
+
+                        <div class="employee-id"
+                             th:text="${assessment.employee.employeeId != null
+                                        ? 'Employee ID: ' + assessment.employee.employeeId
+                                        : 'Employee ID not available'}">
+                            Student ID
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="unassigned" th:if="${assessment.employee == null}">
+                    <div class="ua-icon"><svg class="ico"><use href="#i-alert"/></svg></div>
+                    <div>
+                        <span class="badge st-pending">Not Assigned</span>
+                        <p>
+                            This AI-generated assessment has not yet been
+                            assigned to an Student.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ===== RESULT ===== -->
+        <div class="card" style="animation-delay:.15s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-chart"/></svg></div>
+                    <div>
+                        <h2>Assessment Result</h2>
+                        <p>Score achieved in this assessment</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+
+                <div class="result">
+
+                    <div class="gauge">
+                        <svg viewBox="0 0 120 120" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+                                    <stop offset="0%" stop-color="#6366f1"/>
+                                    <stop offset="100%" stop-color="#14b8a6"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="gauge-track" cx="60" cy="60" r="52"/>
+                            <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="52"
+                                    th:attr="data-pct=${assessment.percentage != null ? #numbers.formatDecimal(assessment.percentage, 1, 1, 'POINT') : 0}"/>
+                        </svg>
+                        <div class="gauge-center">
+                            <div class="gauge-value">
+                                <span data-count
+                                      th:attr="data-value=${assessment.percentage != null ? assessment.percentage : 0}"
+                                      th:text="${assessment.percentage != null ? assessment.percentage : 0}">0</span>%
+                            </div>
+                            <div class="gauge-label">Score</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="score-text">Points obtained</div>
+                        <div class="score-points">
+                            <span th:text="${assessment.score != null ? assessment.score : 0}">0</span>
+                            <small>/ <span th:text="${assessment.maxScore != null ? assessment.maxScore : 100}">100</span> points</small>
+                        </div>
+
+                        <div class="score-bar">
+                            <span id="scoreBar"
+                                  th:attr="data-score=${assessment.percentage != null ? #numbers.formatDecimal(assessment.percentage, 1, 1, 'POINT') : 0}"></span>
+                        </div>
+
+                        <span class="verdict" id="verdict" th:if="${assessment.completedAt != null}"></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ===== TIMELINE ===== -->
+        <div class="card" style="animation-delay:.2s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-clock"/></svg></div>
+                    <div>
+                        <h2>Assessment Timeline</h2>
+                        <p>Progress from creation to completion</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="timeline">
+
+                    <div class="step" th:classappend="${assessment.createdAt != null} ? 'done'">
+                        <div class="step-dot"><svg class="ico"><use href="#i-plus"/></svg></div>
+                        <div>
+                            <div class="step-label">Created</div>
+                            <div class="step-date" th:if="${assessment.createdAt != null}"
+                                 th:text="${#temporals.format(assessment.createdAt,'dd MMM yyyy, hh:mm a')}">29 Sep 2026</div>
+                            <div class="step-date empty" th:unless="${assessment.createdAt != null}">Not available</div>
+                        </div>
+                    </div>
+
+                    <div class="step" th:classappend="${assessment.assignedAt != null} ? 'done'">
+                        <div class="step-dot"><svg class="ico"><use href="#i-send"/></svg></div>
+                        <div>
+                            <div class="step-label">Assigned</div>
+                            <div class="step-date" th:if="${assessment.assignedAt != null}"
+                                 th:text="${#temporals.format(assessment.assignedAt,'dd MMM yyyy, hh:mm a')}">-</div>
+                            <div class="step-date empty" th:unless="${assessment.assignedAt != null}">Not assigned</div>
+                        </div>
+                    </div>
+
+                    <div class="step" th:classappend="${assessment.startedAt != null} ? 'done'">
+                        <div class="step-dot"><svg class="ico"><use href="#i-play"/></svg></div>
+                        <div>
+                            <div class="step-label">Started</div>
+                            <div class="step-date" th:if="${assessment.startedAt != null}"
+                                 th:text="${#temporals.format(assessment.startedAt,'dd MMM yyyy, hh:mm a')}">-</div>
+                            <div class="step-date empty" th:unless="${assessment.startedAt != null}">Not started</div>
+                        </div>
+                    </div>
+
+                    <div class="step" th:classappend="${assessment.completedAt != null} ? 'done'">
+                        <div class="step-dot"><svg class="ico"><use href="#i-check"/></svg></div>
+                        <div>
+                            <div class="step-label">Completed</div>
+                            <div class="step-date" th:if="${assessment.completedAt != null}"
+                                 th:text="${#temporals.format(assessment.completedAt,'dd MMM yyyy, hh:mm a')}">-</div>
+                            <div class="step-date empty" th:unless="${assessment.completedAt != null}">Not completed</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== DESCRIPTION ===== -->
+        <div class="card full" style="animation-delay:.25s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-doc"/></svg></div>
+                    <div>
+                        <h2>Description</h2>
+                        <p>What this assessment covers</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <p class="description"
+                   th:text="${assessment.description != null and !#strings.isEmpty(assessment.description)
+                              ? assessment.description
+                              : 'No description has been provided for this assessment.'}">
+                    Assessment description
+                </p>
+            </div>
+
+        </div>
+
+        <!-- ===== ACTIONS ===== -->
+        <div class="card full" style="animation-delay:.3s">
+
+            <div class="card-header">
+                <div class="card-title">
+                    <div class="card-icon"><svg class="ico"><use href="#i-bolt"/></svg></div>
+                    <div>
+                        <h2>Actions</h2>
+                        <p>Manage the state of this assessment</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <div class="actions">
+
+                    <a class="btn btn-secondary" th:href="@{/admin/assessments}">
+                        <svg class="ico"><use href="#i-back"/></svg>
+                        Back to Assessments
+                    </a>
+
+                    <!-- ACTIVATE -->
+                    <form th:if="${assessment.status != null and assessment.status.toString() == 'PENDING'}"
+                          th:action="@{/admin/assessments/{id}/activate(id=${assessment.id})}"
+                          method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-primary">
+                            <svg class="ico"><use href="#i-play"/></svg>
+                            Activate Assessment
+                        </button>
+                    </form>
+
+                    <!-- COMPLETE -->
+                    <form th:if="${assessment.status != null and assessment.status.toString() == 'ACTIVE'}"
+                          th:action="@{/admin/assessments/{id}/complete(id=${assessment.id})}"
+                          method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <button type="submit" class="btn btn-success">
+                            <svg class="ico"><use href="#i-check"/></svg>
+                            Mark Completed
+                        </button>
+                    </form>
+
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function clamp(n) { return Math.max(0, Math.min(100, isNaN(n) ? 0 : n)); }
+
+    /* ---------- count-up numbers ---------- */
+    document.querySelectorAll("[data-count]").forEach(function (el) {
+        var raw = (el.dataset.value || el.textContent || "0").toString().replace(",", ".");
+        var target = parseFloat(raw);
+        if (isNaN(target) || reduce) { return; }
+
+        var decimals = Math.min((raw.split(".")[1] || "").length, 1);
+        var start = performance.now();
+        var duration = 1100;
+
+        el.textContent = (0).toFixed(decimals);
+        (function tick(now) {
+            var p = Math.min((now - start) / duration, 1);
+            var eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = (target * eased).toFixed(decimals);
+            if (p < 1) { requestAnimationFrame(tick); }
+            else { el.textContent = target.toFixed(decimals); }
+        })(start);
+    });
+
+    /* ---------- gauge ---------- */
+    var gauge = document.getElementById("gaugeFill");
+    var pct = 0;
+    if (gauge) {
+        var c = 2 * Math.PI * 52;
+        pct = clamp(parseFloat(gauge.dataset.pct));
+        gauge.style.strokeDasharray = c;
+        gauge.style.strokeDashoffset = c;
+        setTimeout(function () { gauge.style.strokeDashoffset = c * (1 - pct / 100); }, 250);
+    }
+
+    /* ---------- score bar + verdict ---------- */
+    var bar = document.getElementById("scoreBar");
+    if (bar) {
+        var score = clamp(parseFloat(bar.dataset.score));
+        bar.classList.add(score < 40 ? "fill-red" : (score < 60 ? "fill-yellow" : "fill-green"));
+        setTimeout(function () { bar.style.width = score + "%"; }, 350);
+
+        var verdict = document.getElementById("verdict");
+        if (verdict) {
+            if (score >= 60)      { verdict.className = "verdict good";     verdict.textContent = "Strong performance"; }
+            else if (score >= 40) { verdict.className = "verdict moderate"; verdict.textContent = "Needs improvement"; }
+            else                  { verdict.className = "verdict critical"; verdict.textContent = "Significant gap"; }
+        }
+    }
+
+    /* ---------- stagger stat cards ---------- */
+    document.querySelectorAll(".stat").forEach(function (el, i) {
+        el.style.animationDelay = (0.08 + i * 0.07) + "s";
+    });
+
+});
+</script>
+
+</body>
+</html>
