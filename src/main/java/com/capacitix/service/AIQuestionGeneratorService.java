@@ -64,12 +64,13 @@ public class AIQuestionGeneratorService {
     @Value("${groq.assessment.temperature:0.2}")
     private double groqTemperature;
 
-    // IMPORTANT: Read assessment-specific token property.
-    // Previously this service read groq.max-tokens instead.
     @Value("${groq.assessment.max-tokens:4096}")
     private int groqAssessmentMaxTokens;
 
     private static final int MAX_QUESTION_COUNT = 50;
+
+    // Only one repair request to control API usage.
+    private static final int MAX_REPAIR_REQUESTS = 1;
 
     private RestClient restClient;
 
@@ -81,9 +82,7 @@ public class AIQuestionGeneratorService {
     public void initializeRestClient() {
 
         if (groqApiKey == null || groqApiKey.isBlank()) {
-            log.warn(
-                    "GROQ_API_KEY is not configured. AI question generation will not work."
-            );
+            log.warn("GROQ_API_KEY is not configured.");
         }
 
         SimpleClientHttpRequestFactory factory =
@@ -121,10 +120,10 @@ public class AIQuestionGeneratorService {
         log.info("API URL: {}", groqBaseUrl);
         log.info("Connect timeout: {} ms", connectTimeout);
         log.info("Assessment timeout: {} ms", groqTimeout);
-        log.info("Assessment max completion tokens: {}", groqAssessmentMaxTokens);
+        log.info("Assessment max tokens: {}", groqAssessmentMaxTokens);
         log.info("Assessment temperature: {}", groqTemperature);
-        log.info("Strategy: SINGLE BATCH");
-        log.info("Repair requests: 0");
+        log.info("Strategy: BATCH + ONE REPAIR");
+        log.info("Maximum repair requests: {}", MAX_REPAIR_REQUESTS);
         log.info("========================================");
     }
 
@@ -176,7 +175,11 @@ public class AIQuestionGeneratorService {
                 groqModel
         );
 
-        String prompt = buildPrompt(
+        // =================================================
+        // FIRST GROQ REQUEST
+        // =================================================
+
+        String initialPrompt = buildPrompt(
                 assessment,
                 validCompetencies,
                 requiredCount
@@ -184,128 +187,138 @@ public class AIQuestionGeneratorService {
 
         long requestStart = System.nanoTime();
 
-        String response = callGroq(prompt, requiredCount);
+        String response = callGroq(initialPrompt, requiredCount);
 
         long requestTime =
                 (System.nanoTime() - requestStart) / 1_000_000;
 
-        log.info("Groq response received in {} ms", requestTime);
+        log.info("Initial Groq request completed in {} ms", requestTime);
 
-        // =================================================
-        // PARSE RESPONSE
-        // =================================================
-
-        List<GeneratedQuestion> generated = parseQuestions(response);
+        List<GeneratedQuestion> generated =
+                parseQuestions(response);
 
         log.info(
-                "Groq returned {} questions. Required={}",
+                "Initial Groq response: {} questions. Required={}",
                 generated.size(),
                 requiredCount
         );
 
-        if (generated.isEmpty()) {
-            throw generationFailure(0, requiredCount);
-        }
-
         // =================================================
-        // VALIDATE AND COLLECT QUESTIONS
+        // VALIDATE INITIAL QUESTIONS
         // =================================================
 
         Set<String> questionKeys = new HashSet<>();
 
         List<AssessmentQuestion> questions = new ArrayList<>();
 
-        int order = 1;
-        int skipped = 0;
-
-        for (GeneratedQuestion item : generated) {
-
-            if (questions.size() >= requiredCount) {
-                break;
-            }
-
-            String validationError = validateGeneratedQuestion(item);
-
-            if (validationError != null) {
-                skipped++;
-                log.warn("Skipping invalid AI question: {}", validationError);
-                continue;
-            }
-
-            Competency competency = findCompetency(
-                    item.competency,
-                    competencyMap
-            );
-
-            if (competency == null && validCompetencies.size() == 1) {
-                competency = validCompetencies.get(0);
-            }
-
-            if (competency == null) {
-                skipped++;
-                log.warn("Skipping unknown competency: {}", item.competency);
-                continue;
-            }
-
-            item.correctAnswer = normalizeAnswer(
-                    item.correctAnswer,
-                    item
-            );
-
-            if (!isValidCorrectAnswer(item.correctAnswer)) {
-                skipped++;
-                log.warn("Skipping question with invalid correct answer.");
-                continue;
-            }
-
-            item.question = item.question.trim();
-            item.optionA = item.optionA.trim();
-            item.optionB = item.optionB.trim();
-            item.optionC = item.optionC.trim();
-            item.optionD = item.optionD.trim();
-
-            item.difficulty = normalizeDifficulty(item.difficulty);
-
-            String key = normalize(item.question);
-
-            if (!questionKeys.add(key)) {
-                skipped++;
-                log.warn("Skipping duplicate question: {}", item.question);
-                continue;
-            }
-
-            AssessmentQuestion question =
-                    AssessmentQuestion.builder()
-                            .assessment(assessment)
-                            .competency(competency)
-                            .questionText(item.question)
-                            .questionType("MCQ")
-                            .optionA(item.optionA)
-                            .optionB(item.optionB)
-                            .optionC(item.optionC)
-                            .optionD(item.optionD)
-                            .correctAnswer(item.correctAnswer)
-                            .difficulty(item.difficulty)
-                            .marks(1)
-                            .explanation(safeNullable(item.explanation))
-                            .questionOrder(order++)
-                            .active(true)
-                            .build();
-
-            questions.add(question);
-        }
+        int skipped = collectValidQuestions(
+                generated,
+                competencyMap,
+                validCompetencies,
+                questionKeys,
+                questions
+        );
 
         log.info(
-                "Valid questions collected: {}, Skipped: {}",
+                "Initial validation: Valid={}, Skipped={}, Required={}",
                 questions.size(),
-                skipped
+                skipped,
+                requiredCount
         );
 
         // =================================================
-        // CHECK COMPLETENESS
+        // ONE REPAIR REQUEST FOR MISSING QUESTIONS
+        // =================================================
+
+        int repairRequests = 0;
+
+        if (questions.size() < requiredCount
+                && repairRequests < MAX_REPAIR_REQUESTS) {
+
+            int missingCount = requiredCount - questions.size();
+
+            log.warn(
+                    "Missing {} valid questions. Starting repair request.",
+                    missingCount
+            );
+
+            repairRequests++;
+
+            String repairPrompt = buildRepairPrompt(
+                    assessment,
+                    validCompetencies,
+                    questions,
+                    missingCount
+            );
+
+            long repairStart = System.nanoTime();
+
+            try {
+
+                String repairResponse = callGroq(
+                        repairPrompt,
+                        missingCount
+                );
+
+                long repairTime =
+                        (System.nanoTime() - repairStart) / 1_000_000;
+
+                log.info(
+                        "Repair Groq request completed in {} ms",
+                        repairTime
+                );
+
+                List<GeneratedQuestion> repaired =
+                        parseQuestions(repairResponse);
+
+                log.info(
+                        "Repair response returned {} questions. Missing={}",
+                        repaired.size(),
+                        missingCount
+                );
+
+                int repairSkipped = collectValidQuestions(
+                        repaired,
+                        competencyMap,
+                        validCompetencies,
+                        questionKeys,
+                        questions
+                );
+
+                skipped += repairSkipped;
+
+                log.info(
+                        "After repair: Valid={}, Skipped={}, Required={}",
+                        questions.size(),
+                        skipped,
+                        requiredCount
+                );
+
+            } catch (Exception e) {
+
+                log.error(
+                        "Repair request failed. Existing valid questions={}/{}. Reason={}",
+                        questions.size(),
+                        requiredCount,
+                        safeExceptionMessage(e)
+                );
+            }
+        }
+
+        // =================================================
+        // FINAL COMPLETENESS CHECK
         // =================================================
 
         if (questions.size() != requiredCount) {
+
+            log.error(
+                    "Assessment generation failed. Valid={}, Required={}, Skipped={}, RepairRequests={}",
+                    questions.size(),
+                    requiredCount,
+                    skipped,
+                    repairRequests
+            );
+
             throw generationFailure(
                     questions.size(),
                     requiredCount
@@ -313,7 +326,7 @@ public class AIQuestionGeneratorService {
         }
 
         // =================================================
-        // SAVE QUESTIONS
+        // SAVE ONLY AFTER COMPLETE VALIDATION
         // =================================================
 
         List<AssessmentQuestion> saved =
@@ -329,13 +342,120 @@ public class AIQuestionGeneratorService {
         log.info("========================================");
         log.info("ASSESSMENT GENERATION SUCCESSFUL");
         log.info("Provider: Groq");
-        log.info("Questions: {}", saved.size());
+        log.info("Model: {}", groqModel);
+        log.info("Questions saved: {}", saved.size());
         log.info("Skipped: {}", skipped);
-        log.info("Groq request time: {} ms", requestTime);
+        log.info("Repair requests: {}", repairRequests);
         log.info("Total time: {} ms", totalTime);
         log.info("========================================");
 
         return saved;
+    }
+
+    // =====================================================
+    // VALIDATE AND COLLECT QUESTIONS
+    // =====================================================
+
+    private int collectValidQuestions(
+            List<GeneratedQuestion> generated,
+            Map<String, Competency> competencyMap,
+            List<Competency> validCompetencies,
+            Set<String> questionKeys,
+            List<AssessmentQuestion> questions
+    ) {
+
+        int skipped = 0;
+
+        for (GeneratedQuestion item : generated) {
+
+            if (questions.size() >= MAX_QUESTION_COUNT) {
+                break;
+            }
+
+            String validationError =
+                    validateGeneratedQuestion(item);
+
+            if (validationError != null) {
+                skipped++;
+                log.warn(
+                        "Skipping invalid AI question: {}",
+                        validationError
+                );
+                continue;
+            }
+
+            Competency competency = findCompetency(
+                    item.competency,
+                    competencyMap
+            );
+
+            if (competency == null && validCompetencies.size() == 1) {
+                competency = validCompetencies.get(0);
+            }
+
+            if (competency == null) {
+                skipped++;
+                log.warn(
+                        "Skipping question with unknown competency: {}",
+                        item.competency
+                );
+                continue;
+            }
+
+            item.correctAnswer = normalizeAnswer(
+                    item.correctAnswer,
+                    item
+            );
+
+            if (!isValidCorrectAnswer(item.correctAnswer)) {
+                skipped++;
+                log.warn(
+                        "Skipping question with invalid correct answer: {}",
+                        preview(item.question)
+                );
+                continue;
+            }
+
+            item.question = item.question.trim();
+            item.optionA = item.optionA.trim();
+            item.optionB = item.optionB.trim();
+            item.optionC = item.optionC.trim();
+            item.optionD = item.optionD.trim();
+
+            item.difficulty = normalizeDifficulty(item.difficulty);
+
+            String key = normalize(item.question);
+
+            if (!questionKeys.add(key)) {
+                skipped++;
+                log.warn(
+                        "Skipping duplicate question: {}",
+                        preview(item.question)
+                );
+                continue;
+            }
+
+            AssessmentQuestion question =
+                    AssessmentQuestion.builder()
+                            .competency(competency)
+                            .questionText(item.question)
+                            .questionType("MCQ")
+                            .optionA(item.optionA)
+                            .optionB(item.optionB)
+                            .optionC(item.optionC)
+                            .optionD(item.optionD)
+                            .correctAnswer(item.correctAnswer)
+                            .difficulty(item.difficulty)
+                            .marks(1)
+                            .explanation(safeNullable(item.explanation))
+                            .questionOrder(questions.size() + 1)
+                            .active(true)
+                            .build();
+
+            questions.add(question);
+        }
+
+        return skipped;
     }
 
     // =====================================================
@@ -353,6 +473,12 @@ public class AIQuestionGeneratorService {
             throw new IllegalArgumentException(
                     "Generated question count does not match."
             );
+        }
+
+        // Set assessment and final order before saving.
+        for (int i = 0; i < questions.size(); i++) {
+            questions.get(i).setAssessment(assessment);
+            questions.get(i).setQuestionOrder(i + 1);
         }
 
         questionRepository.deleteByAssessment(assessment);
@@ -374,7 +500,7 @@ public class AIQuestionGeneratorService {
     }
 
     // =====================================================
-    // PROMPT
+    // INITIAL PROMPT
     // =====================================================
 
     private String buildPrompt(
@@ -403,19 +529,18 @@ public class AIQuestionGeneratorService {
                 1. Generate exactly %d questions.
                 2. %s
                 3. Use simple, clear English.
-                4. Questions must test different technical concepts.
+                4. Test different technical concepts.
                 5. Every question must have exactly four options.
                 6. All four options must be different.
                 7. Only one option must be correct.
                 8. correctAnswer must contain only A, B, C or D.
                 9. difficulty must be BEGINNER, INTERMEDIATE or ADVANCED.
-                10. marks must always be the number 1.
-                11. Do not include explanations.
-                12. The competency value must exactly match one of the allowed competency names.
+                10. marks must always be 1.
+                11. Keep explanations short or empty.
+                12. The competency must exactly match an allowed competency name.
                 13. Do not use Markdown or code fences.
-                14. Do not add comments or text outside the JSON.
-                15. Return one complete, syntactically valid JSON object.
-                16. Do not stop before closing every JSON object and array.
+                14. Return one complete valid JSON object.
+                15. Do not stop before closing all JSON arrays and objects.
 
                 REQUIRED JSON STRUCTURE:
                 {
@@ -434,7 +559,7 @@ public class AIQuestionGeneratorService {
                   ]
                 }
 
-                Return exactly %d question objects inside the questions array.
+                Return exactly %d question objects.
                 """.formatted(
                 count,
                 safe(assessment.getName()),
@@ -447,6 +572,76 @@ public class AIQuestionGeneratorService {
     }
 
     // =====================================================
+    // REPAIR PROMPT
+    // =====================================================
+
+    private String buildRepairPrompt(
+            Assessment assessment,
+            List<Competency> competencies,
+            List<AssessmentQuestion> existingQuestions,
+            int missingCount
+    ) {
+
+        String competencyNames = competencies.stream()
+                .map(Competency::getName)
+                .collect(Collectors.joining(", "));
+
+        String existing = existingQuestions.stream()
+                .map(q -> "- " + q.getQuestionText())
+                .collect(Collectors.joining("\n"));
+
+        return """
+                Generate exactly %d NEW technical multiple-choice questions.
+
+                Assessment: %s
+                Target role: %s
+                Allowed competencies: %s
+
+                Already accepted questions:
+                %s
+
+                IMPORTANT:
+                1. Generate exactly %d additional questions.
+                2. Do not repeat or rephrase any existing question.
+                3. Use only the allowed competency names.
+                4. Every question must have four distinct options.
+                5. Only one option must be correct.
+                6. correctAnswer must be exactly A, B, C or D.
+                7. difficulty must be BEGINNER, INTERMEDIATE or ADVANCED.
+                8. Keep questions clear and technically accurate.
+                9. Return a complete JSON object only.
+                10. Do not include Markdown or code fences.
+
+                REQUIRED JSON:
+                {
+                  "questions": [
+                    {
+                      "competency": "Exact competency name",
+                      "question": "New question?",
+                      "optionA": "First option",
+                      "optionB": "Second option",
+                      "optionC": "Third option",
+                      "optionD": "Fourth option",
+                      "correctAnswer": "A",
+                      "difficulty": "INTERMEDIATE",
+                      "marks": 1
+                    }
+                  ]
+                }
+
+                Return exactly %d question objects.
+                """.formatted(
+                missingCount,
+                safe(assessment.getName()),
+                safe(assessment.getTargetRole()),
+                competencyNames,
+                existing.isBlank() ? "None" : existing,
+                missingCount,
+                missingCount
+        );
+    }
+
+    // =====================================================
     // GROQ API
     // =====================================================
 
@@ -455,9 +650,6 @@ public class AIQuestionGeneratorService {
             int questionCount
     ) {
 
-        // Scale the token budget with question count.
-        // For 10 questions and a configured limit of 4096,
-        // this will use 4096 completion tokens.
         int configuredLimit = Math.max(
                 2048,
                 groqAssessmentMaxTokens
@@ -488,7 +680,7 @@ public class AIQuestionGeneratorService {
                 "content",
                 "You are a professional technical assessment question generator. "
                         + "Return exactly the requested number of questions as one "
-                        + "complete valid JSON object. Never return incomplete JSON."
+                        + "complete valid JSON object. Do not add text outside JSON."
         );
 
         Map<String, Object> userMessage = Map.of(
@@ -501,17 +693,14 @@ public class AIQuestionGeneratorService {
         request.put("model", groqModel);
         request.put("messages", List.of(systemMessage, userMessage));
         request.put("temperature", temperature);
-
-        // GPT-OSS / Groq completion token parameter.
-        // Do not use the old max_tokens parameter.
         request.put("max_completion_tokens", tokenLimit);
 
+        // GPT-OSS reasoning configuration.
         request.put("reasoning_effort", "low");
-        request.put("reasoning_format", "hidden");
+        request.put("include_reasoning", false);
 
         request.put("top_p", 0.9);
 
-        // Require JSON object output.
         request.put(
                 "response_format",
                 Map.of("type", "json_object")
@@ -543,7 +732,7 @@ public class AIQuestionGeneratorService {
 
             if (root.has("error") && !root.path("error").isNull()) {
                 throw new RuntimeException(
-                        "Groq error: " + root.path("error").toString()
+                        "Groq error: " + root.path("error")
                 );
             }
 
@@ -575,10 +764,14 @@ public class AIQuestionGeneratorService {
                 );
             }
 
+            log.info(
+                    "Groq completion finished. Finish reason={}",
+                    finishReason
+            );
+
             if ("length".equalsIgnoreCase(finishReason)) {
                 throw new RuntimeException(
                         "Groq reached the completion token limit. "
-                                + "Generated JSON may be incomplete. "
                                 + "Increase groq.assessment.max-tokens."
                 );
             }
@@ -589,11 +782,6 @@ public class AIQuestionGeneratorService {
                                 + "Finish reason: " + finishReason
                 );
             }
-
-            log.info(
-                    "Groq completion finished. Finish reason={}",
-                    finishReason
-            );
 
             return generatedText;
 
@@ -618,8 +806,7 @@ public class AIQuestionGeneratorService {
 
             throw new RuntimeException(
                     "Groq request timed out or connection failed. "
-                            + "Configured timeout: "
-                            + groqTimeout + " ms.",
+                            + "Configured timeout: " + groqTimeout + " ms.",
                     e
             );
 
@@ -634,43 +821,6 @@ public class AIQuestionGeneratorService {
                     e
             );
         }
-    }
-
-    private String groqErrorMessage(String response) {
-
-        if (!notBlank(response)) {
-            return "No error details returned.";
-        }
-
-        try {
-            JsonNode root = objectMapper.readTree(response);
-
-            JsonNode error = root.path("error");
-
-            if (error.isObject()) {
-
-                String message = error.path("message").asText("");
-
-                String code = error.path("code").asText("");
-
-                if (notBlank(code)) {
-                    return message + " (Code: " + code + ")";
-                }
-
-                return notBlank(message)
-                        ? message
-                        : preview(response);
-            }
-
-            if (error.isTextual()) {
-                return error.asText();
-            }
-
-        } catch (Exception ignored) {
-            // Use response preview below.
-        }
-
-        return preview(response);
     }
 
     // =====================================================
@@ -693,12 +843,9 @@ public class AIQuestionGeneratorService {
 
             if (root.isArray()) {
                 array = root;
-
             } else if (root.isObject()
                     && root.path("questions").isArray()) {
-
                 array = root.get("questions");
-
             } else {
                 throw new RuntimeException(
                         "Missing questions array in AI response."
@@ -868,7 +1015,6 @@ public class AIQuestionGeneratorService {
                 || !notBlank(q.optionB)
                 || !notBlank(q.optionC)
                 || !notBlank(q.optionD)) {
-
             return "One or more options are missing.";
         }
 
@@ -919,7 +1065,6 @@ public class AIQuestionGeneratorService {
             if (key.length() >= 5
                     && known.length() >= 5
                     && (key.contains(known) || known.contains(key))) {
-
                 return entry.getValue();
             }
         }
@@ -948,21 +1093,10 @@ public class AIQuestionGeneratorService {
             return upper;
         }
 
-        if (upper.matches("^(OPTION\\s*)?A[).:\\s-].*")) {
-            return "A";
-        }
-
-        if (upper.matches("^(OPTION\\s*)?B[).:\\s-].*")) {
-            return "B";
-        }
-
-        if (upper.matches("^(OPTION\\s*)?C[).:\\s-].*")) {
-            return "C";
-        }
-
-        if (upper.matches("^(OPTION\\s*)?D[).:\\s-].*")) {
-            return "D";
-        }
+        if (upper.matches("^(OPTION\\s*)?A[).:\\s-].*")) return "A";
+        if (upper.matches("^(OPTION\\s*)?B[).:\\s-].*")) return "B";
+        if (upper.matches("^(OPTION\\s*)?C[).:\\s-].*")) return "C";
+        if (upper.matches("^(OPTION\\s*)?D[).:\\s-].*")) return "D";
 
         if (sameText(value, q.optionA)) return "A";
         if (sameText(value, q.optionB)) return "B";
@@ -973,7 +1107,6 @@ public class AIQuestionGeneratorService {
     }
 
     private boolean isValidCorrectAnswer(String answer) {
-
         return "A".equals(answer)
                 || "B".equals(answer)
                 || "C".equals(answer)
@@ -990,9 +1123,7 @@ public class AIQuestionGeneratorService {
             return "INTERMEDIATE";
         }
 
-        return switch (
-                difficulty.trim().toUpperCase(Locale.ROOT)
-        ) {
+        return switch (difficulty.trim().toUpperCase(Locale.ROOT)) {
 
             case "BEGINNER", "EASY" -> "BEGINNER";
 
@@ -1105,10 +1236,7 @@ public class AIQuestionGeneratorService {
                 .trim();
     }
 
-    private boolean sameText(
-            String first,
-            String second
-    ) {
+    private boolean sameText(String first, String second) {
 
         return notBlank(first)
                 && notBlank(second)
@@ -1116,22 +1244,15 @@ public class AIQuestionGeneratorService {
     }
 
     private boolean notBlank(String value) {
-
         return value != null && !value.trim().isEmpty();
     }
 
     private String safe(String value) {
-
-        return notBlank(value)
-                ? value.trim()
-                : "Not specified";
+        return notBlank(value) ? value.trim() : "Not specified";
     }
 
     private String safeNullable(String value) {
-
-        return notBlank(value)
-                ? value.trim()
-                : null;
+        return notBlank(value) ? value.trim() : null;
     }
 
     private String removeTrailingSlash(String url) {
@@ -1174,6 +1295,47 @@ public class AIQuestionGeneratorService {
         return result.length() > 500
                 ? result.substring(0, 500) + "..."
                 : result;
+    }
+
+    // =====================================================
+    // GROQ ERROR MESSAGE
+    // =====================================================
+
+    private String groqErrorMessage(String response) {
+
+        if (!notBlank(response)) {
+            return "No error details returned.";
+        }
+
+        try {
+
+            JsonNode root = objectMapper.readTree(response);
+
+            JsonNode error = root.path("error");
+
+            if (error.isObject()) {
+
+                String message = error.path("message").asText("");
+                String code = error.path("code").asText("");
+
+                if (notBlank(code)) {
+                    return message + " (Code: " + code + ")";
+                }
+
+                return notBlank(message)
+                        ? message
+                        : preview(response);
+            }
+
+            if (error.isTextual()) {
+                return error.asText();
+            }
+
+        } catch (Exception ignored) {
+            // Use response preview below.
+        }
+
+        return preview(response);
     }
 
     // =====================================================
