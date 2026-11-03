@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Assignment Details | Capacitix">
+
+<title>Assignment Details | Capacitix</title>
+
+<style>
+
+    :root {
+        --primary: #635bff;
+        --primary-dark: #4f46e5;
+        --teal: #14b8a6;
+        --bg: #f4f7fb;
+        --ink: #101828;
+        --muted: #667085;
+        --line: #e7eaf0;
+        --sidebar: #0b1220;
+        --sidebar-w: 270px;
+        --radius: 20px;
+        --shadow: 0 8px 28px rgba(16, 24, 40, .05);
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    body {
+        font-family: Inter, "Segoe UI", Arial, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    button {
+        font-family: inherit;
+    }
+
+    :focus-visible {
+        outline: 3px solid rgba(99, 91, 255, .45);
+        outline-offset: 2px;
+    }
+
+    /* =====================================================
+       SIDEBAR
+       ===================================================== */
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: var(--sidebar-w);
+        height: 100vh;
+        background: var(--sidebar);
+        color: #cbd5e1;
+        display: flex;
+        flex-direction: column;
+        z-index: 1000;
+        animation: slideInLeft .5s ease both;
+        transition: transform .3s ease, width .3s ease;
+    }
+
+    .sidebar-brand {
+        flex: 0 0 auto;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 22px;
+        border-bottom: 1px solid rgba(255, 255, 255, .07);
+    }
+
+    .logo {
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--primary), var(--teal));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        font-weight: 800;
+        box-shadow: 0 6px 18px rgba(99, 91, 255, .35);
+    }
+
+    .brand-text {
+        font-size: 21px;
+        font-weight: 800;
+        color: #fff;
+        white-space: nowrap;
+    }
+
+    .brand-text span {
+        color: #8b85ff;
+    }
+
+    .sidebar-nav {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 16px 14px;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, .18) transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, .18);
+        border-radius: 99px;
+    }
+
+    .nav-section {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .9px;
+        text-transform: uppercase;
+        color: #64748b;
+        padding: 16px 12px 8px;
+        white-space: nowrap;
+    }
+
+    .nav-item {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 12px;
+        margin-bottom: 3px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 650;
+        color: #aab4c5;
+        white-space: nowrap;
+        transition: background .2s ease, color .2s ease, transform .2s ease;
+    }
+
+    .nav-item svg {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: transform .2s ease;
+    }
+
+    .nav-item:hover {
+        background: rgba(255, 255, 255, .06);
+        color: #fff;
+    }
+
+    .nav-item:hover svg {
+        transform: scale(1.12);
+    }
+
+    .nav-item::before {
+        content: "";
+        position: absolute;
+        left: -14px;
+        top: 50%;
+        width: 4px;
+        height: 0;
+        border-radius: 0 4px 4px 0;
+        background: linear-gradient(var(--primary), var(--teal));
+        transform: translateY(-50%);
+        transition: height .25s ease;
+    }
+
+    .nav-item.active {
+        background: linear-gradient(90deg, rgba(99, 91, 255, .28), rgba(20, 184, 166, .12));
+        color: #fff;
+    }
+
+    .nav-item.active::before {
+        height: 24px;
+    }
+
+    .sidebar-footer {
+        flex: 0 0 auto;
+        padding: 14px;
+        border-top: 1px solid rgba(255, 255, 255, .07);
+        background: var(--sidebar);
+    }
+
+    .sidebar-footer form {
+        display: block;
+    }
+
+    .logout-btn {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 12px;
+        border: none;
+        border-radius: 12px;
+        background: rgba(239, 68, 68, .1);
+        color: #fca5a5;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background .2s ease, transform .2s ease;
+    }
+
+    .logout-btn svg {
+        width: 20px;
+        height: 20px;
+        min-width: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .logout-btn:hover {
+        background: rgba(239, 68, 68, .2);
+    }
+
+    .logout-btn:active {
+        transform: scale(.98);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(11, 18, 32, .55);
+        backdrop-filter: blur(2px);
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .3s ease, visibility .3s ease;
+        z-index: 990;
+    }
+
+    .sidebar-overlay.show {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* =====================================================
+       MAIN + HEADER
+       ===================================================== */
+
+    .main {
+        margin-left: var(--sidebar-w);
+        height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        transition: margin-left .3s ease;
+    }
+
+    .header {
+        position: sticky;
+        top: 0;
+        z-index: 900;
+        height: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 0 32px;
+        background: rgba(255, 255, 255, .85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--line);
+        animation: fadeDown .5s ease both;
+    }
+
+    .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+    }
+
+    .menu-btn {
+        display: none;
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--ink);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        transition: transform .2s ease, background .2s ease;
+    }
+
+    .menu-btn svg,
+    .icon-btn svg {
+        width: 20px;
+        height: 20px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .menu-btn:hover,
+    .icon-btn:hover {
+        transform: translateY(-1px);
+        background: #f8fafc;
+    }
+
+    .header-title {
+        font-size: 19px;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .header-subtitle {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .header-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        position: relative;
+    }
+
+    .icon-btn {
+        position: relative;
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: #475467;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+
+    .notif-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 99px;
+        background: #ef4444;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2.2s ease-in-out 3;
+    }
+
+    .notif-panel {
+        position: absolute;
+        top: 54px;
+        right: 0;
+        width: 320px;
+        max-width: calc(100vw - 24px);
+        max-height: 380px;
+        overflow-y: auto;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        box-shadow: 0 18px 50px rgba(16, 24, 40, .16);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-8px) scale(.98);
+        transition: opacity .2s ease, transform .2s ease, visibility .2s ease;
+    }
+
+    .notif-panel.show {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+    }
+
+    .notif-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        border-bottom: 1px solid #edf0f4;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .notif-close {
+        border: none;
+        background: transparent;
+        font-size: 20px;
+        line-height: 1;
+        color: var(--muted);
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+    }
+
+    .notif-close:hover {
+        background: #f1f5f9;
+    }
+
+    .profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .profile-info {
+        text-align: right;
+    }
+
+    .profile-name {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    .profile-role {
+        font-size: 12px;
+        color: #7b8497;
+        margin-top: 2px;
+    }
+
+    .avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        background: #eef2ff;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+    }
+
+    /* =====================================================
+       CONTENT
+       ===================================================== */
+
+    .container {
+        width: min(1100px, calc(100% - 48px));
+        margin: 32px auto 50px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        color: var(--primary-dark);
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        transition: transform .2s ease;
+    }
+
+    .back-link:hover {
+        text-decoration: underline;
+        transform: translateX(-3px);
+    }
+
+    .page-title {
+        font-size: 29px;
+        font-weight: 850;
+        margin-bottom: 7px;
+    }
+
+    .page-description {
+        color: #6b7280;
+        font-size: 14px;
+        line-height: 1.6;
+        margin-bottom: 25px;
+    }
+
+    /* =====================================================
+       CARD
+       ===================================================== */
+
+    .card {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        opacity: 0;
+        animation: fadeUp .55s ease forwards;
+        transition: box-shadow .25s ease, transform .25s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 36px rgba(16, 24, 40, .08);
+    }
+
+    .container > .card:nth-of-type(1) { animation-delay: .05s; }
+    .container > .card:nth-of-type(2) { animation-delay: .12s; }
+    .container > .card:nth-of-type(3) { animation-delay: .19s; }
+    .container > .card:nth-of-type(4) { animation-delay: .26s; }
+    .container > .card:nth-of-type(5) { animation-delay: .33s; }
+
+    .card-header {
+        padding: 20px 23px;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .card-title {
+        font-size: 18px;
+        font-weight: 800;
+    }
+
+    .card-subtitle {
+        margin-top: 4px;
+        color: #7b8497;
+        font-size: 12px;
+    }
+
+    .card-body {
+        padding: 23px;
+    }
+
+    /* =====================================================
+       DETAILS
+       ===================================================== */
+
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 18px 25px;
+    }
+
+    .detail {
+        padding: 15px;
+        border: 1px solid #edf0f4;
+        border-radius: 14px;
+        background: #fafbfc;
+        min-width: 0;
+        transition: border-color .2s ease, background .2s ease;
+    }
+
+    .detail:hover {
+        border-color: #d9defa;
+        background: #fff;
+    }
+
+    .detail-label {
+        color: #7b8497;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .45px;
+        margin-bottom: 6px;
+    }
+
+    .detail-value {
+        font-size: 14px;
+        font-weight: 750;
+        word-break: break-word;
+    }
+
+    .description {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 14px;
+        background: #f8fafc;
+        color: #596579;
+        font-size: 13px;
+        line-height: 1.7;
+    }
+
+    /* =====================================================
+       EMPLOYEE
+       ===================================================== */
+
+    .employee-box {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+
+    .employee-avatar {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 50%;
+        background: #eef2ff;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 17px;
+        font-weight: 850;
+    }
+
+    .employee-name {
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .employee-email {
+        color: #7b8497;
+        font-size: 12px;
+        margin-top: 4px;
+        word-break: break-word;
+    }
+
+    .employee-meta {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 5px;
+    }
+
+    /* =====================================================
+       STATUS
+       ===================================================== */
+
+    .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 7px 11px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 800;
+        animation: popIn .4s ease both;
+    }
+
+    .badge.assigned { background: #eef2ff; color: #4f46e5; }
+    .badge.progress { background: #fff7ed; color: #c2410c; }
+    .badge.completed { background: #ecfdf5; color: #047857; }
+    .badge.cancelled { background: #fef2f2; color: #b91c1c; }
+    .badge.default { background: #f1f5f9; color: #475569; }
+
+    /* =====================================================
+       SCORE
+       ===================================================== */
+
+    .score-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+    }
+
+    .score-card {
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 18px;
+        text-align: center;
+        background: #fff;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .score-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(99, 91, 255, .1);
+    }
+
+    .score-value {
+        font-size: 27px;
+        font-weight: 850;
+        background: linear-gradient(135deg, var(--primary), var(--teal));
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: var(--primary-dark);
+    }
+
+    .score-label {
+        color: #7b8497;
+        font-size: 11px;
+        font-weight: 700;
+        margin-top: 5px;
+    }
+
+    /* =====================================================
+       TIMELINE
+       ===================================================== */
+
+    .timeline {
+        display: grid;
+        gap: 15px;
+    }
+
+    .timeline-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 13px;
+    }
+
+    .timeline-dot {
+        width: 10px;
+        height: 10px;
+        min-width: 10px;
+        border-radius: 50%;
+        background: var(--primary);
+        margin-top: 5px;
+        box-shadow: 0 0 0 4px rgba(99, 91, 255, .12);
+    }
+
+    .timeline-label {
+        font-size: 12px;
+        color: #7b8497;
+    }
+
+    .timeline-value {
+        font-size: 13px;
+        font-weight: 750;
+        margin-top: 3px;
+    }
+
+    /* =====================================================
+       ACTIONS
+       ===================================================== */
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 11px 17px;
+        border-radius: 12px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 750;
+        cursor: pointer;
+        transition: background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+
+    .btn:active {
+        transform: scale(.97);
+    }
+
+    .btn-primary {
+        border: none;
+        background: var(--primary-dark);
+        color: #fff;
+    }
+
+    .btn-primary:hover {
+        background: #4338ca;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 15px rgba(79, 70, 229, .22);
+    }
+
+    .btn-secondary {
+        border: 1px solid #dfe3eb;
+        background: #fff;
+        color: #374151;
+    }
+
+    .btn-secondary:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        border: 1px solid #fecaca;
+        background: #fff;
+        color: #b91c1c;
+    }
+
+    .btn-danger:hover {
+        background: #fef2f2;
+        transform: translateY(-1px);
+    }
+
+    .actions form {
+        display: inline;
+    }
+
+    /* =====================================================
+       INFO
+       ===================================================== */
+
+    .info-box {
+        padding: 16px 18px;
+        border-radius: 14px;
+        background: #eef2ff;
+        border: 1px solid #e0e7ff;
+        color: #3730a3;
+        font-size: 13px;
+        line-height: 1.6;
+        margin-top: 5px;
+    }
+
+    /* =====================================================
+       EMPTY STATE (shared pattern)
+       ===================================================== */
+
+    .empty-state {
+        text-align: center;
+        padding: 30px 18px;
+        color: var(--muted);
+    }
+
+    .empty-state .empty-icon {
+        width: 46px;
+        height: 46px;
+        margin: 0 auto 10px;
+        border-radius: 14px;
+        background: #eef2ff;
+        color: var(--primary-dark);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state .empty-icon svg {
+        width: 22px;
+        height: 22px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .empty-state h3 {
+        font-size: 14px;
+        color: var(--ink);
+        margin-bottom: 4px;
+    }
+
+    .empty-state p {
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    /* =====================================================
+       ANIMATIONS
+       ===================================================== */
+
+    @keyframes slideInLeft {
+        from { opacity: 0; transform: translateX(-24px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    @keyframes fadeDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: none; }
+    }
+
+    @keyframes popIn {
+        from { opacity: 0; transform: scale(.85); }
+        to { opacity: 1; transform: none; }
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, .5); }
+        50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 1200px) {
+        .container {
+            width: min(1100px, calc(100% - 40px));
+        }
+    }
+
+    /* Tablet: compact sidebar */
+    @media (max-width: 900px) and (min-width: 651px) {
+
+        :root {
+            --sidebar-w: 80px;
+        }
+
+        .brand-text,
+        .nav-section,
+        .nav-item span,
+        .logout-btn span {
+            display: none;
+        }
+
+        .sidebar-brand {
+            justify-content: center;
+            padding: 0;
+        }
+
+        .nav-item,
+        .logout-btn {
+            justify-content: center;
+            padding: 12px 0;
+        }
+
+        .nav-item::before {
+            left: -14px;
+        }
+
+        .header {
+            padding: 0 22px;
+        }
+    }
+
+    /* Mobile: off-canvas drawer */
+    @media (max-width: 650px) {
+
+        :root {
+            --sidebar-w: 270px;
+        }
+
+        .sidebar {
+            transform: translateX(-100%);
+            box-shadow: none;
+            animation: none;
+        }
+
+        .sidebar.open {
+            transform: translateX(0);
+            box-shadow: 0 0 40px rgba(0, 0, 0, .4);
+        }
+
+        .main {
+            margin-left: 0;
+        }
+
+        .menu-btn {
+            display: flex;
+        }
+
+        .header {
+            padding: 0 14px;
+        }
+
+        .header-title {
+            font-size: 16px;
+        }
+
+        .header-subtitle,
+        .profile-info,
+        .profile .avatar {
+            display: none;
+        }
+
+        .container {
+            width: min(100% - 24px, 1100px);
+            margin-top: 20px;
+        }
+
+        .page-title {
+            font-size: 24px;
+        }
+
+        .details-grid,
+        .score-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .card-body {
+            padding: 18px;
+        }
+
+        .status-row {
+            align-items: flex-start;
+        }
+
+        .actions {
+            width: 100%;
+        }
+
+        .actions .btn,
+        .actions form,
+        .actions form .btn {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 430px) {
+        .card-header {
+            padding: 16px 18px;
+        }
+
+        .employee-box {
+            align-items: flex-start;
+        }
+    }
+
+    body.drawer-open {
+        overflow: hidden;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: .01ms !important;
+        }
+
+        .card {
+            opacity: 1;
+        }
+    }
+
+</style>
+
+</head>
+
+<body>
+
+<!-- =========================================================
+     SIDEBAR
+     ========================================================= -->
+
+<aside class="sidebar" id="sidebar" aria-label="Trainer navigation">
+
+    <div class="sidebar-brand">
+        <div class="logo">C</div>
+        <div class="brand-text">Capacit<span>iX</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+        <div class="nav-section">Training</div>
+
+        <a class="nav-item" th:href="@{/trainer/dashboard}" href="/trainer/dashboard" title="Dashboard">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+            <span>Dashboard</span>
+        </a>
+
+        <a class="nav-item" th:href="@{/trainer/employees}" href="/trainer/employees" title="My Trainees">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>My Trainees</span>
+        </a>
+
+        <a class="nav-item" th:href="@{/trainer/skill-gaps}" href="/trainer/skill-gaps" title="Skill Gaps">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+            <span>Skill Gaps</span>
+        </a>
+
+        <a class="nav-item" th:href="@{/trainer/learning-resources}" href="/trainer/learning-resources" title="Learning Resources">
+            <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span>Learning Resources</span>
+        </a>
+
+        <a class="nav-item active" aria-current="page" th:href="@{/trainer/assessments}" href="/trainer/assessments" title="Assessments">
+            <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Assessments</span>
+        </a>
+
+      
+        <div class="nav-section">Analytics</div>
+
+        <a class="nav-item" th:href="@{/trainer/progress}" href="/trainer/progress" title="Trainee Progress">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Trainee Progress</span>
+        </a>
+
+        <a class="nav-item" th:href="@{/trainer/reports}" href="/trainer/reports" title="Reports">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Reports</span>
+        </a>
+
+        <div class="nav-section">Account</div>
+
+        <a class="nav-item" th:href="@{/trainer/profile}" href="/trainer/profile" title="My Profile">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>My Profile</span>
+        </a>
+
+        <a class="nav-item" th:href="@{/trainer/settings}" href="/trainer/settings" title="Settings">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+        <form th:action="@{/logout}" action="/logout" method="post">
+
+            <input type="hidden"
+                   th:if="${_csrf != null}"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <button type="submit" class="logout-btn" title="Logout">
+                <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <span>Logout</span>
+            </button>
+
+        </form>
+    </div>
+
+</aside>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<div class="main" id="main">
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="header">
+
+        <div class="header-left">
+
+            <button type="button"
+                    class="menu-btn"
+                    id="menuBtn"
+                    aria-label="Open navigation menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+                <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+
+            <div style="min-width:0;">
+                <div class="header-title">Assessments</div>
+                <div class="header-subtitle">Assignment details and result</div>
+            </div>
+
+        </div>
+
+        <div class="header-right">
+
+            <button type="button"
+                    class="icon-btn"
+                    id="notifBtn"
+                    aria-label="Notifications"
+                    aria-controls="notifPanel"
+                    aria-expanded="false">
+                <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                <span class="notif-badge"
+                      th:if="${notificationCount != null and notificationCount > 0}"
+                      th:text="${notificationCount}">1</span>
+            </button>
+
+            <div class="notif-panel" id="notifPanel" role="dialog" aria-label="Notifications panel">
+                <div class="notif-head">
+                    <span>Notifications</span>
+                    <button type="button" class="notif-close" id="notifClose" aria-label="Close notifications">&times;</button>
+                </div>
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                    </div>
+                    <h3>No new notifications</h3>
+                    <p>You're all caught up.</p>
+                </div>
+            </div>
+
+            <div class="profile">
+
+                <div class="profile-info">
+
+                    <div class="profile-name"
+                         th:text="${trainer != null
+                            and trainer.fullName != null
+                            ? trainer.fullName
+                            : 'Trainer'}">
+                        Trainer
+                    </div>
+
+                    <div class="profile-role">
+                        Trainer
+                    </div>
+
+                </div>
+
+                <div class="avatar"
+                     th:text="${trainer != null
+                        and trainer.fullName != null
+                        and !trainer.fullName.isBlank()
+                        ? trainer.fullName.substring(0,1).toUpperCase()
+                        : 'T'}">
+                    T
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+    <!-- =========================================================
+         CONTENT
+         ========================================================= -->
+
+    <main class="container">
+
+        <a href="/trainer/assessments/assigned"
+           class="back-link">
+            ← Back to Assigned Assessments
+        </a>
+
+
+        <h1 class="page-title">
+            Assessment Assignment
+        </h1>
+
+
+        <p class="page-description">
+            View assignment details, Student information,
+            progress and assessment result.
+        </p>
+
+
+        <!-- =====================================================
+             ASSESSMENT DETAILS
+             ===================================================== -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+                    Assessment Details
+                </div>
+
+                <div class="card-subtitle">
+                    AI-generated assessment assigned to the Student
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="details-grid">
+
+
+                    <!-- NAME -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            Assessment Name
+                        </div>
+
+                        <div class="detail-value"
+                             th:text="${assignment.assessment != null
+                                and assignment.assessment.name != null
+                                ? assignment.assessment.name
+                                : 'Assessment'}">
+                            Java Backend Assessment
+                        </div>
+
+                    </div>
+
+
+                    <!-- TYPE -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            Assessment Type
+                        </div>
+
+                        <div class="detail-value"
+                             th:text="${assignment.assessment != null
+                                and assignment.assessment.type != null
+                                ? assignment.assessment.type
+                                : 'SKILL'}">
+                            SKILL
+                        </div>
+
+                    </div>
+
+
+                    <!-- ROLE -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            Target Role
+                        </div>
+
+                        <div class="detail-value"
+                             th:text="${assignment.assessment != null
+                                and assignment.assessment.targetRole != null
+                                and !assignment.assessment.targetRole.isBlank()
+                                ? assignment.assessment.targetRole
+                                : 'Not specified'}">
+                            Java Backend Developer
+                        </div>
+
+                    </div>
+
+
+                    <!-- QUESTIONS -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            Questions
+                        </div>
+
+                        <div class="detail-value"
+                             th:text="${assignment.assessment != null
+                                and assignment.assessment.questionCount != null
+                                ? assignment.assessment.questionCount
+                                : 0}">
+                            10
+                        </div>
+
+                    </div>
+
+
+                    <!-- MAX SCORE -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            Maximum Score
+                        </div>
+
+                        <div class="detail-value"
+                             th:text="${assignment.maxScore != null
+                                ? assignment.maxScore
+                                : 0}">
+                            10
+                        </div>
+
+                    </div>
+
+
+                    <!-- AI GENERATED -->
+
+                    <div class="detail">
+
+                        <div class="detail-label">
+                            AI Generated
+                        </div>
+
+                        <div class="detail-value">
+
+                            <span
+                                    th:if="${assignment.assessment != null
+                                        and assignment.assessment.aiGenerated}">
+                                Yes
+                            </span>
+
+                            <span
+                                    th:unless="${assignment.assessment != null
+                                        and assignment.assessment.aiGenerated}">
+                                No
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DESCRIPTION -->
+
+                <div
+                        class="description"
+                        th:if="${assignment.assessment != null
+                            and assignment.assessment.description != null
+                            and !assignment.assessment.description.isBlank()}"
+                        th:text="${assignment.assessment.description}">
+                    Assessment generated from the required competencies
+                    defined by the organization.
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             EMPLOYEE
+             ===================================================== -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+                    Assigned Student
+                </div>
+
+                <div class="card-subtitle">
+                    Student receiving this assessment
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="employee-box">
+
+
+                    <div class="employee-avatar"
+                         th:text="${assignment.employee != null
+                            and assignment.employee.fullName != null
+                            and !assignment.employee.fullName.isBlank()
+                            ? assignment.employee.fullName.substring(0,1).toUpperCase()
+                            : 'E'}">
+                        E
+                    </div>
+
+
+                    <div>
+
+                        <div class="employee-name"
+                             th:text="${assignment.employee != null
+                                and assignment.employee.fullName != null
+                                ? assignment.employee.fullName
+                                : 'Employee'}">
+                            Student Name
+                        </div>
+
+
+                        <div class="employee-email"
+                             th:text="${assignment.employee != null
+                                and assignment.employee.email != null
+                                ? assignment.employee.email
+                                : ''}">
+                            employee@example.com
+                        </div>
+
+
+                        <div class="employee-meta"
+                             th:text="${assignment.employee != null
+                                and assignment.employee.department != null
+                                and !assignment.employee.department.isBlank()
+                                ? assignment.employee.department
+                                : 'Department not specified'}">
+                            Computer Science
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             STATUS
+             ===================================================== -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+                    Assignment Status
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="status-row">
+
+
+                    <div>
+
+                        <!-- ASSIGNED -->
+
+                        <span
+                                class="badge assigned"
+                                th:if="${assignment.status != null
+                                    and #strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'ASSIGNED'
+                                    )}">
+                            Assigned
+                        </span>
+
+
+                        <!-- IN PROGRESS -->
+
+                        <span
+                                class="badge progress"
+                                th:if="${assignment.status != null
+                                    and #strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'IN_PROGRESS'
+                                    )}">
+                            In Progress
+                        </span>
+
+
+                        <!-- COMPLETED -->
+
+                        <span
+                                class="badge completed"
+                                th:if="${assignment.status != null
+                                    and #strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'COMPLETED'
+                                    )}">
+                            Completed
+                        </span>
+
+
+                        <!-- CANCELLED -->
+
+                        <span
+                                class="badge cancelled"
+                                th:if="${assignment.status != null
+                                    and #strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'CANCELLED'
+                                    )}">
+                            Cancelled
+                        </span>
+
+
+                        <!-- OTHER -->
+
+                        <span
+                                class="badge default"
+                                th:if="${assignment.status == null
+                                    or (
+                                        !#strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'ASSIGNED'
+                                        )
+                                        and
+                                        !#strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'IN_PROGRESS'
+                                        )
+                                        and
+                                        !#strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'COMPLETED'
+                                        )
+                                        and
+                                        !#strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'CANCELLED'
+                                        )
+                                    )}"
+                                th:text="${assignment.status != null
+                                    ? assignment.status
+                                    : 'UNKNOWN'}">
+                            Status
+                        </span>
+
+                    </div>
+
+
+                    <div class="actions">
+
+
+                        <!-- BACK -->
+
+                        <a
+                                href="/trainer/assessments/assigned"
+                                class="btn btn-secondary">
+                            Back
+                        </a>
+
+
+                        <!-- OPEN ASSESSMENT -->
+
+                        <a
+                                class="btn btn-primary"
+                                th:if="${assignment.status != null
+                                    and (
+                                        #strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'ASSIGNED'
+                                        )
+                                        or
+                                        #strings.equalsIgnoreCase(
+                                            assignment.status,
+                                            'IN_PROGRESS'
+                                        )
+                                    )}"
+                                th:href="@{/employee/assessments/{id}/start(
+                                    id=${assignment.id}
+                                )}">
+                            Open Assessment
+                        </a>
+
+
+                        <!-- RESULT -->
+
+                        <a
+                                class="btn btn-primary"
+                                th:if="${assignment.status != null
+                                    and #strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'COMPLETED'
+                                    )}"
+                                th:href="@{/employee/assessments/{id}/result(
+                                    id=${assignment.id}
+                                )}">
+                            View Result
+                        </a>
+
+
+                        <!-- CANCEL -->
+
+                        <form
+                                th:if="${assignment.status != null
+                                    and !#strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'COMPLETED'
+                                    )
+                                    and !#strings.equalsIgnoreCase(
+                                        assignment.status,
+                                        'CANCELLED'
+                                    )}"
+                                th:action="@{/trainer/assessments/assigned/{id}/cancel(
+                                    id=${assignment.id}
+                                )}"
+                                method="post"
+                                onsubmit="return confirmCancel();">
+
+
+                            <input
+                                    type="hidden"
+                                    th:if="${_csrf != null}"
+                                    th:name="${_csrf.parameterName}"
+                                    th:value="${_csrf.token}">
+
+
+                            <button
+                                    type="submit"
+                                    class="btn btn-danger">
+                                Cancel Assignment
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             SCORE
+             ===================================================== -->
+
+        <section
+                class="card"
+                th:if="${assignment.status != null
+                    and #strings.equalsIgnoreCase(
+                        assignment.status,
+                        'COMPLETED'
+                    )}">
+
+
+            <div class="card-header">
+
+                <div class="card-title">
+                    Assessment Result
+                </div>
+
+                <div class="card-subtitle">
+                    Result submitted by the Student
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="score-grid">
+
+
+                    <!-- SCORE -->
+
+                    <div class="score-card">
+
+                        <div
+                                class="score-value"
+                                th:text="${assignment.score != null
+                                    ? assignment.score
+                                    : 0}">
+                            8
+                        </div>
+
+                        <div class="score-label">
+                            Score Obtained
+                        </div>
+
+                    </div>
+
+
+                    <!-- MAX -->
+
+                    <div class="score-card">
+
+                        <div
+                                class="score-value"
+                                th:text="${assignment.maxScore != null
+                                    ? assignment.maxScore
+                                    : 0}">
+                            10
+                        </div>
+
+                        <div class="score-label">
+                            Maximum Score
+                        </div>
+
+                    </div>
+
+
+                    <!-- PERCENTAGE -->
+
+                    <div class="score-card">
+
+                        <div
+                                class="score-value"
+                                th:text="${assignment.percentage + '%'}">
+                            80%
+                        </div>
+
+                        <div class="score-label">
+                            Percentage
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             TIMELINE
+             ===================================================== -->
+
+        <section class="card">
+
+            <div class="card-header">
+
+                <div class="card-title">
+                    Assignment Timeline
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="timeline">
+
+
+                    <!-- ASSIGNED -->
+
+                    <div class="timeline-item">
+
+                        <div class="timeline-dot"></div>
+
+                        <div>
+
+                            <div class="timeline-label">
+                                Assigned At
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:if="${assignment.assignedAt != null}"
+                                    th:text="${#temporals.format(
+                                        assignment.assignedAt,
+                                        'dd MMM yyyy, hh:mm a'
+                                    )}">
+                                02 Oct 2026, 10:30 AM
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:unless="${assignment.assignedAt != null}">
+                                —
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- STARTED -->
+
+                    <div class="timeline-item">
+
+                        <div class="timeline-dot"></div>
+
+                        <div>
+
+                            <div class="timeline-label">
+                                Started At
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:if="${assignment.startedAt != null}"
+                                    th:text="${#temporals.format(
+                                        assignment.startedAt,
+                                        'dd MMM yyyy, hh:mm a'
+                                    )}">
+                                02 Oct 2026, 11:00 AM
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:unless="${assignment.startedAt != null}">
+                                Not started yet
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- COMPLETED -->
+
+                    <div class="timeline-item">
+
+                        <div class="timeline-dot"></div>
+
+                        <div>
+
+                            <div class="timeline-label">
+                                Completed At
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:if="${assignment.completedAt != null}"
+                                    th:text="${#temporals.format(
+                                        assignment.completedAt,
+                                        'dd MMM yyyy, hh:mm a'
+                                    )}">
+                                02 Oct 2026, 11:25 AM
+                            </div>
+
+                            <div
+                                    class="timeline-value"
+                                    th:unless="${assignment.completedAt != null}">
+                                Not completed yet
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             AI INFORMATION
+             ===================================================== -->
+
+        <div class="info-box">
+
+            <strong>AI Assessment:</strong>
+
+            The assessment questions were generated automatically
+            from the organization's required competencies.
+
+            Trainers only assign the generated assessment to
+            Students and cannot manually create or modify questions.
+
+        </div>
+
+    </main>
+
+</div>
+
+<script>
+
+    function confirmCancel() {
+
+        return window.confirm(
+            "Are you sure you want to cancel this assessment assignment?"
+        );
+
+    }
+
+    (function () {
+
+        var sidebar = document.getElementById('sidebar');
+        var overlay = document.getElementById('sidebarOverlay');
+        var menuBtn = document.getElementById('menuBtn');
+        var notifBtn = document.getElementById('notifBtn');
+        var notifPanel = document.getElementById('notifPanel');
+        var notifClose = document.getElementById('notifClose');
+        var mobileMq = window.matchMedia('(max-width: 650px)');
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.add('show');
+            document.body.classList.add('drawer-open');
+            menuBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('show');
+            document.body.classList.remove('drawer-open');
+            menuBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        function openNotif() {
+            notifPanel.classList.add('show');
+            notifBtn.setAttribute('aria-expanded', 'true');
+        }
+
+        function closeNotif() {
+            notifPanel.classList.remove('show');
+            notifBtn.setAttribute('aria-expanded', 'false');
+        }
+
+        menuBtn.addEventListener('click', function () {
+            if (sidebar.classList.contains('open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+
+        sidebar.querySelectorAll('.nav-item').forEach(function (link) {
+            link.addEventListener('click', closeSidebar);
+        });
+
+        notifBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (notifPanel.classList.contains('show')) {
+                closeNotif();
+            } else {
+                openNotif();
+            }
+        });
+
+        notifClose.addEventListener('click', closeNotif);
+
+        document.addEventListener('click', function (e) {
+            if (!notifPanel.contains(e.target) && !notifBtn.contains(e.target)) {
+                closeNotif();
+            }
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+                closeNotif();
+            }
+        });
+
+        function onViewportChange() {
+            if (!mobileMq.matches) {
+                closeSidebar();
+            }
+        }
+
+        if (mobileMq.addEventListener) {
+            mobileMq.addEventListener('change', onViewportChange);
+        } else if (mobileMq.addListener) {
+            mobileMq.addListener(onViewportChange);
+        }
+
+    })();
+
+</script>
+
+</body>
+</html>

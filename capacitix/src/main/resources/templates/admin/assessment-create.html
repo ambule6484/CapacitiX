@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Create AI Assessment | Capacitix</title>
+
+    <style>
+
+        /* =====================================================
+           1. DESIGN TOKENS
+        ===================================================== */
+        :root {
+            --navy-900: #0b1220;
+            --navy-800: #111a2e;
+            --indigo: #4f46e5;
+            --indigo-2: #6366f1;
+            --indigo-dark: #4338ca;
+            --indigo-soft: #eef2ff;
+            --teal: #14b8a6;
+            --bg: #f3f6fb;
+            --card: #ffffff;
+            --text: #172033;
+            --text-2: #344054;
+            --muted: #667085;
+            --muted-2: #98a2b3;
+            --border: #e6e9f0;
+            --border-2: #dfe3eb;
+            --danger: #dc2626;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, .06);
+            --shadow: 0 8px 30px rgba(15, 23, 42, .06);
+            --shadow-lg: 0 14px 40px rgba(15, 23, 42, .13);
+            --sidebar-w: 270px;
+            --topbar-h: 72px;
+            --ease: cubic-bezier(.22, .61, .36, 1);
+            --font: Inter, "Segoe UI", Arial, sans-serif;
+        }
+
+        /* =====================================================
+           2. GLOBAL
+        ===================================================== */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;            /* no global scrollbar */
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        button, input, textarea, select { font: inherit; }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            height: 100dvh;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        /* =====================================================
+           3. SIDEBAR
+        ===================================================== */
+        .sidebar {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            width: var(--sidebar-w);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            background: linear-gradient(180deg, var(--navy-800) 0%, var(--navy-900) 100%);
+            color: #cbd5e1;
+            z-index: 1000;
+            overflow: hidden;            /* only .nav scrolls */
+            animation: slideInLeft .55s var(--ease) both;
+        }
+
+        .brand {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 22px 22px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, .07);
+        }
+
+        .brand-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: grid; place-items: center;
+            background: linear-gradient(135deg, var(--indigo-2), var(--teal));
+            color: #fff;
+            font-size: 18px;
+            font-weight: 800;
+            box-shadow: 0 6px 18px rgba(79, 70, 229, .45);
+        }
+
+        .brand-name {
+            color: #fff;
+            font-size: 19px;
+            font-weight: 700;
+            letter-spacing: .2px;
+        }
+
+        /* =====================================================
+           4. NAVIGATION (independent vertical scroll)
+        ===================================================== */
+        .nav {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 14px 12px 20px;
+            scroll-behavior: smooth;
+            overscroll-behavior: contain;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, .25) transparent;
+        }
+
+        .nav::-webkit-scrollbar { width: 6px; }
+        .nav::-webkit-scrollbar-track { background: transparent; }
+        .nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .22); border-radius: 99px; }
+        .nav::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, .38); }
+
+        .nav-title {
+            margin: 16px 12px 8px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .nav-title:first-child { margin-top: 4px; }
+
+        .nav-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            margin-bottom: 3px;
+            border-radius: 10px;
+            color: #cbd5e1;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background .2s var(--ease), color .2s var(--ease), transform .2s var(--ease);
+            opacity: 0;
+            animation: fadeIn .45s var(--ease) forwards;
+        }
+
+        .nav-icon {
+            width: 18px; height: 18px;
+            flex: 0 0 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform .25s var(--ease);
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, .07);
+            color: #fff;
+            transform: translateX(3px);
+        }
+
+        .nav-link:hover .nav-icon { transform: translateX(2px) scale(1.12); }
+
+        .nav-link.active {
+            color: #fff;
+            background: linear-gradient(90deg, rgba(79, 70, 229, .55), rgba(20, 184, 166, .22));
+            box-shadow: 0 0 18px rgba(79, 70, 229, .35);
+        }
+
+        .nav-link.active::before {
+            content: "";
+            position: absolute;
+            left: -12px; top: 8px; bottom: 8px;
+            width: 4px;
+            border-radius: 0 4px 4px 0;
+            background: linear-gradient(180deg, var(--indigo-2), var(--teal));
+        }
+
+        .nav-link:nth-of-type(1)  { animation-delay: .10s; }
+        .nav-link:nth-of-type(2)  { animation-delay: .14s; }
+        .nav-link:nth-of-type(3)  { animation-delay: .18s; }
+        .nav-link:nth-of-type(4)  { animation-delay: .22s; }
+        .nav-link:nth-of-type(5)  { animation-delay: .26s; }
+        .nav-link:nth-of-type(6)  { animation-delay: .30s; }
+        .nav-link:nth-of-type(7)  { animation-delay: .34s; }
+        .nav-link:nth-of-type(8)  { animation-delay: .38s; }
+        .nav-link:nth-of-type(9)  { animation-delay: .42s; }
+        .nav-link:nth-of-type(10) { animation-delay: .46s; }
+        .nav-link:nth-of-type(11) { animation-delay: .50s; }
+
+        /* pinned logout */
+        .sidebar-footer {
+            flex: 0 0 auto;
+            padding: 14px 12px 16px;
+            border-top: 1px solid rgba(255, 255, 255, .07);
+            background: rgba(0, 0, 0, .15);
+        }
+
+        .logout-btn {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 10px;
+            background: transparent;
+            color: #fda4af;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s var(--ease), transform .2s var(--ease), color .2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(225, 29, 72, .15);
+            color: #fecdd3;
+            transform: translateY(-1px);
+        }
+
+        .logout-btn:hover .nav-icon { transform: translateX(3px); }
+        .logout-btn:active { transform: scale(.98); }
+
+        /* =====================================================
+           5. TOPBAR
+        ===================================================== */
+        .main {
+            flex: 1 1 auto;
+            min-width: 0;
+            margin-left: var(--sidebar-w);
+            height: 100vh;
+            height: 100dvh;
+            overflow-y: auto;            /* independent main scroll */
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #c3cad8 transparent;
+        }
+
+        .main::-webkit-scrollbar { width: 8px; }
+        .main::-webkit-scrollbar-track { background: transparent; }
+        .main::-webkit-scrollbar-thumb { background: #c3cad8; border-radius: 99px; }
+        .main::-webkit-scrollbar-thumb:hover { background: #a3adc0; }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            height: var(--topbar-h);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 0 32px;
+            background: rgba(255, 255, 255, .92);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            animation: slideDown .5s var(--ease) both;
+        }
+
+        .topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+        .menu-btn {
+            display: none;
+            width: 40px; height: 40px;
+            border: 1px solid var(--border-2);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--text-2);
+            cursor: pointer;
+            place-items: center;
+            transition: background .2s, transform .2s;
+        }
+
+        .menu-btn:hover { background: #f9fafb; }
+        .menu-btn:active { transform: scale(.94); }
+
+        .menu-btn svg {
+            width: 20px; height: 20px;
+            stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round;
+        }
+
+        .heading h1 { font-size: 20px; line-height: 1.2; }
+
+        .heading p {
+            margin-top: 3px;
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile { display: flex; align-items: center; gap: 10px; }
+
+        .profile-text { text-align: right; line-height: 1.25; }
+        .profile-text strong { display: block; font-size: 13px; }
+        .profile-text span { font-size: 11px; color: var(--muted); }
+
+        .avatar {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            display: grid; place-items: center;
+            color: #fff;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--indigo-2), var(--teal));
+            box-shadow: 0 4px 12px rgba(79, 70, 229, .35);
+        }
+
+        /* loading progress bar */
+        .progress {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            width: 0;
+            z-index: 2000;
+            background: linear-gradient(90deg, var(--indigo), var(--teal));
+            opacity: 0;
+            transition: opacity .3s;
+        }
+
+        .progress.active { opacity: 1; width: 90%; transition: width 6s var(--ease), opacity .3s; }
+
+        /* =====================================================
+           6. MAIN CONTENT
+        ===================================================== */
+        .content {
+            padding: 28px 32px 60px;
+            min-height: calc(100% - var(--topbar-h));
+            background:
+                radial-gradient(900px 400px at 100% -10%, rgba(79, 70, 229, .07), transparent 60%),
+                radial-gradient(700px 360px at -10% 0%, rgba(20, 184, 166, .06), transparent 60%);
+        }
+
+        .content-inner { max-width: 1100px; }
+
+        .back {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 650;
+            margin-bottom: 18px;
+            transition: color .2s, gap .2s var(--ease);
+            animation: fadeUp .5s var(--ease) both;
+        }
+
+        .back:hover { color: var(--indigo); gap: 11px; }
+
+        /* =====================================================
+           7. CARDS
+        ===================================================== */
+        .card {
+            position: relative;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            animation: fadeUp .6s var(--ease) .08s both;
+            transition: transform .25s var(--ease), box-shadow .25s var(--ease);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--indigo), var(--teal));
+        }
+
+        .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+
+        .card-header {
+            padding: 28px 28px 24px;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(90deg, rgba(99, 91, 255, .06), rgba(20, 184, 166, .03));
+        }
+
+        .header-icon {
+            width: 48px; height: 48px;
+            border-radius: 13px;
+            display: grid; place-items: center;
+            background: var(--indigo-soft);
+            color: var(--indigo);
+            font-size: 22px;
+            margin-bottom: 12px;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .card-header h2 { font-size: 19px; margin-bottom: 5px; }
+        .card-header p { color: var(--muted); font-size: 13px; }
+
+        .card-body { padding: 28px; }
+
+        /* error */
+        .error {
+            padding: 13px 15px;
+            margin-bottom: 22px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-left: 4px solid var(--danger);
+            color: #b91c1c;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            animation: fadeUp .4s var(--ease) both;
+        }
+
+        /* =====================================================
+           8. FORMS
+        ===================================================== */
+        .field {
+            margin-bottom: 24px;
+            opacity: 0;
+            animation: fadeUp .5s var(--ease) forwards;
+        }
+
+        form > .field:nth-of-type(1) { animation-delay: .15s; }
+        form > .field:nth-of-type(2) { animation-delay: .22s; }
+        .two-column .field:nth-child(1) { animation-delay: .29s; }
+        .two-column .field:nth-child(2) { animation-delay: .34s; }
+        form > .field:nth-of-type(3) { animation-delay: .40s; }
+
+        .label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-2);
+        }
+
+        .required { color: var(--danger); }
+
+        .input,
+        .textarea,
+        .select {
+            width: 100%;
+            border: 1px solid var(--border-2);
+            border-radius: 10px;
+            background: #fff;
+            outline: none;
+            color: #1f2937;
+            transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+        }
+
+        .input, .select { height: 46px; padding: 0 14px; }
+
+        .textarea { min-height: 120px; padding: 13px 14px; resize: vertical; }
+
+        .input:hover, .textarea:hover, .select:hover { border-color: #b4bccb; }
+
+        .input:focus,
+        .textarea:focus,
+        .select:focus {
+            border-color: var(--indigo-2);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, .12);
+            transform: translateY(-1px);
+        }
+
+        .help { margin-top: 7px; color: var(--muted-2); font-size: 11.5px; }
+
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        .two-column > * { min-width: 0; }
+
+        /* competencies */
+        .competency-box {
+            border: 1px solid var(--border-2);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .competency-list {
+            max-height: 320px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #c3cad8 transparent;
+        }
+
+        .competency-list::-webkit-scrollbar { width: 6px; }
+        .competency-list::-webkit-scrollbar-thumb { background: #c3cad8; border-radius: 99px; }
+
+        .competency {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 13px 15px;
+            border-bottom: 1px solid #f0f2f5;
+            cursor: pointer;
+            transition: background .2s, padding-left .2s var(--ease);
+        }
+
+        .competency:last-child { border-bottom: 0; }
+
+        .competency:hover { background: #f7f8ff; padding-left: 19px; }
+
+        .competency:has(input:checked) {
+            background: linear-gradient(90deg, rgba(79, 70, 229, .08), transparent);
+            box-shadow: inset 3px 0 var(--indigo);
+        }
+
+        .competency input {
+            width: 17px; height: 17px;
+            accent-color: var(--indigo);
+            cursor: pointer;
+            flex: 0 0 17px;
+        }
+
+        .competency:focus-within { outline: 2px solid rgba(79, 70, 229, .4); outline-offset: -2px; }
+
+        .competency-info { min-width: 0; }
+        .competency-info strong { display: block; font-size: 13px; }
+        .competency-info span {
+            display: block;
+            margin-top: 3px;
+            font-size: 11.5px;
+            color: var(--muted);
+            overflow-wrap: anywhere;
+        }
+
+        .no-data {
+            padding: 25px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* info */
+        .info {
+            display: flex;
+            gap: 12px;
+            padding: 16px 18px;
+            margin-top: 25px;
+            background: linear-gradient(135deg, #eef2ff, #ecfdf9);
+            border: 1px solid #dbe2ff;
+            border-left: 4px solid var(--indigo);
+            border-radius: 11px;
+            color: var(--muted);
+            font-size: 12.5px;
+            line-height: 1.6;
+        }
+
+        .info strong { display: block; color: var(--text-2); margin-bottom: 3px; }
+
+        /* =====================================================
+           9. BUTTONS
+        ===================================================== */
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 26px;
+            padding-top: 22px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn {
+            min-height: 44px;
+            padding: 0 22px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-size: 13.5px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform .2s var(--ease), box-shadow .2s var(--ease), background .2s;
+        }
+
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0) scale(.97); }
+
+        .btn-secondary {
+            background: #fff;
+            border-color: var(--border-2);
+            color: #596273;
+        }
+
+        .btn-secondary:hover { background: #f9fafb; box-shadow: var(--shadow-sm); }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--indigo), var(--indigo-2));
+            color: #fff;
+            box-shadow: 0 7px 17px rgba(79, 70, 229, .25);
+        }
+
+        .btn-primary:hover { box-shadow: 0 10px 24px rgba(79, 70, 229, .38); }
+
+        .btn-primary:disabled {
+            opacity: .75;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: none;
+            width: 15px; height: 15px;
+            border: 2px solid rgba(255, 255, 255, .4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        .btn-primary:disabled .spinner { display: inline-block; }
+        .btn-primary:disabled .btn-emoji { display: none; }
+
+        /* scrim */
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(11, 18, 32, .55);
+            backdrop-filter: blur(2px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s;
+            z-index: 900;
+        }
+
+        .scrim.show { opacity: 1; pointer-events: auto; }
+
+        /* =====================================================
+           10. ANIMATIONS
+        ===================================================== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideInLeft {
+            from { transform: translateX(-30px); opacity: 0; }
+            to   { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-20px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-3px); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* =====================================================
+           11. RESPONSIVE
+        ===================================================== */
+        @media (max-width: 960px) {
+
+            .sidebar {
+                transform: translateX(-100%);
+                animation: none;
+                transition: transform .3s var(--ease);
+                box-shadow: var(--shadow-lg);
+            }
+
+            .sidebar.open { transform: translateX(0); }
+
+            .main { margin-left: 0; }
+
+            .menu-btn { display: grid; }
+
+            .topbar { padding: 0 18px; }
+        }
+
+        @media (max-width: 800px) {
+
+            .content { padding: 20px 16px 40px; }
+
+            .profile-text { display: none; }
+
+            .two-column { grid-template-columns: 1fr; gap: 0; }
+
+            .card-header { padding: 24px 20px 20px; }
+
+            .card-body { padding: 20px; }
+
+            .actions { flex-direction: column-reverse; }
+
+            .btn { width: 100%; }
+        }
+
+        /* =====================================================
+           12. ACCESSIBILITY
+        ===================================================== */
+        a:focus-visible,
+        button:focus-visible {
+            outline: 3px solid rgba(79, 70, 229, .55);
+            outline-offset: 2px;
+        }
+
+        .nav-link:focus-visible,
+        .logout-btn:focus-visible { outline-color: #5eead4; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: .01ms !important;
+                animation-delay: 0s !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .nav-link, .field { opacity: 1; }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="progress" id="progress" aria-hidden="true"></div>
+
+<div class="app">
+
+<!-- =========================================================
+     SIDEBAR
+     ========================================================= -->
+
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
+
+    <div class="brand">
+
+        <div class="brand-icon" aria-hidden="true">
+            C
+        </div>
+
+        <div class="brand-name">
+            Capacitix
+        </div>
+
+    </div>
+
+
+    <nav class="nav" id="nav" aria-label="Admin navigation">
+
+        <div class="nav-title">
+            Overview
+        </div>
+
+        <a th:href="@{/admin/dashboard}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            Workforce Management
+        </div>
+
+        <a th:href="@{/admin/employees}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Students</span>
+
+        </a>
+
+
+        <a th:href="@{/admin/trainers}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
+            <span>Trainers</span>
+
+        </a>
+
+
+        
+
+
+        <div class="nav-title">
+            Competency Intelligence
+        </div>
+
+        <a th:href="@{/admin/competencies}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+            <span>Competencies</span>
+
+        </a>
+
+
+        <a th:href="@{/admin/skill-heatmap}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="6" height="6"/><rect x="15" y="3" width="6" height="6"/><rect x="3" y="15" width="6" height="6"/><rect x="15" y="15" width="6" height="6"/></svg>
+            <span>Skill Heatmap</span>
+
+        </a>
+
+
+        <a th:href="@{/admin/skill-gaps}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>
+            <span>Skill Gaps</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            Learning &amp; Assessment
+        </div>
+
+        <a th:href="@{/admin/assessments}"
+           class="nav-link active"
+           aria-current="page">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span>Assessments</span>
+
+        </a>
+
+
+     
+
+
+        <a th:href="@{/admin/reports}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+            <span>Reports</span>
+
+        </a>
+
+
+        <div class="nav-title">
+            System
+        </div>
+
+        <a th:href="@{/admin/settings}"
+           class="nav-link">
+
+            <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+            <span>Settings</span>
+
+        </a>
+
+    </nav>
+
+
+    <!-- Pinned logout -->
+
+    <div class="sidebar-footer">
+
+        <form th:action="@{/logout}"
+              method="post">
+
+            <button type="submit"
+                    class="logout-btn">
+
+                <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+
+                <span>Logout</span>
+
+            </button>
+
+        </form>
+
+    </div>
+
+</aside>
+
+<div class="scrim" id="scrim"></div>
+
+
+<!-- =========================================================
+     MAIN
+     ========================================================= -->
+
+<main class="main" id="main">
+
+    <!-- TOPBAR -->
+
+    <header class="topbar">
+
+        <div class="topbar-left">
+
+            <button type="button"
+                    class="menu-btn"
+                    id="menuBtn"
+                    aria-label="Open navigation menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+            </button>
+
+            <div class="heading">
+
+                <h1>
+                    Create AI Assessment
+                </h1>
+
+                <p>
+                    Generate assessment questions using AI
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="profile">
+
+            <div class="profile-text">
+
+                <strong
+                        th:text="${userName != null ? userName : 'Administrator'}">
+
+                    Administrator
+
+                </strong>
+
+                <span>
+                    Organization Administrator
+                </span>
+
+            </div>
+
+
+            <div class="avatar"
+                 th:text="${userInitial != null ? userInitial : 'A'}">
+
+                A
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- CONTENT -->
+
+    <section class="content">
+
+      <div class="content-inner">
+
+        <a th:href="@{/admin/assessments}"
+           class="back">
+
+            ← Back to Assessments
+
+        </a>
+
+
+        <div class="card">
+
+            <!-- HEADER -->
+
+            <div class="card-header">
+
+                <div class="header-icon" aria-hidden="true">
+                    ✨
+                </div>
+
+                <h2>
+                    AI Assessment Generator
+                </h2>
+
+                <p>
+                    Select competencies and let AI generate questions
+                    for the assessment.
+                </p>
+
+            </div>
+
+
+            <!-- BODY -->
+
+            <div class="card-body">
+
+
+                <!-- ERROR -->
+
+                <div class="error"
+                     role="alert"
+                     th:if="${errorMessage != null}">
+
+                    <strong>
+                        Unable to create assessment:
+                    </strong>
+
+                    <span th:text="${errorMessage}">
+                        Error
+                    </span>
+
+                </div>
+
+
+                <!-- FORM -->
+
+                <form th:action="@{/admin/assessments/generate}"
+                      method="post"
+                      id="assessmentForm">
+
+
+                    <!-- CSRF -->
+
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+
+
+                    <!-- NAME -->
+
+                    <div class="field">
+
+                        <label class="label"
+                               for="name">
+
+                            Assessment Name
+                            <span class="required">*</span>
+
+                        </label>
+
+                        <input class="input"
+                               type="text"
+                               id="name"
+                               name="name"
+                               maxlength="150"
+                               required
+                               placeholder="Example: Java Fundamentals Assessment"
+                               th:value="${name}">
+
+                        <div class="help">
+
+                            Enter a clear name for the assessment.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- DESCRIPTION -->
+
+                    <div class="field">
+
+                        <label class="label"
+                               for="description">
+
+                            Description
+
+                        </label>
+
+                        <textarea class="textarea"
+                                  id="description"
+                                  name="description"
+                                  maxlength="1000"
+                                  placeholder="Example: Assessment to evaluate Java programming fundamentals."
+                                  th:text="${description}"></textarea>
+
+                        <div class="help">
+
+                            Optional description of the assessment.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ROLE + QUESTION COUNT -->
+
+                    <div class="two-column">
+
+
+                        <!-- TARGET ROLE -->
+
+                        <div class="field">
+
+                            <label class="label"
+                                   for="targetRole">
+
+                                Target Role
+
+                            </label>
+
+                            <input class="input"
+                                   type="text"
+                                   id="targetRole"
+                                   name="targetRole"
+                                   maxlength="100"
+                                   placeholder="Example: Java Developer"
+                                   th:value="${targetRole}">
+
+                            <div class="help">
+
+                                Optional. Example: Java Developer,
+                                Backend Developer, Software Engineer.
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- QUESTION COUNT -->
+
+                        <div class="field">
+
+                            <label class="label"
+                                   for="questionCount">
+
+                                Number of Questions
+                                <span class="required">*</span>
+
+                            </label>
+
+                            <input class="input"
+                                   type="number"
+                                   id="questionCount"
+                                   name="questionCount"
+                                   min="1"
+                                   max="50"
+                                   required
+                                   th:value="${questionCount != null ? questionCount : 10}">
+
+                            <div class="help">
+
+                                Choose between 1 and 50 questions.
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- COMPETENCIES -->
+
+                    <div class="field">
+
+                        <label class="label">
+
+                            Select Competencies
+                            <span class="required">*</span>
+
+                        </label>
+
+
+                        <div class="help"
+                             style="margin-bottom:10px;">
+
+                            Select one or more competencies.
+                            AI will generate questions based on
+                            the selected competencies.
+
+                        </div>
+
+
+                        <div class="competency-box"
+                             th:if="${competencies != null and !#lists.isEmpty(competencies)}">
+
+                            <div class="competency-list">
+
+
+                                <label class="competency"
+                                       th:each="competency : ${competencies}">
+
+                                    <input type="checkbox"
+                                           name="competencyIds"
+                                           th:value="${competency.id}"
+                                           th:checked="${selectedCompetencyIds != null and selectedCompetencyIds.contains(competency.id)}">
+
+
+                                    <div class="competency-info">
+
+                                        <strong
+                                                th:text="${competency.name}">
+
+                                            Java
+
+                                        </strong>
+
+                                        <span
+                                                th:text="${competency.description != null ? competency.description : 'Skill competency'}">
+
+                                            Skill competency
+
+                                        </span>
+
+                                    </div>
+
+                                </label>
+
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- NO COMPETENCIES -->
+
+                        <div class="competency-box"
+                             th:if="${competencies == null or #lists.isEmpty(competencies)}">
+
+                            <div class="no-data">
+
+                                No competencies available.
+
+                                <br><br>
+
+                                Create competencies first from:
+
+                                <br>
+
+                                <strong>
+                                    Admin → Competencies
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- INFORMATION -->
+
+                    <div class="info">
+
+                        <div aria-hidden="true">
+                            ℹ
+                        </div>
+
+                        <div>
+
+                            <strong>
+                                What happens after clicking Generate?
+                            </strong>
+
+                            An assessment is created and AI generates
+                            questions using the selected competencies.
+
+                            The assessment is then available to the
+                            Trainer for Student assignment.
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ACTIONS -->
+
+                    <div class="actions">
+
+                        <a th:href="@{/admin/assessments}"
+                           class="btn btn-secondary">
+
+                            Cancel
+
+                        </a>
+
+
+                        <button type="submit"
+                                class="btn btn-primary"
+                                id="generateButton">
+
+                            <span class="spinner" aria-hidden="true"></span>
+
+                            <span class="btn-emoji" aria-hidden="true">
+                                ✨
+                            </span>
+
+                            <span id="buttonText">
+                                Generate AI Assessment
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                </form>
+
+            </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+</main>
+
+</div>
+
+
+<script>
+
+    /* =========================================================
+       EXISTING FORM LOGIC (unchanged behaviour)
+       ========================================================= */
+
+    const form =
+        document.getElementById("assessmentForm");
+
+    const button =
+        document.getElementById("generateButton");
+
+    const buttonText =
+        document.getElementById("buttonText");
+
+
+    form.addEventListener("submit", function (event) {
+
+        const name =
+            document.getElementById("name").value.trim();
+
+        const questionCount =
+            parseInt(
+                document.getElementById("questionCount").value
+            );
+
+
+        const competencies =
+            document.querySelectorAll(
+                'input[name="competencyIds"]:checked'
+            );
+
+
+        if (!name) {
+
+            event.preventDefault();
+
+            alert("Please enter assessment name.");
+
+            return;
+        }
+
+
+        if (!questionCount
+            || questionCount < 1
+            || questionCount > 50) {
+
+            event.preventDefault();
+
+            alert(
+                "Question count must be between 1 and 50."
+            );
+
+            return;
+        }
+
+
+        if (competencies.length === 0) {
+
+            event.preventDefault();
+
+            alert(
+                "Please select at least one competency."
+            );
+
+            return;
+        }
+
+
+        button.disabled = true;
+
+        buttonText.textContent =
+            "Generating AI Questions...";
+
+        document.getElementById("progress").classList.add("active");
+
+    });
+
+
+    /* =========================================================
+       UI: MOBILE SIDEBAR
+       ========================================================= */
+
+    (function () {
+
+        const sidebar = document.getElementById("sidebar");
+        const scrim   = document.getElementById("scrim");
+        const menuBtn = document.getElementById("menuBtn");
+
+        function openSidebar() {
+            sidebar.classList.add("open");
+            scrim.classList.add("show");
+            menuBtn.setAttribute("aria-expanded", "true");
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove("open");
+            scrim.classList.remove("show");
+            menuBtn.setAttribute("aria-expanded", "false");
+        }
+
+        menuBtn.addEventListener("click", function () {
+            sidebar.classList.contains("open") ? closeSidebar() : openSidebar();
+        });
+
+        scrim.addEventListener("click", closeSidebar);
+
+        document.querySelectorAll(".nav-link").forEach(function (link) {
+            link.addEventListener("click", closeSidebar);
+        });
+
+        document.addEventListener("keydown", function (e) {
+            if (e.key === "Escape") closeSidebar();
+        });
+
+        window.addEventListener("resize", function () {
+            if (window.innerWidth > 960) closeSidebar();
+        });
+
+    })();
+
+
+    /* =========================================================
+       UI: KEEP ACTIVE NAV ITEM VISIBLE IN SIDEBAR
+       ========================================================= */
+
+    (function () {
+
+        const nav = document.getElementById("nav");
+        const active = nav.querySelector(".nav-link.active");
+
+        if (active) {
+            const target = active.offsetTop - nav.clientHeight / 2 + active.offsetHeight / 2;
+            nav.scrollTo({ top: Math.max(0, target), behavior: "auto" });
+        }
+
+    })();
+
+</script>
+
+</body>
+
+</html>

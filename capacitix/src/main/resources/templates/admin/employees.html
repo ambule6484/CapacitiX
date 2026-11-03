@@ -1,0 +1,1908 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Capacitix Employee Management">
+<title>Students | Capacitix</title>
+
+<style>
+:root {
+    --navy-900: #0a1020;
+    --navy-800: #0f172a;
+    --navy-700: #131d36;
+
+    --primary: #4f46e5;
+    --primary-dark: #4338ca;
+    --primary-soft: #eef2ff;
+    --primary-line: #c7d2fe;
+    --accent: #0d9488;
+
+    --bg: #f3f5fa;
+    --surface: #ffffff;
+    --text: #172033;
+    --muted: #667085;
+    --faint: #98a2b3;
+    --line: #e6e9f0;
+
+    --ok: #059669;
+    --warn: #ea580c;
+    --bad: #dc2626;
+
+    --radius: 16px;
+    --radius-sm: 11px;
+
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 3px 10px rgba(16,24,40,.04);
+    --shadow: 0 14px 32px rgba(15,23,42,.09);
+
+    --ease: cubic-bezier(.2,.8,.2,1);
+    --t: .22s;
+    --sidebar-w: 268px;
+
+    --font: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+
+    --scrollbar-width: 8px;
+    --scrollbar-track: transparent;
+    --scrollbar-thumb: #8f9ab5;
+    --scrollbar-thumb-hover: #6f7b9c;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    font-family: var(--font);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    background:
+        radial-gradient(circle at 8% 6%, rgba(79,70,229,.07), transparent 30%),
+        radial-gradient(circle at 92% 18%, rgba(13,148,136,.07), transparent 26%),
+        var(--bg);
+}
+
+a { text-decoration: none; color: inherit; }
+button, input, select { font-family: inherit; }
+
+:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; border-radius: 8px; }
+
+.ico {
+    width: 1.15em; height: 1.15em;
+    stroke: currentColor; fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+/* ---------- Global scrollbar (shared by sidebar, main, tables) ---------- */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+::-webkit-scrollbar { width: var(--scrollbar-width); height: var(--scrollbar-width); }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: content-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* ---------- Keyframes ---------- */
+@keyframes pageIn   { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes slideIn  { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@keyframes slideUp  { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes rowIn    { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pulse    { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.85); } }
+@keyframes heroFloat{ 0%,100% { transform: translate(0,0); } 50% { transform: translate(-14px,14px); } }
+@keyframes shimmer  { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+@keyframes popIn    { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes ring     { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,.45); } 100% { box-shadow: 0 0 0 9px rgba(239,68,68,0); } }
+
+/* =====================================================
+   SIDEBAR
+===================================================== */
+.sidebar {
+    position: fixed; inset: 0 auto 0 0;
+    width: var(--sidebar-w);
+    z-index: 1000;
+    display: flex; flex-direction: column;
+    padding: 18px 6px 12px 12px;
+    color: #fff;
+    background: linear-gradient(180deg, var(--navy-900), var(--navy-800) 50%, var(--navy-700));
+    border-right: 1px solid rgba(255,255,255,.05);
+    overflow-y: auto; overflow-x: hidden;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+    animation: slideIn .5s ease;
+    transition: transform .3s var(--ease);
+}
+
+.logo {
+    display: flex; align-items: center; gap: 12px;
+    padding: 4px 10px 16px; margin-bottom: 4px;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.logo-mark {
+    width: 40px; height: 40px; flex-shrink: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #6366f1, #14b8a6);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 19px;
+    box-shadow: 0 8px 22px rgba(99,102,241,.35);
+    transition: transform .4s var(--ease);
+}
+.logo:hover .logo-mark { transform: rotate(-8deg) scale(1.06); }
+
+.logo-text { font-size: 20px; font-weight: 750; letter-spacing: -.3px; }
+.logo-text span { color: #a5b4fc; }
+
+.menu-label {
+    color: #6b7790; font-size: 11px; font-weight: 600;
+    letter-spacing: .4px; margin: 18px 12px 6px;
+}
+
+.menu { list-style: none; }
+.menu li { margin: 2px 0; }
+
+.menu a {
+    position: relative;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    color: #a9b4c6; font-size: 13.5px; font-weight: 500;
+    transition: background var(--t), color var(--t), box-shadow var(--t);
+}
+
+.icon {
+    width: 20px; height: 20px;
+    display: grid; place-items: center;
+    font-size: 18px; flex-shrink: 0;
+    transition: transform var(--t), color var(--t);
+}
+
+.menu a:hover { background: rgba(255,255,255,.07); color: #fff; }
+.menu a:hover .icon { transform: translateX(3px); color: #c7d2fe; }
+
+.menu a.active {
+    background: linear-gradient(90deg, rgba(99,102,241,.32), rgba(20,184,166,.08));
+    color: #fff;
+    box-shadow: inset 3px 0 #818cf8, 0 4px 16px rgba(79,70,229,.18);
+}
+.menu a.active .icon { color: #a5b4fc; }
+.menu a.active::after {
+    content: ""; position: absolute; right: 12px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: #2dd4bf; box-shadow: 0 0 8px #2dd4bf;
+    animation: pulse 2.4s infinite;
+}
+
+.logout {
+    margin-top: auto; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,.07);
+    position: sticky; bottom: 0;
+    background: linear-gradient(180deg, rgba(19,29,54,0), var(--navy-700) 30%);
+}
+.logout form { margin: 0; }
+.logout button {
+    width: 100%; border: 0; background: transparent;
+    color: #a9b4c6;
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 13.5px; font-weight: 500;
+    transition: background var(--t), color var(--t);
+}
+.logout button:hover { background: rgba(239,68,68,.14); color: #fca5a5; }
+.logout button .ico { font-size: 18px; transition: transform var(--t); }
+.logout button:hover .ico { transform: translateX(3px); }
+
+.sidebar-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,16,32,.5);
+    backdrop-filter: blur(3px);
+    z-index: 950; opacity: 0; transition: opacity .3s;
+}
+.sidebar-overlay.show { display: block; opacity: 1; }
+
+/* =====================================================
+   MAIN + HEADER
+===================================================== */
+.main {
+    margin-left: var(--sidebar-w);
+    height: 100vh; height: 100dvh;
+    overflow-y: auto; overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+.header {
+    height: 72px;
+    position: sticky; top: 0; z-index: 900;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 0 32px;
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 1px 0 rgba(16,24,40,.02), 0 6px 18px rgba(16,24,40,.03);
+    transition: box-shadow var(--t);
+}
+.header.scrolled { box-shadow: 0 8px 26px rgba(16,24,40,.09); }
+
+.header-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+
+.mobile-menu-btn {
+    display: none; width: 42px; height: 42px;
+    border: 1px solid var(--line); background: #fff;
+    border-radius: 12px; cursor: pointer; font-size: 20px;
+    place-items: center; color: var(--text);
+    transition: background var(--t), border-color var(--t);
+}
+.mobile-menu-btn:hover { background: var(--primary-soft); border-color: var(--primary-line); }
+
+.header-title { font-size: 20px; font-weight: 700; letter-spacing: -.3px; line-height: 1.2; }
+.header-subtitle { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+
+.header-right { display: flex; align-items: center; gap: 14px; }
+
+.notification {
+    position: relative; width: 42px; height: 42px;
+    border: 1px solid var(--line); border-radius: 12px;
+    display: grid; place-items: center;
+    background: #fff; color: #475467; font-size: 19px; cursor: pointer;
+    transition: transform var(--t), border-color var(--t), background var(--t), color var(--t);
+}
+.notification:hover { transform: translateY(-2px); border-color: var(--primary-line); background: var(--primary-soft); color: var(--primary); }
+.notification:hover .ico { animation: bellShake .6s ease; transform-origin: 50% 0; }
+@keyframes bellShake { 0%,100% { transform: rotate(0); } 20% { transform: rotate(14deg); } 40% { transform: rotate(-12deg); } 60% { transform: rotate(8deg); } 80% { transform: rotate(-5deg); } }
+.notification-dot {
+    position: absolute; top: 8px; right: 9px;
+    width: 9px; height: 9px; border-radius: 50%;
+    background: #ef4444; border: 2px solid #fff;
+    animation: ring 2s infinite;
+}
+
+.profile {
+    display: flex; align-items: center; gap: 11px;
+    padding: 5px 14px 5px 5px;
+    border: 1px solid var(--line); border-radius: 14px;
+    background: #fff; box-shadow: var(--shadow-sm);
+    transition: border-color var(--t), box-shadow var(--t);
+}
+.profile:hover { border-color: var(--primary-line); box-shadow: var(--shadow); }
+
+.avatar {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, #6366f1, #14b8a6);
+    color: #fff; display: grid; place-items: center;
+    font-weight: 700; font-size: 15px;
+    box-shadow: 0 5px 14px rgba(99,102,241,.28);
+}
+.profile-name {
+    font-size: 13px; font-weight: 650; line-height: 1.25;
+    max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.profile-role { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+
+/* =====================================================
+   CONTENT
+===================================================== */
+.content {
+    padding: 28px 32px 56px;
+    max-width: 1800px; margin: auto;
+    animation: pageIn .45s ease both;
+}
+
+.flash-message {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 16px; border-radius: 12px; margin-bottom: 18px;
+    font-size: 13px; font-weight: 600; overflow-wrap: anywhere;
+    animation: slideUp .4s ease both;
+}
+.flash-success { background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857; }
+.flash-error   { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; }
+.flash-icon {
+    width: 28px; height: 28px; display: grid; place-items: center;
+    border-radius: 8px; flex-shrink: 0; font-size: 16px;
+}
+.flash-success .flash-icon { background: #d1fae5; }
+.flash-error .flash-icon   { background: #fee2e2; }
+
+/* ---------- Hero ---------- */
+.page-hero {
+    position: relative; overflow: hidden;
+    padding: 28px 32px; border-radius: 20px; margin-bottom: 22px;
+    color: #fff;
+    background: linear-gradient(135deg, #131c36, #262366 52%, #115e59);
+    box-shadow: 0 16px 40px rgba(23,31,56,.18);
+    animation: slideUp .5s ease both;
+}
+.page-hero::before {
+    content: ""; position: absolute; width: 280px; height: 280px; border-radius: 50%;
+    background: rgba(99,102,241,.25); right: -90px; top: -150px;
+    animation: heroFloat 9s ease-in-out infinite;
+}
+.page-hero::after {
+    content: ""; position: absolute; width: 170px; height: 170px; border-radius: 50%;
+    background: rgba(20,184,166,.15); right: 190px; bottom: -120px;
+    animation: heroFloat 10s ease-in-out infinite reverse;
+}
+.hero-content {
+    position: relative; z-index: 2;
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+}
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 30px;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.12);
+    color: #dcdaff; font-size: 12px; font-weight: 600; margin-bottom: 12px;
+}
+.live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #2dd4bf; box-shadow: 0 0 0 5px rgba(45,212,191,.14);
+    animation: pulse 2s infinite;
+}
+.hero-content h1 {
+    font-size: clamp(24px, 3vw, 32px); line-height: 1.2;
+    letter-spacing: -.6px; margin-bottom: 8px; font-weight: 750;
+}
+.hero-content p { max-width: 640px; color: #bcc4d8; font-size: 13.5px; line-height: 1.7; }
+
+/* ---------- Buttons ---------- */
+.btn, .primary-btn {
+    position: relative; overflow: hidden;
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    min-height: 40px; padding: 9px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 650; white-space: nowrap; cursor: pointer;
+    border: 1px solid #d0d5dd; color: #344054; background: #fff;
+    transition: transform var(--t), box-shadow var(--t), background var(--t), border-color var(--t);
+}
+.btn:hover, .primary-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15,23,42,.1); }
+.btn:active, .primary-btn:active { transform: translateY(0); box-shadow: none; }
+
+.primary-btn {
+    background: linear-gradient(135deg, #6366f1, var(--primary-dark));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 7px 18px rgba(79,70,229,.28);
+}
+.primary-btn:hover { box-shadow: 0 10px 24px rgba(79,70,229,.34); }
+.primary-btn .ico { transition: transform .3s var(--ease); }
+.primary-btn:hover .ico { transform: rotate(90deg); }
+.primary-btn.on-dark { background: #fff; color: var(--primary); border-color: rgba(255,255,255,.35); box-shadow: 0 10px 25px rgba(0,0,0,.14); }
+.primary-btn.on-dark:hover { box-shadow: 0 14px 30px rgba(0,0,0,.2); }
+
+.btn-danger { background: linear-gradient(135deg,#ef4444,#dc2626); color:#fff; border-color: transparent; box-shadow: 0 7px 18px rgba(220,38,38,.25); }
+.btn-warn   { background: linear-gradient(135deg,#f97316,#ea580c); color:#fff; border-color: transparent; box-shadow: 0 7px 18px rgba(234,88,12,.25); }
+
+/* ---------- Stats ---------- */
+.stats {
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 15px; margin-bottom: 22px;
+}
+.stat {
+    position: relative; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 19px;
+    box-shadow: var(--shadow-sm);
+    animation: slideUp .55s ease both;
+    transition: transform var(--t), box-shadow var(--t), border-color var(--t);
+}
+.stat::before {
+    content: ""; position: absolute; width: 110px; height: 110px; border-radius: 50%;
+    right: -60px; top: -60px; background: rgba(79,70,229,.06);
+    transition: transform .35s;
+}
+.stat:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--primary-line); }
+.stat:hover::before { transform: scale(1.5); }
+.stat-icon {
+    width: 40px; height: 40px; display: grid; place-items: center;
+    border-radius: 11px; background: var(--primary-soft); color: var(--primary);
+    font-size: 19px; margin-bottom: 14px; transition: transform .3s;
+}
+.stat:hover .stat-icon { transform: rotate(-6deg) scale(1.08); }
+.stat-number {
+    font-size: 30px; font-weight: 750; letter-spacing: -.6px;
+    line-height: 1.1; margin-bottom: 4px; font-variant-numeric: tabular-nums;
+}
+.stat-title { color: #475467; font-size: 13px; font-weight: 550; }
+.stat-note  { color: var(--faint); font-size: 11.5px; margin-top: 8px; }
+
+.stat:nth-child(2) .stat-icon { background: #ecfdf5; color: var(--ok); }
+.stat:nth-child(3) .stat-icon { background: #fff7ed; color: var(--warn); }
+.stat:nth-child(4) .stat-icon { background: #fef2f2; color: var(--bad); }
+.stat:nth-child(2)::before { background: rgba(5,150,105,.07); }
+.stat:nth-child(3)::before { background: rgba(234,88,12,.07); }
+.stat:nth-child(4)::before { background: rgba(220,38,38,.07); }
+
+.indigo { color: var(--primary); }
+.green  { color: var(--ok); }
+.orange { color: var(--warn); }
+.red    { color: var(--bad); }
+
+/* ---------- Card ---------- */
+.card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 18px; padding: 22px;
+    box-shadow: var(--shadow-sm);
+    animation: slideUp .55s .12s ease both;
+    transition: box-shadow var(--t);
+}
+.card:hover { box-shadow: var(--shadow); }
+
+.card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 15px; margin-bottom: 18px;
+}
+.card-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.card-title-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    color: var(--primary); font-size: 20px; flex-shrink: 0;
+}
+.card-header h2 { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.card-header p  { color: var(--muted); font-size: 12.5px; }
+
+.count-pill {
+    display: inline-flex; align-items: center; margin-left: 8px;
+    padding: 2px 9px; border-radius: 20px;
+    background: var(--primary-soft); color: var(--primary-dark);
+    font-size: 11.5px; font-weight: 700; vertical-align: middle;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Tools ---------- */
+.tools {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 16px; padding: 12px;
+    background: #f8fafc; border: 1px solid #eef0f4; border-radius: 13px;
+}
+.search-box { flex: 1; min-width: 220px; max-width: 460px; position: relative; }
+.search-box input {
+    width: 100%; height: 42px; padding: 0 38px 0 40px;
+    border: 1px solid #d0d5dd; border-radius: 10px; outline: none;
+    background: #fff; font-size: 13px; color: var(--text);
+    transition: border-color var(--t), box-shadow var(--t);
+}
+.search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
+.search-box input::placeholder { color: #98a2b3; }
+.search-icon {
+    position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+    color: #98a2b3; font-size: 17px; display: grid; pointer-events: none;
+    transition: color var(--t);
+}
+.search-box:focus-within .search-icon { color: var(--primary); }
+.search-clear {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%) scale(.8);
+    width: 26px; height: 26px; border: 0; border-radius: 8px;
+    background: #eef0f4; color: #667085; font-size: 15px; line-height: 1;
+    cursor: pointer; opacity: 0; pointer-events: none;
+    transition: opacity var(--t), transform var(--t), background var(--t);
+}
+.search-clear.show { opacity: 1; pointer-events: auto; transform: translateY(-50%) scale(1); }
+.search-clear:hover { background: #e0e7ff; color: var(--primary); }
+
+.filter {
+    height: 42px; min-width: 160px; padding: 0 12px;
+    border: 1px solid #d0d5dd; border-radius: 10px;
+    background: #fff; color: #344054; font-size: 13px;
+    outline: none; cursor: pointer;
+    transition: border-color var(--t), box-shadow var(--t);
+}
+.filter:hover { border-color: #b7bfcc; }
+.filter:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,70,229,.12); }
+
+.reset-btn { margin-left: auto; min-height: 42px; }
+
+/* =====================================================
+   TABLE
+===================================================== */
+.table-wrapper {
+    overflow-x: auto;
+    border: 1px solid #edf0f4; border-radius: 14px; background: #fff;
+}
+
+table { width: 100%; min-width: 1560px; border-collapse: separate; border-spacing: 0; }
+
+thead th {
+    text-align: left; padding: 13px 14px;
+    color: #667085; font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .5px;
+    background: linear-gradient(90deg, #f8faff, #fafafa);
+    border-bottom: 1px solid #eaecf0; white-space: nowrap;
+}
+
+td {
+    padding: 12px 14px; font-size: 13px;
+    border-bottom: 1px solid #eef0f5;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+tbody tr.emp-row { --row-bg: #ffffff; animation: rowIn .5s var(--ease) both; }
+tbody tr.emp-row.row-alt { --row-bg: #f3f5fc; }
+tbody tr.emp-row:hover { --row-bg: #e8ecfd; }
+tbody tr.emp-row td { background: var(--row-bg); transition: background .2s ease; }
+tbody tr.emp-row td:first-child { box-shadow: inset 3px 0 0 transparent; transition: background .2s ease, box-shadow .2s ease; }
+tbody tr.emp-row:hover td:first-child { box-shadow: inset 3px 0 0 var(--primary); }
+tbody tr.emp-row:hover .employee-avatar { transform: scale(1.08) rotate(-3deg); }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr.is-hidden { display: none; }
+
+/* Sticky first + last column so key info is always reachable on small screens */
+th:first-child, td:first-child { position: sticky; left: 0; z-index: 2; background: #fff; }
+thead th:first-child { background: #f8faff; z-index: 3; }
+th:last-child, td:last-child { position: sticky; right: 0; z-index: 2; background: #fff; }
+thead th:last-child { background: #fafafa; z-index: 3; }
+.table-wrapper.scrolled-x th:first-child,
+.table-wrapper.scrolled-x tbody tr.emp-row td:first-child { box-shadow: 8px 0 14px -10px rgba(16,24,40,.18); }
+
+/* ---------- Employee cell ---------- */
+.employee { display: flex; align-items: center; gap: 12px; min-width: 250px; max-width: 320px; }
+.employee-avatar {
+    width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px;
+    background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+    color: var(--primary);
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 750;
+    box-shadow: inset 0 0 0 1px rgba(79,70,229,.08);
+    transition: transform .3s var(--ease);
+}
+tbody tr:nth-child(4n+2) .employee-avatar { background: linear-gradient(135deg,#ecfeff,#ccfbf1); color:#0f766e; }
+tbody tr:nth-child(4n+3) .employee-avatar { background: linear-gradient(135deg,#fff7ed,#ffedd5); color:#c2410c; }
+tbody tr:nth-child(4n+4) .employee-avatar { background: linear-gradient(135deg,#fdf2f8,#fce7f3); color:#be185d; }
+
+.employee-info { min-width: 0; }
+.employee-name {
+    font-weight: 650; font-size: 13.5px; color: #172033;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.employee-email {
+    display: flex; align-items: center; gap: 5px;
+    color: var(--faint); font-size: 11.5px; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.employee-email .ico { width: 12px; height: 12px; }
+
+.id-chip {
+    display: inline-block; padding: 4px 9px; border-radius: 8px;
+    background: #f4f6fa; border: 1px solid #e8ebf1;
+    color: #344054; font-size: 12px; font-weight: 650;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: nowrap;
+}
+
+.dept-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 8px;
+    background: var(--primary-soft); color: var(--primary-dark);
+    font-size: 12px; font-weight: 650; white-space: nowrap;
+}
+
+.muted-dash { color: var(--faint); font-weight: 600; }
+
+/* ---------- Trainer ---------- */
+.trainer-cell { min-width: 190px; }
+.trainer-info { display: flex; align-items: center; gap: 9px; }
+.trainer-avatar {
+    width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #ecfeff, #ccfbf1);
+    color: #0f766e; font-size: 12px; font-weight: 700;
+}
+.trainer-name { font-size: 12.5px; font-weight: 650; color: #344054; white-space: nowrap; }
+.trainer-id { margin-top: 2px; color: var(--faint); font-size: 11px; white-space: nowrap; }
+
+.trainer-not-assigned {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px; border-radius: 30px;
+    background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;
+    font-size: 11.5px; font-weight: 650; white-space: nowrap;
+}
+.trainer-not-assigned::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #f97316; }
+
+/* ---------- Status ---------- */
+.status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 11px; border-radius: 30px;
+    font-size: 11.5px; font-weight: 650; white-space: nowrap;
+}
+.status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
+.status-active { background: #ecfdf5; color: #047857; }
+.status-active::before { background: #10b981; animation: pulse 2s infinite; }
+.status-disabled { background: #fef2f2; color: #b91c1c; }
+.status-disabled::before { background: #ef4444; }
+
+/* ---------- Competency ---------- */
+.competency-box { display: flex; align-items: center; gap: 10px; flex-wrap: nowrap; }
+.competency-main {
+    display: flex; align-items: center; gap: 7px;
+    color: #344054; font-size: 12.5px; font-weight: 700; line-height: 1.35;
+}
+.competency-main span { white-space: nowrap; }
+.competency-main .ico { width: 15px; height: 15px; color: var(--primary); }
+
+.competency-meta { display: flex; align-items: center; flex-wrap: nowrap; gap: 5px; }
+
+.level-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 8px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+.level-current  { background: #eef2ff; color: #4338ca; }
+.level-required { background: #f0fdf4; color: #15803d; }
+
+.score-badge {
+    display: inline-flex; align-items: center;
+    padding: 4px 8px; border-radius: 20px;
+    background: #f8fafc; border: 1px solid #e5e7eb; color: #475467;
+    font-size: 10.5px; font-weight: 700; white-space: nowrap;
+}
+
+.progress {
+    width: 64px; flex-shrink: 0;
+    height: 6px; border-radius: 99px; background: #e3e7ef;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 100%; width: 0; border-radius: 99px;
+    background: linear-gradient(90deg, #6366f1, #14b8a6);
+    transition: width 1s var(--ease);
+    position: relative;
+}
+.progress-bar::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2.4s linear infinite;
+}
+.progress-bar.low  { background: linear-gradient(90deg, #f97316, #ef4444); }
+.progress-bar.mid  { background: linear-gradient(90deg, #f59e0b, #f97316); }
+.progress-bar.high { background: linear-gradient(90deg, #10b981, #14b8a6); }
+
+.more-note { color: var(--muted); font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: rgba(79,70,229,.08); white-space: nowrap; }
+
+.not-assessed {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 30px;
+    background: #f4f6fa; border: 1px solid #e5e7eb; color: #667085;
+    font-size: 11.5px; font-weight: 550; white-space: nowrap;
+}
+.not-assessed .ico { width: 14px; height: 14px; }
+
+/* ---------- Skill gap ---------- */
+.skill-gap-box { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; }
+.skill-gap-box.expanded { flex-wrap: wrap; white-space: normal; max-width: 460px; }
+.gap-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 3px 4px 3px 10px; border: 1px solid #e6e9f0; border-radius: 20px;
+    background: #fff;
+}
+.skill-gap-main {
+    display: flex; align-items: center; gap: 6px; min-width: 0;
+    color: #344054; font-size: 12px; font-weight: 700; line-height: 1.4;
+}
+.skill-gap-main span { white-space: nowrap; }
+.skill-gap-main .ico { width: 14px; height: 14px; flex-shrink: 0; color: #ea580c; }
+
+.gap-priority {
+    display: inline-flex; align-items: center; flex-shrink: 0;
+    padding: 4px 8px; border-radius: 20px;
+    font-size: 10.5px; font-weight: 750; white-space: nowrap;
+}
+.gap-high   { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.gap-medium { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+.gap-low    { background: #fffbeb; color: #a16207; border: 1px solid #fde68a; }
+
+.gap-extra { display: none; }
+.skill-gap-box.expanded .gap-extra { display: flex; animation: rowIn .35s var(--ease) both; }
+.gap-toggle {
+    border: 0; background: transparent; cursor: pointer; white-space: nowrap;
+    color: var(--primary); font-size: 11.5px; font-weight: 700; padding: 2px 0;
+}
+.gap-toggle:hover { text-decoration: underline; }
+
+.no-gap {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 30px;
+    background: #ecfdf5; border: 1px solid #a7f3d0; color: #047857;
+    font-size: 11.5px; font-weight: 650; white-space: nowrap;
+}
+
+/* ---------- Actions ---------- */
+.actions { display: flex; gap: 7px; align-items: center; flex-wrap: nowrap; }
+.action-form { display: inline-flex; margin: 0; padding: 0; }
+
+.action-btn {
+    position: relative;
+    width: 34px; height: 34px; min-width: 34px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1px solid #e5e7eb; border-radius: 9px;
+    background: #fff; color: #374151; font-size: 16px; cursor: pointer;
+    box-shadow: 0 2px 5px rgba(16,24,40,.03);
+    transition: transform var(--t), background var(--t), border-color var(--t), color var(--t), box-shadow var(--t);
+}
+.action-btn:hover { background: #f3f4f6; border-color: #d1d5db; transform: translateY(-2px); box-shadow: 0 5px 12px rgba(16,24,40,.08); }
+.action-btn:active { transform: translateY(0); }
+.action-btn.view:hover { color: #4f46e5; background: #eef2ff; border-color: #c7d2fe; }
+.action-btn.edit:hover { color: #0369a1; background: #f0f9ff; border-color: #bae6fd; }
+.action-btn.delete { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.action-btn.delete:hover { background: #ffedd5; border-color: #fdba74; color: #9a3412; }
+.action-btn.permanent-delete { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+.action-btn.permanent-delete:hover { background: #ffe4e6; border-color: #fda4af; color: #9f1239; }
+.action-btn.enable { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.action-btn.enable:hover { background: #d1fae5; border-color: #6ee7b7; color: #065f46; }
+
+/* CSS tooltips for action buttons */
+.action-btn[data-tip]::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translate(-50%, 4px);
+    padding: 5px 9px; border-radius: 8px;
+    background: #0f172a; color: #fff;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+    opacity: 0; pointer-events: none;
+    transition: opacity .18s, transform .18s;
+}
+.action-btn[data-tip]:hover::after { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Empty ---------- */
+.empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+.empty-icon {
+    width: 62px; height: 62px; margin: 0 auto 14px;
+    display: grid; place-items: center; border-radius: 18px;
+    background: linear-gradient(135deg, #eef2ff, #ecfeff);
+    color: #635bff; font-size: 28px;
+    animation: heroFloat 5s ease-in-out infinite;
+}
+.empty strong { display: block; color: #344054; font-size: 15px; margin-bottom: 5px; }
+.empty p { max-width: 450px; margin: 0 auto; line-height: 1.6; font-size: 13px; }
+.empty .primary-btn { margin-top: 18px; }
+
+#noResults { display: none; }
+#noResults.show { display: table-row; }
+#noResults td { position: static; }
+
+/* ---------- Pagination ---------- */
+.table-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-top: 16px;
+}
+.table-info { color: var(--muted); font-size: 12.5px; }
+.table-info b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+.pager { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pager button {
+    min-width: 36px; height: 36px; padding: 0 10px;
+    border: 1px solid #e0e4eb; border-radius: 10px;
+    background: #fff; color: #344054;
+    font-size: 12.5px; font-weight: 650; cursor: pointer;
+    transition: transform var(--t), background var(--t), border-color var(--t), color var(--t);
+}
+.pager button:hover:not(:disabled):not(.current) { background: var(--primary-soft); border-color: var(--primary-line); color: var(--primary); transform: translateY(-1px); }
+.pager button.current {
+    background: linear-gradient(135deg, #6366f1, var(--primary-dark));
+    color: #fff; border-color: transparent;
+    box-shadow: 0 6px 14px rgba(79,70,229,.28);
+}
+.pager button:disabled { opacity: .4; cursor: not-allowed; }
+.pager .dots { color: var(--faint); padding: 0 4px; }
+
+/* ---------- Confirm modal ---------- */
+.modal-backdrop {
+    position: fixed; inset: 0; z-index: 2000;
+    display: none; align-items: center; justify-content: center; padding: 20px;
+    background: rgba(10,16,32,.55); backdrop-filter: blur(4px);
+}
+.modal-backdrop.show { display: flex; animation: pageIn .2s ease both; }
+.modal {
+    width: 100%; max-width: 420px; padding: 26px;
+    background: #fff; border-radius: 20px;
+    box-shadow: 0 30px 70px rgba(10,16,32,.35);
+    text-align: center;
+    animation: popIn .3s var(--ease) both;
+}
+.modal-icon {
+    width: 56px; height: 56px; margin: 0 auto 14px;
+    display: grid; place-items: center; border-radius: 16px;
+    font-size: 26px;
+}
+.modal-icon.warn   { background: #fff7ed; color: #ea580c; }
+.modal-icon.danger { background: #fef2f2; color: #dc2626; }
+.modal h3 { font-size: 17px; margin-bottom: 6px; }
+.modal p  { color: var(--muted); font-size: 13px; line-height: 1.6; margin-bottom: 22px; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions .btn { flex: 1; }
+
+/* =====================================================
+   RESPONSIVE
+===================================================== */
+@media (max-width: 1100px) {
+    .content { padding: 24px; }
+    .header { padding: 0 24px; }
+    .stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 850px) {
+    .sidebar { transform: translateX(-100%); animation: none; }
+    .sidebar.open { transform: none; box-shadow: 12px 0 40px rgba(0,0,0,.35); }
+    .main { margin-left: 0; }
+    .mobile-menu-btn { display: grid; }
+    .content { padding: 22px 18px 40px; }
+    .header { padding: 0 18px; }
+    .hero-content { align-items: flex-start; flex-direction: column; }
+    .hero-content .primary-btn { width: 100%; }
+    .profile { padding: 4px; }
+    .profile > div:last-child { display: none; }
+}
+
+@media (max-width: 600px) {
+    .header { height: 66px; }
+    .header-title { font-size: 17px; }
+    .header-subtitle, .notification { display: none; }
+    .page-hero { padding: 22px; border-radius: 18px; }
+    .stats { grid-template-columns: 1fr; }
+    .card { padding: 17px; border-radius: 17px; }
+    .card-header { align-items: flex-start; flex-direction: column; }
+    .card-header .primary-btn { width: 100%; }
+    .tools { flex-direction: column; align-items: stretch; }
+    .search-box { max-width: none; }
+    .filter, .reset-btn { width: 100%; margin-left: 0; }
+    .table-footer { justify-content: center; }
+}
+
+@media (max-width: 380px) {
+    .content { padding: 17px 12px 30px; }
+    .header { padding: 0 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+</style>
+</head>
+
+
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+<defs>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V20h5v-6h4v6h5V9.5"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5"/><path d="M16 4.7a3.5 3.5 0 0 1 0 6.6"/><path d="M18 14.8c1.9.7 3.2 2.5 3.6 5.2"/></symbol>
+<symbol id="i-cap" viewBox="0 0 24 24"><path d="m2 9 10-5 10 5-10 5L2 9Z"/><path d="M6 11.5V16c0 1.4 2.7 3 6 3s6-1.6 6-3v-4.5"/><path d="M22 9v6"/></symbol>
+<symbol id="i-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6.5L20.5 7"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 12.5 9 5 9-5"/><path d="m3 16.5 9 5 9-5"/></symbol>
+<symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></symbol>
+<symbol id="i-gap" viewBox="0 0 24 24"><path d="M10.3 4 2.8 17.2A2 2 0 0 0 4.5 20h15a2 2 0 0 0 1.7-2.8L13.7 4a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4.5"/><path d="M12 17h.01"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12.3 2.8 2.8L16.3 9.5"/></symbol>
+<symbol id="i-tick" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-report" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+<symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8.5 3 8.5H3S6 15 6 8Z"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></symbol>
+<symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/></symbol>
+<symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></symbol>
+<symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5h.01"/></symbol>
+<symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></symbol>
+<symbol id="i-chev-l" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+<symbol id="i-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+</defs>
+</svg>
+
+<div class="app">
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Admin navigation">
+
+    <div class="logo">
+        <div class="logo-mark">C</div>
+        <div class="logo-text">Capacit<span>i</span>x</div>
+    </div>
+
+    <div class="menu-label">Overview</div>
+    <ul class="menu">
+        <li>
+            <a th:href="@{/admin/dashboard}">
+                <span class="icon"><svg class="ico"><use href="#i-home"/></svg></span>
+                <span>Dashboard</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="menu-label">Workforce Management</div>
+    <ul class="menu">
+        <li>
+            <a th:href="@{/admin/employees}" class="active" aria-current="page">
+                <span class="icon"><svg class="ico"><use href="#i-users"/></svg></span>
+                <span>Students</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/trainers}">
+                <span class="icon"><svg class="ico"><use href="#i-cap"/></svg></span>
+                <span>Trainers</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="menu-label">Competency Intelligence</div>
+    <ul class="menu">
+        <li>
+            <a th:href="@{/admin/competencies}">
+                <span class="icon"><svg class="ico"><use href="#i-layers"/></svg></span>
+                <span>Competencies</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/skill-heatmap}">
+                <span class="icon"><svg class="ico"><use href="#i-grid"/></svg></span>
+                <span>Skill Heatmap</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/skill-gaps}">
+                <span class="icon"><svg class="ico"><use href="#i-gap"/></svg></span>
+                <span>Skill Gaps</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="menu-label">Learning &amp; Assessment</div>
+    <ul class="menu">
+        <li>
+            <a th:href="@{/admin/assessments}">
+                <span class="icon"><svg class="ico"><use href="#i-check"/></svg></span>
+                <span>Assessments</span>
+            </a>
+        </li>
+        <li>
+            <a th:href="@{/admin/reports}">
+                <span class="icon"><svg class="ico"><use href="#i-report"/></svg></span>
+                <span>Reports</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="menu-label">System</div>
+    <ul class="menu">
+        <li>
+            <a th:href="@{/admin/settings}">
+                <span class="icon"><svg class="ico"><use href="#i-settings"/></svg></span>
+                <span>Settings</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="logout">
+        <form th:action="@{/logout}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit">
+                <span class="icon"><svg class="ico"><use href="#i-logout"/></svg></span>
+                <span>Logout</span>
+            </button>
+        </form>
+    </div>
+
+</aside>
+
+<main class="main" id="mainScroll">
+
+<header class="header" id="pageHeader">
+
+    <div class="header-left">
+        <button class="mobile-menu-btn" type="button" aria-label="Open menu" onclick="openSidebar()">
+            <svg class="ico"><use href="#i-menu"/></svg>
+        </button>
+        <div>
+            <div class="header-title">Students Management</div>
+            <div class="header-subtitle">Manage organization Students and competency progress</div>
+        </div>
+    </div>
+
+    <div class="header-right">
+        <div class="notification" title="Notifications" aria-label="Notifications">
+            <svg class="ico"><use href="#i-bell"/></svg>
+            <span class="notification-dot"></span>
+        </div>
+
+        <div class="profile">
+            <div class="avatar" th:text="${userInitial != null ? userInitial : 'A'}">A</div>
+            <div>
+                <div class="profile-name" th:text="${userName != null ? userName : 'Administrator'}">Administrator</div>
+                <div class="profile-role">Organization Administrator</div>
+            </div>
+        </div>
+    </div>
+
+</header>
+
+<section class="content">
+
+    <div th:if="${successMessage}" class="flash-message flash-success" role="status">
+        <span class="flash-icon"><svg class="ico"><use href="#i-tick"/></svg></span>
+        <span th:text="${successMessage}">Students created successfully.</span>
+    </div>
+
+    <div th:if="${errorMessage}" class="flash-message flash-error" role="alert">
+        <span class="flash-icon"><svg class="ico"><use href="#i-warn"/></svg></span>
+        <span th:text="${errorMessage}">Unable to create Students.</span>
+    </div>
+
+    <div class="page-hero">
+        <div class="hero-content">
+            <div>
+                <div class="hero-badge">
+                    <span class="live-dot"></span>
+                    Workforce Management
+                </div>
+                <h1>Students</h1>
+                <p>
+                    Manage Students, monitor competency progress
+                    and see their assigned trainers from one place.
+                </p>
+            </div>
+
+            <a th:href="@{/admin/employees/add}" class="primary-btn on-dark">
+                <svg class="ico"><use href="#i-plus"/></svg>
+                Add Students
+            </a>
+        </div>
+    </div>
+
+    <div class="stats">
+
+        <div class="stat">
+            <div class="stat-icon"><svg class="ico"><use href="#i-users"/></svg></div>
+            <div class="stat-number indigo" data-count
+                 th:text="${totalEmployees != null ? totalEmployees : 0}">0</div>
+            <div class="stat-title">Total Students</div>
+            <div class="stat-note">Registered workforce</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-icon"><svg class="ico"><use href="#i-check"/></svg></div>
+            <div class="stat-number green" data-count
+                 th:text="${activeEmployees != null ? activeEmployees : 0}">0</div>
+            <div class="stat-title">Active Students</div>
+            <div class="stat-note">Currently active accounts</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-icon"><svg class="ico"><use href="#i-cap"/></svg></div>
+            <div class="stat-number orange" data-count
+                 th:text="${assignedEmployees != null ? assignedEmployees : 0}">0</div>
+            <div class="stat-title">Trainer Assigned</div>
+            <div class="stat-note">Students linked to trainers</div>
+        </div>
+
+        <div class="stat">
+            <div class="stat-icon"><svg class="ico"><use href="#i-ban"/></svg></div>
+            <div class="stat-number red" data-count
+                 th:text="${disabledEmployees != null ? disabledEmployees : 0}">0</div>
+            <div class="stat-title">Disabled Accounts</div>
+            <div class="stat-note">Currently disabled</div>
+        </div>
+
+    </div>
+
+    <div class="card">
+
+        <div class="card-header">
+            <div class="card-title">
+                <div class="card-title-icon"><svg class="ico"><use href="#i-users"/></svg></div>
+                <div>
+                    <h2>
+                        Organization Students
+                        <span class="count-pill" id="countPill"
+                              th:text="${employees != null ? #lists.size(employees) : 0}">0</span>
+                    </h2>
+                    <p>Search, filter and manage Students accounts</p>
+                </div>
+            </div>
+
+            <a th:href="@{/admin/employees/add}" class="primary-btn">
+                <svg class="ico"><use href="#i-plus"/></svg>
+                Add Students
+            </a>
+        </div>
+
+        <div class="tools">
+
+            <div class="search-box">
+                <span class="search-icon"><svg class="ico"><use href="#i-search"/></svg></span>
+                <input type="text" id="employeeSearch" autocomplete="off"
+                       aria-label="Search employees"
+                       placeholder="Search by name, Student ID, email or trainer...">
+                <button type="button" class="search-clear" id="searchClear" aria-label="Clear search">&times;</button>
+            </div>
+
+            <select class="filter" id="statusFilter" aria-label="Filter by status">
+                <option value="ALL">All Status</option>
+                <option value="ACTIVE">Active</option>
+                <option value="DISABLED">Disabled</option>
+            </select>
+
+            <select class="filter" id="trainerFilter" aria-label="Filter by trainer">
+                <option value="ALL">All Trainers</option>
+                <option value="ASSIGNED">Trainer Assigned</option>
+                <option value="UNASSIGNED">Not Assigned</option>
+            </select>
+
+            <button type="button" class="btn reset-btn" id="resetFilters">
+                <svg class="ico"><use href="#i-reset"/></svg>
+                Reset
+            </button>
+
+        </div>
+
+        <div class="table-wrapper" id="tableWrapper">
+
+            <table id="employeeTable">
+
+                <thead>
+                <tr>
+                    <th>Students</th>
+                    <th>Students ID</th>
+                    <th>Department</th>
+                    <th>Assigned Trainer</th>
+                    <th>Status</th>
+                    <th>Competency</th>
+                    <th>Skill Gap</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                <tr class="emp-row"
+                    th:each="employee : ${employees}"
+                    th:with="analysis=${employeeSkillAnalysis != null ? employeeSkillAnalysis[employee.id] : null}"
+                    th:attr="data-status=${employee.enabled ? 'ACTIVE' : 'DISABLED'},
+                             data-trainer=${employee.trainer != null ? 'ASSIGNED' : 'UNASSIGNED'},
+                             data-search=${(employee.fullName ?: '') + ' ' +
+                                         (employee.email ?: '') + ' ' +
+                                         (employee.employeeId ?: '') + ' ' +
+                                         (employee.department ?: '') + ' ' +
+                                         (employee.trainer != null ? ((employee.trainer.fullName ?: '') + ' ' + (employee.trainer.trainerId ?: '')) : '')}">
+
+                    <td>
+                        <div class="employee">
+                            <div class="employee-avatar"
+                                 th:text="${employee.fullName != null and !#strings.isEmpty(#strings.trim(employee.fullName))
+                                           ? #strings.toUpperCase(#strings.substring(#strings.trim(employee.fullName), 0, 1))
+                                           : 'E'}">E</div>
+
+                            <div class="employee-info">
+                                <div class="employee-name"
+                                     th:title="${employee.fullName}"
+                                     th:text="${employee.fullName != null and !#strings.isEmpty(#strings.trim(employee.fullName))
+                                                ? employee.fullName : 'Unnamed employee'}">
+                                    Students Name
+                                </div>
+                                <div class="employee-email" th:title="${employee.email}">
+                                    <svg class="ico"><use href="#i-mail"/></svg>
+                                    <span th:text="${employee.email != null and !#strings.isEmpty(employee.email)
+                                                     ? employee.email : 'No email'}">employee@example.com</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td>
+                        <span class="id-chip"
+                              th:if="${employee.employeeId != null and !#strings.isEmpty(employee.employeeId)}"
+                              th:text="${employee.employeeId}">EMP-001</span>
+                        <span class="muted-dash"
+                              th:unless="${employee.employeeId != null and !#strings.isEmpty(employee.employeeId)}">—</span>
+                    </td>
+
+                    <td>
+                        <span class="dept-chip"
+                              th:if="${employee.department != null and !#strings.isEmpty(#strings.trim(employee.department))}"
+                              th:text="${employee.department}">Engineering</span>
+                        <span class="muted-dash"
+                              th:unless="${employee.department != null and !#strings.isEmpty(#strings.trim(employee.department))}">—</span>
+                    </td>
+
+                    <td class="trainer-cell">
+                        <div th:if="${employee.trainer != null}" class="trainer-info">
+                            <div class="trainer-avatar"
+                                 th:text="${employee.trainer.fullName != null and !#strings.isEmpty(#strings.trim(employee.trainer.fullName))
+                                           ? #strings.toUpperCase(#strings.substring(#strings.trim(employee.trainer.fullName), 0, 1))
+                                           : 'T'}">T</div>
+                            <div>
+                                <div class="trainer-name"
+                                     th:text="${employee.trainer.fullName != null ? employee.trainer.fullName : 'Trainer'}">
+                                    Trainer Name
+                                </div>
+                                <div class="trainer-id"
+                                     th:text="${employee.trainer.trainerId != null ? employee.trainer.trainerId : '—'}">
+                                    TRN-001
+                                </div>
+                            </div>
+                        </div>
+
+                        <span th:unless="${employee.trainer != null}" class="trainer-not-assigned">Not Assigned</span>
+                    </td>
+
+                    <td>
+                        <span class="status status-active" th:if="${employee.enabled}">Active</span>
+                        <span class="status status-disabled" th:unless="${employee.enabled}">Disabled</span>
+                    </td>
+
+                    <td>
+                        <div class="competency-box"
+                             th:if="${analysis != null and analysis.skills != null and !#lists.isEmpty(analysis.skills)}">
+
+                            <div class="competency-main">
+                                <svg class="ico"><use href="#i-layers"/></svg>
+                                <span th:text="${analysis.skills[0].competencyName}">Java</span>
+                            </div>
+
+                            <div class="competency-meta">
+                                <span class="level-badge level-current"
+                                      th:if="${analysis.skills[0].currentLevel != null}"
+                                      th:text="${analysis.skills[0].currentLevel}">BEGINNER</span>
+
+                                <span class="level-badge level-required"
+                                      th:if="${analysis.skills[0].requiredLevel != null}"
+                                      th:text="${'Required: ' + analysis.skills[0].requiredLevel}">Required: ADVANCED</span>
+
+                                <span class="score-badge"
+                                      th:if="${analysis.skills[0].percentage != null}"
+                                      th:text="${#numbers.formatDecimal(analysis.skills[0].percentage, 1, 0) + '%'}">45%</span>
+                            </div>
+
+                            <div class="progress" th:if="${analysis.skills[0].percentage != null}">
+                                <div class="progress-bar"
+                                     th:attr="data-pct=${#numbers.formatDecimal(analysis.skills[0].percentage, 1, 0, 'POINT')}"></div>
+                            </div>
+
+                            <div th:if="${#lists.size(analysis.skills) > 1}"
+                                 class="more-note"
+                                 th:text="${'+' + (#lists.size(analysis.skills) - 1) + ' more competencies'}">
+                                +2 more competencies
+                            </div>
+                        </div>
+
+                        <span class="not-assessed"
+                              th:if="${analysis != null and (analysis.skills == null or #lists.isEmpty(analysis.skills))}">
+                            <svg class="ico"><use href="#i-warn"/></svg>
+                            No competency data
+                        </span>
+
+                        <span class="not-assessed" th:if="${analysis == null}">
+                            <svg class="ico"><use href="#i-layers"/></svg>
+                            Not assessed
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="skill-gap-box"
+                             th:if="${analysis != null and analysis.skillGaps != null and !#lists.isEmpty(analysis.skillGaps)}">
+
+                            <div class="gap-item"
+                                 th:each="gap, gapStat : ${analysis.skillGaps}"
+                                 th:classappend="${gapStat.index >= 2 ? 'gap-extra' : ''}">
+
+                                <div class="skill-gap-main">
+                                    <svg class="ico"><use href="#i-gap"/></svg>
+                                    <span th:text="${gap.competencyName}">Django</span>
+                                </div>
+
+                                <span class="gap-priority"
+                                      th:with="level=${gap.gap != null ? #strings.toUpperCase(gap.gap.toString()) : 'LOW'}"
+                                      th:classappend="${level == 'HIGH' ? 'gap-high' : (level == 'MEDIUM' ? 'gap-medium' : 'gap-low')}"
+                                      th:text="${level}">HIGH</span>
+                            </div>
+
+                            <button type="button" class="gap-toggle"
+                                    th:if="${#lists.size(analysis.skillGaps) > 2}"
+                                    th:attr="data-more=${'+' + (#lists.size(analysis.skillGaps) - 2) + ' more'}"
+                                    th:text="${'+' + (#lists.size(analysis.skillGaps) - 2) + ' more'}">+1 more</button>
+                        </div>
+
+                        <span class="no-gap"
+                              th:if="${analysis != null and (analysis.skillGaps == null or #lists.isEmpty(analysis.skillGaps))}">
+                            <svg class="ico"><use href="#i-check"/></svg>
+                            No Skill Gap
+                        </span>
+
+                        <span class="not-assessed" th:if="${analysis == null}">
+                            <svg class="ico"><use href="#i-gap"/></svg>
+                            Not calculated
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="actions">
+
+                            <a th:href="@{/admin/employees/{id}(id=${employee.id})}"
+                               class="action-btn view" data-tip="View"
+                               title="View Employee" aria-label="View Employee">
+                                <svg class="ico"><use href="#i-eye"/></svg>
+                            </a>
+
+                            <a th:href="@{/admin/employees/{id}/edit(id=${employee.id})}"
+                               class="action-btn edit" data-tip="Edit / Assign trainer"
+                               title="Edit Employee / Assign Trainer" aria-label="Edit Employee / Assign Trainer">
+                                <svg class="ico"><use href="#i-edit"/></svg>
+                            </a>
+
+                            <form th:if="${employee.enabled}"
+                                  th:action="@{/admin/employees/{id}/disable(id=${employee.id})}"
+                                  method="post" class="action-form"
+                                  data-confirm-title="Disable employee?"
+                                  data-confirm-text="This employee will no longer be able to sign in. You can enable the account again at any time."
+                                  data-confirm-label="Disable"
+                                  data-confirm-type="warn">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="action-btn delete" data-tip="Disable"
+                                        title="Disable Employee" aria-label="Disable Employee">
+                                    <svg class="ico"><use href="#i-ban"/></svg>
+                                </button>
+                            </form>
+
+                            <form th:unless="${employee.enabled}"
+                                  th:action="@{/admin/employees/{id}/enable(id=${employee.id})}"
+                                  method="post" class="action-form">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="action-btn enable" data-tip="Enable"
+                                        title="Enable Employee" aria-label="Enable Employee">
+                                    <svg class="ico"><use href="#i-check"/></svg>
+                                </button>
+                            </form>
+
+                            <form th:action="@{/admin/employees/{id}/delete(id=${employee.id})}"
+                                  method="post" class="action-form"
+                                  data-confirm-title="Delete permanently?"
+                                  data-confirm-text="This will permanently delete the employee and cannot be undone."
+                                  data-confirm-label="Delete"
+                                  data-confirm-type="danger">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="action-btn permanent-delete" data-tip="Delete"
+                                        title="Delete Employee Permanently" aria-label="Delete Employee Permanently">
+                                    <svg class="ico"><use href="#i-trash"/></svg>
+                                </button>
+                            </form>
+
+                        </div>
+                    </td>
+
+                </tr>
+
+                <tr th:if="${employees == null or #lists.isEmpty(employees)}">
+                    <td colspan="8">
+                        <div class="empty">
+                            <div class="empty-icon"><svg class="ico"><use href="#i-users"/></svg></div>
+                            <strong>No Students found</strong>
+                            <p>
+                                Add Students to start building your
+                                organization's competency map and
+                                trainer relationships.
+                            </p>
+                            <a th:href="@{/admin/employees/add}" class="primary-btn">
+                                <svg class="ico"><use href="#i-plus"/></svg>
+                                Add First Students
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+
+                <tr id="noResults" class="is-hidden">
+                    <td colspan="8">
+                        <div class="empty">
+                            <div class="empty-icon"><svg class="ico"><use href="#i-search"/></svg></div>
+                            <strong>No matching Students</strong>
+                            <p>Try a different name, ID or email, or reset the filters.</p>
+                        </div>
+                    </td>
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+        <div class="table-footer" id="tableFooter">
+            <div class="table-info" id="tableInfo"></div>
+            <div class="pager" id="pager"></div>
+        </div>
+
+    </div>
+
+</section>
+
+</main>
+
+</div>
+
+<!-- Confirm modal -->
+<div class="modal-backdrop" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal">
+        <div class="modal-icon warn" id="confirmIcon"><svg class="ico"><use href="#i-warn"/></svg></div>
+        <h3 id="confirmTitle">Are you sure?</h3>
+        <p id="confirmText"></p>
+        <div class="modal-actions">
+            <button type="button" class="btn" id="confirmCancel">Cancel</button>
+            <button type="button" class="btn btn-warn" id="confirmOk">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* =========================================================
+   SIDEBAR
+========================================================= */
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("sidebarOverlay");
+const mainScroll = document.getElementById("mainScroll");
+
+function openSidebar() {
+    if (!sidebar || !overlay || !mainScroll) return;
+
+    sidebar.classList.add("open");
+    overlay.classList.add("show");
+    mainScroll.style.overflowY = "hidden";
+}
+
+function closeSidebar() {
+    if (!sidebar || !overlay || !mainScroll) return;
+
+    sidebar.classList.remove("open");
+    overlay.classList.remove("show");
+    mainScroll.style.overflowY = "";
+}
+
+document.querySelectorAll(".sidebar a").forEach(function (link) {
+    link.addEventListener("click", function () {
+        if (window.innerWidth <= 850) closeSidebar();
+    });
+});
+
+window.addEventListener("resize", function () {
+    if (window.innerWidth > 850) closeSidebar();
+});
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+        closeSidebar();
+        closeConfirm();
+    }
+});
+
+/* Header shadow on scroll */
+const pageHeader = document.getElementById("pageHeader");
+
+if (mainScroll && pageHeader) {
+    mainScroll.addEventListener("scroll", function () {
+        pageHeader.classList.toggle("scrolled", mainScroll.scrollTop > 6);
+    }, { passive: true });
+}
+
+/* =========================================================
+   EMPLOYEE SEARCH + FILTER + PAGINATION
+========================================================= */
+const searchInput = document.getElementById("employeeSearch");
+const searchClear = document.getElementById("searchClear");
+const statusFilter = document.getElementById("statusFilter");
+const trainerFilter = document.getElementById("trainerFilter");
+const resetBtn = document.getElementById("resetFilters");
+const table = document.getElementById("employeeTable");
+const noResults = document.getElementById("noResults");
+const tableInfo = document.getElementById("tableInfo");
+const pager = document.getElementById("pager");
+const tableFooter = document.getElementById("tableFooter");
+const countPill = document.getElementById("countPill");
+
+const PAGE_SIZE = 8;
+let currentPage = 1;
+
+const allRows = table
+    ? Array.from(table.querySelectorAll("tbody tr.emp-row"))
+    : [];
+
+let matchedRows = allRows.slice();
+
+function normalize(s) {
+    return (s || "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function applyFilters(resetPage) {
+    if (!searchInput || !statusFilter || !trainerFilter) return;
+
+    const search = normalize(searchInput.value);
+    const status = statusFilter.value;
+    const trainer = trainerFilter.value;
+
+    matchedRows = allRows.filter(function (row) {
+        const hay = normalize(row.dataset.search);
+
+        return hay.includes(search)
+            && (status === "ALL" || row.dataset.status === status)
+            && (trainer === "ALL" || row.dataset.trainer === trainer);
+    });
+
+    if (resetPage) currentPage = 1;
+
+    if (searchClear) {
+        searchClear.classList.toggle("show", searchInput.value.length > 0);
+    }
+
+    render();
+}
+
+function render() {
+    const total = matchedRows.length;
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+    if (currentPage > pages) currentPage = pages;
+
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const end = start + PAGE_SIZE;
+
+    allRows.forEach(function (row) {
+        row.classList.add("is-hidden");
+    });
+
+    matchedRows.forEach(function (row, i) {
+        if (i >= start && i < end) {
+            row.classList.remove("is-hidden");
+            row.classList.toggle("row-alt", (i - start) % 2 === 1);
+
+            row.style.animation = "none";
+            void row.offsetWidth;
+            row.style.animation = "";
+            row.style.animationDelay = ((i - start) * 0.04) + "s";
+        }
+    });
+
+    animateBars();
+
+    if (noResults && allRows.length > 0) {
+        noResults.classList.toggle("show", total === 0);
+    }
+
+    if (countPill) {
+        countPill.textContent = total;
+    }
+
+    if (!tableFooter) return;
+
+    if (allRows.length === 0) {
+        tableFooter.style.display = "none";
+        return;
+    }
+
+    tableFooter.style.display = "";
+
+    if (tableInfo) {
+        if (total === 0) {
+            tableInfo.textContent = "No results";
+        } else {
+            tableInfo.innerHTML =
+                "Showing <b>" + (start + 1) + "&ndash;" + Math.min(end, total) +
+                "</b> of <b>" + total + "</b> employees";
+        }
+    }
+
+    renderPager(pages);
+}
+
+function pageBtn(label, page, opts) {
+    const b = document.createElement("button");
+
+    b.type = "button";
+    b.innerHTML = label;
+
+    if (opts && opts.current) b.classList.add("current");
+    if (opts && opts.disabled) b.disabled = true;
+    if (opts && opts.aria) b.setAttribute("aria-label", opts.aria);
+
+    b.addEventListener("click", function () {
+        currentPage = page;
+        render();
+    });
+
+    return b;
+}
+
+function renderPager(pages) {
+    if (!pager) return;
+
+    pager.innerHTML = "";
+
+    if (pages <= 1) return;
+
+    pager.appendChild(pageBtn(
+        '<svg class="ico"><use href="#i-chev-l"/></svg>',
+        currentPage - 1,
+        { disabled: currentPage === 1, aria: "Previous page" }
+    ));
+
+    const show = [];
+
+    for (let p = 1; p <= pages; p++) {
+        if (p === 1 || p === pages || Math.abs(p - currentPage) <= 1) {
+            show.push(p);
+        }
+    }
+
+    let prev = 0;
+
+    show.forEach(function (p) {
+        if (p - prev > 1) {
+            const d = document.createElement("span");
+            d.className = "dots";
+            d.textContent = "…";
+            pager.appendChild(d);
+        }
+
+        pager.appendChild(pageBtn(p, p, {
+            current: p === currentPage
+        }));
+
+        prev = p;
+    });
+
+    pager.appendChild(pageBtn(
+        '<svg class="ico"><use href="#i-chev-r"/></svg>',
+        currentPage + 1,
+        { disabled: currentPage === pages, aria: "Next page" }
+    ));
+}
+
+if (searchInput && statusFilter && trainerFilter && table) {
+
+    searchInput.addEventListener("input", function () {
+        applyFilters(true);
+    });
+
+    statusFilter.addEventListener("change", function () {
+        applyFilters(true);
+    });
+
+    trainerFilter.addEventListener("change", function () {
+        applyFilters(true);
+    });
+
+    if (searchClear) {
+        searchClear.addEventListener("click", function () {
+            searchInput.value = "";
+            searchInput.focus();
+            applyFilters(true);
+        });
+    }
+
+    if (resetBtn) {
+        resetBtn.addEventListener("click", function () {
+            searchInput.value = "";
+            statusFilter.value = "ALL";
+            trainerFilter.value = "ALL";
+            applyFilters(true);
+        });
+    }
+
+    applyFilters(true);
+}
+
+/* =========================================================
+   COMPETENCY PROGRESS BARS
+========================================================= */
+function animateBars() {
+    if (!table) return;
+
+    requestAnimationFrame(function () {
+        table.querySelectorAll("tr.emp-row:not(.is-hidden) .progress-bar")
+            .forEach(function (bar) {
+
+                const raw = parseFloat(bar.dataset.pct);
+                const pct = isNaN(raw) ? 0 : Math.max(0, Math.min(100, raw));
+
+                bar.classList.remove("low", "mid", "high");
+
+                bar.classList.add(
+                    pct < 40 ? "low" : (pct < 70 ? "mid" : "high")
+                );
+
+                bar.style.width = pct + "%";
+            });
+    });
+}
+
+/* =========================================================
+   SKILL GAP EXPAND / COLLAPSE
+========================================================= */
+if (table) {
+    table.addEventListener("click", function (e) {
+        const btn = e.target.closest(".gap-toggle");
+
+        if (!btn) return;
+
+        const box = btn.closest(".skill-gap-box");
+
+        if (!box) return;
+
+        const open = box.classList.toggle("expanded");
+
+        btn.textContent = open ? "Show less" : btn.dataset.more;
+    });
+}
+
+/* =========================================================
+   STICKY COLUMN SHADOW
+========================================================= */
+const tableWrapper = document.getElementById("tableWrapper");
+
+if (tableWrapper) {
+    tableWrapper.addEventListener("scroll", function () {
+        tableWrapper.classList.toggle(
+            "scrolled-x",
+            tableWrapper.scrollLeft > 4
+        );
+    }, { passive: true });
+}
+
+/* =========================================================
+   CONFIRM MODAL
+========================================================= */
+const confirmModal = document.getElementById("confirmModal");
+const confirmTitle = document.getElementById("confirmTitle");
+const confirmText = document.getElementById("confirmText");
+const confirmIcon = document.getElementById("confirmIcon");
+const confirmOk = document.getElementById("confirmOk");
+const confirmCancel = document.getElementById("confirmCancel");
+
+let pendingForm = null;
+
+function openConfirm(form) {
+    if (!confirmModal || !form) return;
+
+    pendingForm = form;
+
+    const type = form.dataset.confirmType === "danger"
+        ? "danger"
+        : "warn";
+
+    confirmTitle.textContent = form.dataset.confirmTitle || "Are you sure?";
+    confirmText.textContent = form.dataset.confirmText || "";
+    confirmOk.textContent = form.dataset.confirmLabel || "Confirm";
+
+    confirmIcon.className = "modal-icon " + type;
+
+    confirmOk.className = "btn " +
+        (type === "danger" ? "btn-danger" : "btn-warn");
+
+    confirmModal.classList.add("show");
+    confirmCancel.focus();
+}
+
+function closeConfirm() {
+    if (confirmModal) {
+        confirmModal.classList.remove("show");
+    }
+
+    pendingForm = null;
+}
+
+document.querySelectorAll("form[data-confirm-title]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+        if (form.dataset.confirmed === "true") return;
+
+        e.preventDefault();
+        openConfirm(form);
+    });
+});
+
+if (confirmOk) {
+    confirmOk.addEventListener("click", function () {
+        if (!pendingForm) return;
+
+        const form = pendingForm;
+
+        form.dataset.confirmed = "true";
+
+        closeConfirm();
+
+        form.submit();
+    });
+}
+
+if (confirmCancel) {
+    confirmCancel.addEventListener("click", closeConfirm);
+}
+
+if (confirmModal) {
+    confirmModal.addEventListener("click", function (e) {
+        if (e.target === confirmModal) {
+            closeConfirm();
+        }
+    });
+}
+
+/* =========================================================
+   STAT COUNT-UP
+========================================================= */
+(function () {
+    const reduce = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    document.querySelectorAll("[data-count]").forEach(function (el) {
+        const target = parseInt(
+            el.textContent.replace(/[^0-9-]/g, ""),
+            10
+        );
+
+        if (isNaN(target) || reduce || target === 0) return;
+
+        const duration = 900;
+        const startTime = performance.now();
+
+        el.textContent = "0";
+
+        function tick(now) {
+            const p = Math.min((now - startTime) / duration, 1);
+            const eased = 1 - Math.pow(1 - p, 3);
+
+            el.textContent = Math.round(target * eased).toLocaleString();
+
+            if (p < 1) {
+                requestAnimationFrame(tick);
+            } else {
+                el.textContent = target.toLocaleString();
+            }
+        }
+
+        requestAnimationFrame(tick);
+    });
+})();
+
+/* =========================================================
+   AUTO HIDE FLASH MESSAGE
+========================================================= */
+setTimeout(function () {
+    document.querySelectorAll(".flash-message").forEach(function (message) {
+        message.style.transition = "opacity .4s ease, transform .4s ease";
+        message.style.opacity = "0";
+        message.style.transform = "translateY(-5px)";
+
+        setTimeout(function () {
+            message.remove();
+        }, 450);
+    });
+}, 6000);
+
+/* =========================================================
+   STAGGERED CARD ANIMATION
+========================================================= */
+document.querySelectorAll(".stat").forEach(function (el, i) {
+    el.style.animationDelay = (i * 0.07) + "s";
+});
+
+/* =========================================================
+   KEEP ACTIVE NAV ITEM VISIBLE
+========================================================= */
+(function () {
+    const active = document.querySelector(".sidebar a.active");
+
+    if (active && active.scrollIntoView) {
+        active.scrollIntoView({ block: "nearest" });
+    }
+})();
+</script>
+
+</body>
+
+</html>

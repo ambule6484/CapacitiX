@@ -1,0 +1,4123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="View and complete your practical competency tasks in Capacitix">
+
+    <meta name="theme-color" content="#635bff">
+
+    <title>Practical Tasks | Capacitix</title>
+
+    <style>
+        /* =========================================================
+           DESIGN TOKENS
+        ========================================================= */
+        :root {
+            --primary: #635bff;
+            --teal: #14b8a6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --pink: #ec4899;
+            --sky: #0ea5e9;
+            --orange: #f97316;
+
+            --ink: #101828;
+            --muted: #667085;
+            --line: #eaecf0;
+            --bg: #f4f7fb;
+            --sidebar: #0b1220;
+
+            --shadow: 0 12px 35px rgba(16, 24, 40, .08);
+            --shadow-sm: 0 5px 18px rgba(16, 24, 40, .055);
+
+            --ease: cubic-bezier(.2, .8, .2, 1);
+
+            --side: 272px;
+            --side-compact: 82px;
+            --header-h: 78px;
+        }
+
+        /* =========================================================
+           GLOBAL
+        ========================================================= */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+                         "Segoe UI", Arial, sans-serif;
+
+            color: var(--ink);
+
+            background:
+                radial-gradient(
+                    circle at 85% 5%,
+                    rgba(99, 91, 255, .10),
+                    transparent 25rem
+                ),
+                radial-gradient(
+                    circle at 15% 70%,
+                    rgba(20, 184, 166, .07),
+                    transparent 24rem
+                ),
+                var(--bg);
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        .skip {
+            position: absolute;
+            left: -999px;
+            top: 8px;
+
+            background: #fff;
+
+            padding: 8px 14px;
+
+            border-radius: 8px;
+
+            z-index: 3000;
+        }
+
+        .skip:focus {
+            left: 8px;
+        }
+
+        /* =========================================================
+           SIDEBAR
+        ========================================================= */
+        .sidebar {
+            position: fixed;
+            inset: 0 auto 0 0;
+
+            width: var(--side);
+            height: 100vh;
+
+            z-index: 1100;
+
+            display: flex;
+            flex-direction: column;
+
+            overflow: hidden;
+
+            color: #fff;
+
+            background:
+                radial-gradient(
+                    circle at 80% 10%,
+                    rgba(99, 91, 255, .20),
+                    transparent 13rem
+                ),
+                linear-gradient(
+                    180deg,
+                    var(--sidebar),
+                    #0e1728
+                );
+
+            box-shadow:
+                10px 0 40px rgba(15, 23, 42, .13);
+
+            transition:
+                transform .35s var(--ease),
+                width .35s var(--ease);
+
+            animation:
+                slideIn .6s var(--ease) both;
+        }
+
+        .brand {
+            flex: none;
+
+            display: flex;
+            align-items: center;
+
+            gap: 11px;
+
+            padding: 22px 24px 14px;
+        }
+
+        .brand-mark {
+            width: 42px;
+            height: 42px;
+
+            flex: 0 0 42px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 13px;
+
+            font-weight: 900;
+            font-size: 20px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--teal)
+                );
+
+            box-shadow:
+                0 12px 30px rgba(99, 91, 255, .32);
+
+            transition:
+                transform .4s var(--ease);
+        }
+
+        .brand:hover .brand-mark {
+            transform:
+                rotate(-8deg)
+                scale(1.06);
+        }
+
+        .brand-name {
+            font-size: 22px;
+            font-weight: 850;
+            letter-spacing: -.7px;
+        }
+
+        .brand-name span {
+            color: #9c96ff;
+        }
+
+        /* =========================================================
+           NAVIGATION
+        ========================================================= */
+        .nav {
+            flex: 1 1 auto;
+            min-height: 0;
+
+            overflow-y: auto;
+            overflow-x: hidden;
+
+            overscroll-behavior: contain;
+
+            scroll-behavior: smooth;
+
+            padding: 0 14px 12px;
+
+            scrollbar-width: thin;
+            scrollbar-color: #3b4560 transparent;
+        }
+
+        .nav::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .nav::-webkit-scrollbar-thumb {
+            background: #3b4560;
+            border-radius: 20px;
+        }
+
+        .nav::-webkit-scrollbar-thumb:hover {
+            background: #5b6785;
+        }
+
+        .menu-label {
+            padding: 15px 12px 8px;
+
+            color: #7f8ba3;
+
+            font-size: 11px;
+            font-weight: 700;
+
+            letter-spacing: .6px;
+        }
+
+        .menu {
+            list-style: none;
+        }
+
+        .menu li {
+            margin: 4px 0;
+        }
+
+        .menu a {
+            position: relative;
+            z-index: 2;
+
+            min-height: 46px;
+
+            display: flex;
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 10px 12px;
+
+            border: 1px solid transparent;
+            border-radius: 13px;
+
+            color: #b8c1d1;
+
+            font-size: 13px;
+            font-weight: 600;
+
+            cursor: pointer;
+            pointer-events: auto;
+
+            transition:
+                all .25s var(--ease);
+
+            overflow: hidden;
+        }
+
+        .menu a::before {
+            content: "";
+
+            position: absolute;
+
+            inset: 0 auto 0 0;
+
+            width: 3px;
+
+            transform: scaleY(0);
+
+            background:
+                linear-gradient(
+                    180deg,
+                    var(--primary),
+                    var(--teal)
+                );
+
+            transition:
+                transform .25s var(--ease);
+        }
+
+        .menu a:hover {
+            color: #fff;
+
+            background:
+                rgba(255, 255, 255, .065);
+
+            transform:
+                translateX(3px);
+        }
+
+        .menu a:active {
+            transform:
+                translateX(1px)
+                scale(.98);
+        }
+
+        .menu a.active {
+            color: #fff;
+
+            background:
+                linear-gradient(
+                    100deg,
+                    rgba(99, 91, 255, .28),
+                    rgba(20, 184, 166, .1)
+                );
+
+            border-color:
+                rgba(255, 255, 255, .055);
+
+            box-shadow:
+                0 0 22px rgba(99, 91, 255, .18);
+        }
+
+        .menu a.active::before {
+            transform: scaleY(.65);
+        }
+
+        .icon {
+            width: 23px;
+            height: 23px;
+
+            flex: 0 0 23px;
+
+            display: grid;
+            place-items: center;
+
+            color: #8d99ad;
+
+            font-size: 16px;
+
+            transition:
+                transform .25s ease,
+                color .25s ease;
+        }
+
+        .menu a:hover .icon,
+        .menu a.active .icon {
+            color: #fff;
+            transform: scale(1.12);
+        }
+
+        .menu a:hover .icon {
+            color: #5eead4;
+        }
+
+        /* =========================================================
+           SIDEBAR BOTTOM
+        ========================================================= */
+        .sidebar-bottom {
+            flex: none;
+
+            padding: 10px 14px 16px;
+
+            border-top:
+                1px solid rgba(255, 255, 255, .07);
+
+            background: var(--sidebar);
+
+            position: relative;
+
+            z-index: 3;
+        }
+
+        .logout form {
+            margin: 0;
+        }
+
+        .logout button {
+            width: 100%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 9px;
+
+            padding: 11px 12px;
+
+            cursor: pointer;
+
+            border:
+                1px solid rgba(255, 255, 255, .08);
+
+            border-radius: 12px;
+
+            background:
+                rgba(255, 255, 255, .035);
+
+            color: #c5cbd6;
+
+            font-size: 12px;
+            font-weight: 700;
+
+            transition:
+                all .25s ease;
+        }
+
+        .logout button:hover {
+            background:
+                rgba(239, 68, 68, .12);
+
+            color: #fff;
+
+            border-color:
+                rgba(239, 68, 68, .25);
+        }
+
+        .logout button:active {
+            transform: scale(.98);
+        }
+
+        /* =========================================================
+           OVERLAY
+        ========================================================= */
+        .overlay {
+            position: fixed;
+            inset: 0;
+
+            z-index: 1050;
+
+            background:
+                rgba(15, 23, 42, .45);
+
+            opacity: 0;
+            visibility: hidden;
+
+            pointer-events: none;
+
+            transition: .25s;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        /* =========================================================
+           MAIN
+        ========================================================= */
+        .main {
+            margin-left: var(--side);
+
+            height: 100vh;
+
+            overflow-y: auto;
+            overflow-x: hidden;
+
+            scroll-behavior: smooth;
+
+            transition:
+                margin .35s var(--ease);
+
+            scrollbar-width: thin;
+            scrollbar-color: #c5cbd8 transparent;
+        }
+
+        .main::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        .main::-webkit-scrollbar-thumb {
+            background: #c5cbd8;
+            border-radius: 20px;
+        }
+
+        .no-scroll .main {
+            overflow: hidden;
+        }
+
+        /* =========================================================
+           HEADER
+        ========================================================= */
+        .header {
+            position: sticky;
+            top: 0;
+
+            z-index: 900;
+
+            min-height: var(--header-h);
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 20px;
+
+            padding: 14px 36px;
+
+            background:
+                rgba(255, 255, 255, .86);
+
+            border-bottom:
+                1px solid var(--line);
+
+            backdrop-filter: blur(18px);
+
+            animation:
+                dropIn .6s var(--ease) both;
+        }
+
+        .header::after {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            bottom: -1px;
+
+            height: 2px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--teal),
+                    var(--pink),
+                    var(--primary)
+                );
+
+            background-size: 200% 100%;
+
+            animation:
+                flow 6s linear infinite;
+
+            opacity: .75;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+
+            gap: 12px;
+
+            min-width: 0;
+        }
+
+        .mobile-menu {
+            display: none;
+
+            width: 42px;
+            height: 42px;
+
+            flex: 0 0 42px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 12px;
+
+            background: #fff;
+
+            cursor: pointer;
+
+            font-size: 19px;
+
+            transition: .2s;
+        }
+
+        .mobile-menu:hover {
+            border-color: #cbc7ff;
+            background: #f5f3ff;
+        }
+
+        .header-title {
+            font-size: 21px;
+            font-weight: 850;
+            letter-spacing: -.5px;
+        }
+
+        .header-subtitle {
+            margin-top: 3px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-btn {
+            position: relative;
+
+            width: 42px;
+            height: 42px;
+
+            display: grid;
+            place-items: center;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 12px;
+
+            background: #fff;
+
+            cursor: pointer;
+
+            transition:
+                all .25s ease;
+        }
+
+        .header-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .header-btn:active {
+            transform: scale(.96);
+        }
+
+        .badge {
+            position: absolute;
+
+            top: -5px;
+            right: -5px;
+
+            min-width: 19px;
+            height: 19px;
+
+            padding: 0 5px;
+
+            display: grid;
+            place-items: center;
+
+            border:
+                2px solid #fff;
+
+            border-radius: 99px;
+
+            background: var(--danger);
+
+            color: #fff;
+
+            font-size: 10px;
+            font-weight: 800;
+
+            animation:
+                pulseBadge 2.4s ease-in-out 3;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 42px;
+            height: 42px;
+
+            flex: 0 0 42px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 14px;
+
+            color: #fff;
+
+            font-size: 13px;
+            font-weight: 850;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--primary),
+                    var(--teal)
+                );
+
+            box-shadow:
+                0 8px 20px rgba(99, 91, 255, .22);
+
+            transition:
+                transform .25s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.07);
+        }
+
+        .name {
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .role-name {
+            margin-top: 2px;
+
+            color: var(--muted);
+
+            font-size: 11px;
+        }
+
+        /* =========================================================
+           CONTENT
+        ========================================================= */
+        .content {
+            width: min(1450px, 100%);
+
+            margin: auto;
+
+            padding: 30px 36px 55px;
+        }
+
+        .welcome {
+            position: relative;
+
+            padding: 28px 30px;
+
+            margin-bottom: 22px;
+
+            overflow: hidden;
+
+            border-radius: 24px;
+
+            color: #fff;
+
+            background:
+                radial-gradient(
+                    circle at 90% 20%,
+                    rgba(255, 255, 255, .20),
+                    transparent 12rem
+                ),
+                linear-gradient(
+                    120deg,
+                    #5b55ed,
+                    #7c3aed 35%,
+                    #0ea5e9 70%,
+                    #12ad9d
+                );
+
+            background-size:
+                100% 100%,
+                240% 240%;
+
+            box-shadow:
+                0 18px 45px rgba(79, 70, 229, .22);
+
+            animation:
+                fadeUp .6s var(--ease) both,
+                flow 14s ease infinite;
+        }
+
+        .welcome::before {
+            content: "";
+
+            position: absolute;
+
+            width: 150px;
+            height: 150px;
+
+            left: 45%;
+            bottom: -80px;
+
+            border-radius: 50%;
+
+            background:
+                rgba(236, 72, 153, .35);
+
+            animation:
+                float 9s ease-in-out infinite;
+
+            pointer-events: none;
+        }
+
+        .welcome::after {
+            content: "";
+
+            position: absolute;
+
+            width: 210px;
+            height: 210px;
+
+            right: -70px;
+            bottom: -120px;
+
+            border:
+                35px solid rgba(255, 255, 255, .1);
+
+            border-radius: 50%;
+
+            pointer-events: none;
+
+            animation:
+                spin 30s linear infinite;
+        }
+
+        .welcome > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        .welcome-chip {
+            display: inline-flex;
+            align-items: center;
+
+            gap: 7px;
+
+            margin-bottom: 13px;
+
+            padding: 6px 11px;
+
+            border-radius: 999px;
+
+            border:
+                1px solid rgba(255, 255, 255, .2);
+
+            background:
+                rgba(255, 255, 255, .12);
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .welcome h1 {
+            font-size: 28px;
+
+            letter-spacing: -.7px;
+
+            margin-bottom: 7px;
+        }
+
+        .welcome p {
+            max-width: 680px;
+
+            color:
+                rgba(255, 255, 255, .88);
+
+            font-size: 13px;
+
+            line-height: 1.6;
+        }
+
+        .flow-steps {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+
+            gap: 6px;
+
+            margin-top: 16px;
+        }
+
+        .flow-steps span {
+            padding: 6px 11px;
+
+            border-radius: 999px;
+
+            border:
+                1px solid rgba(255, 255, 255, .25);
+
+            background:
+                rgba(255, 255, 255, .16);
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .flow-steps i {
+            font-style: normal;
+            opacity: .7;
+        }
+
+        .flow-steps .goal {
+            background: #fff;
+            color: #4f46e5;
+        }
+
+        /* =========================================================
+           STATS
+        ========================================================= */
+        .stats {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, 1fr);
+
+            gap: 16px;
+
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            --c1: #6366f1;
+            --c2: #8b5cf6;
+
+            position: relative;
+
+            overflow: hidden;
+
+            padding: 20px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 20px;
+
+            background: #fff;
+
+            box-shadow:
+                var(--shadow-sm);
+
+            transition:
+                transform .3s var(--ease),
+                box-shadow .3s ease;
+
+            animation:
+                fadeUp .6s var(--ease) both;
+        }
+
+        .stat:nth-child(2) {
+            animation-delay: .08s;
+        }
+
+        .stat:nth-child(3) {
+            animation-delay: .16s;
+        }
+
+        .stat::before {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            top: 0;
+
+            height: 4px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--c1),
+                    var(--c2)
+                );
+
+            transform-origin: left;
+
+            animation:
+                grow .9s .3s var(--ease) both;
+        }
+
+        .stat::after {
+            content: "";
+
+            position: absolute;
+
+            right: -40px;
+            bottom: -50px;
+
+            width: 130px;
+            height: 130px;
+
+            border-radius: 50%;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--c1),
+                    var(--c2)
+                );
+
+            opacity: .08;
+
+            transition:
+                transform .5s var(--ease);
+        }
+
+        .stat:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat:hover::after {
+            transform: scale(1.5);
+        }
+
+        .s-pink {
+            --c1: #ec4899;
+            --c2: #f97316;
+        }
+
+        .s-green {
+            --c1: #10b981;
+            --c2: #14b8a6;
+        }
+
+        .stat-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+
+            gap: 10px;
+        }
+
+        .stat-icon {
+            width: 46px;
+            height: 46px;
+
+            border-radius: 15px;
+
+            display: grid;
+            place-items: center;
+
+            color: #fff;
+
+            font-size: 18px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--c1),
+                    var(--c2)
+                );
+
+            box-shadow:
+                0 10px 22px rgba(99, 91, 255, .22);
+
+            transition:
+                transform .35s var(--ease);
+        }
+
+        .stat:hover .stat-icon {
+            transform:
+                scale(1.12)
+                rotate(-8deg);
+        }
+
+        .number {
+            font-size: 30px;
+            font-weight: 850;
+
+            letter-spacing: -.8px;
+
+            font-variant-numeric:
+                tabular-nums;
+        }
+
+        .label {
+            margin-top: 4px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .trend {
+            margin-top: 13px;
+
+            font-size: 11px;
+            font-weight: 700;
+
+            color: var(--muted);
+        }
+
+        /* =========================================================
+           CARD
+        ========================================================= */
+        .card {
+            margin-bottom: 20px;
+
+            padding: 22px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 22px;
+
+            background: #fff;
+
+            box-shadow:
+                var(--shadow-sm);
+
+            transition:
+                box-shadow .3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 15px;
+
+            margin-bottom: 12px;
+
+            flex-wrap: wrap;
+        }
+
+        .card-head h2 {
+            font-size: 16px;
+            font-weight: 850;
+
+            letter-spacing: -.25px;
+        }
+
+        .card-sub {
+            margin-top: 4px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+        }
+
+        /* =========================================================
+           TOOLBAR
+        ========================================================= */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 10px;
+
+            margin: 4px 0 14px;
+
+            align-items: center;
+        }
+
+        .search {
+            flex: 1 1 220px;
+
+            min-width: 0;
+
+            padding: 10px 13px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 12px;
+
+            background: #f8fafc;
+
+            font-size: 12px;
+
+            transition:
+                border-color .2s,
+                box-shadow .2s,
+                background .2s,
+                transform .2s;
+        }
+
+        .search:focus {
+            outline: 0;
+
+            background: #fff;
+
+            border-color: #b9b4ff;
+
+            box-shadow:
+                0 0 0 4px rgba(99, 91, 255, .10);
+
+            transform: scale(1.01);
+        }
+
+        .chips {
+            display: flex;
+
+            gap: 6px;
+
+            flex-wrap: wrap;
+        }
+
+        .chip {
+            padding: 8px 12px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 999px;
+
+            background: #fff;
+
+            color: var(--muted);
+
+            font-size: 11px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            transition:
+                all .2s ease;
+        }
+
+        .chip:hover {
+            border-color: #cbc7ff;
+            color: #4f46e5;
+
+            transform:
+                translateY(-1px);
+        }
+
+        .chip.on {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+
+            animation:
+                pop .3s var(--ease);
+        }
+
+        /* =========================================================
+           TASK GRID
+        ========================================================= */
+        .task-grid {
+            display: grid;
+
+            grid-template-columns:
+                repeat(3, minmax(0, 1fr));
+
+            gap: 18px;
+        }
+
+        .task-item {
+            --accent: #98a2b3;
+            --tint: #f2f4f7;
+
+            position: relative;
+
+            overflow: hidden;
+
+            display: flex;
+            flex-direction: column;
+
+            min-width: 0;
+
+            padding: 22px 20px 18px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 20px;
+
+            background:
+                linear-gradient(
+                    160deg,
+                    #fff 40%,
+                    var(--tint)
+                );
+
+            transition:
+                transform .3s var(--ease),
+                border-color .3s,
+                box-shadow .3s,
+                opacity .6s var(--ease);
+        }
+
+        .task-item.reveal {
+            opacity: 0;
+
+            transform:
+                translateY(22px)
+                scale(.97);
+        }
+
+        .task-item.reveal.in {
+            opacity: 1;
+            transform: none;
+        }
+
+        .task-item.reveal.in:hover,
+        .task-item:hover {
+            transform: translateY(-6px);
+
+            border-color:
+                var(--accent);
+
+            box-shadow:
+                0 18px 34px rgba(16, 24, 40, .12);
+        }
+
+        .task-item::before {
+            content: "";
+
+            position: absolute;
+
+            left: 0;
+            right: 0;
+            top: 0;
+
+            height: 4px;
+
+            background:
+                var(--accent);
+
+            transform:
+                scaleX(0);
+
+            transform-origin: left;
+
+            transition:
+                transform .8s .15s var(--ease);
+        }
+
+        .task-item.in::before {
+            transform: scaleX(1);
+        }
+
+        .task-item::after {
+            content: "";
+
+            position: absolute;
+
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    110deg,
+                    transparent 35%,
+                    rgba(255, 255, 255, .7) 50%,
+                    transparent 65%
+                );
+
+            transform:
+                translateX(-120%);
+
+            pointer-events: none;
+        }
+
+        .task-item:hover::after {
+            transform:
+                translateX(120%);
+
+            transition:
+                transform .8s var(--ease);
+        }
+
+        .task-item[hidden] {
+            display: none;
+        }
+
+        .task-item.enter {
+            animation:
+                pop .45s var(--ease);
+        }
+
+        .task-item[data-status="pending"] {
+            --accent: #f59e0b;
+            --tint: #fffbeb;
+        }
+
+        .task-item[data-status="in-progress"] {
+            --accent: #f97316;
+            --tint: #fff7ed;
+        }
+
+        .task-item[data-status="submitted"] {
+            --accent: #0ea5e9;
+            --tint: #f0f9ff;
+        }
+
+        .task-item[data-status="needs-improvement"] {
+            --accent: #ec4899;
+            --tint: #fdf2f8;
+        }
+
+        .task-item[data-status="completed"] {
+            --accent: #10b981;
+            --tint: #ecfdf5;
+        }
+
+        .task-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-bottom: 14px;
+        }
+
+        .task-icon {
+            width: 44px;
+            height: 44px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 14px;
+
+            background:
+                var(--accent);
+
+            color: #fff;
+
+            font-size: 17px;
+
+            box-shadow:
+                0 10px 20px rgba(16, 24, 40, .14);
+
+            animation:
+                bob 4s ease-in-out infinite;
+
+            transition:
+                transform .4s var(--ease);
+        }
+
+        .task-item:hover .task-icon {
+            transform:
+                rotate(12deg)
+                scale(1.12);
+
+            animation-play-state:
+                paused;
+        }
+
+        .task-name {
+            margin-bottom: 7px;
+
+            font-size: 15px;
+            font-weight: 800;
+
+            letter-spacing: -.2px;
+
+            word-break: break-word;
+        }
+
+        .task-text {
+            flex: 1;
+
+            margin-bottom: 14px;
+
+            color: var(--muted);
+
+            font-size: 12px;
+
+            line-height: 1.6;
+
+            word-break: break-word;
+
+            display: -webkit-box;
+
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+
+            overflow: hidden;
+        }
+
+        /* =========================================================
+           LEARNING PATH / TRAINING
+        ========================================================= */
+        .learning-path,
+        .training-module {
+            display: flex;
+            align-items: center;
+
+            gap: 6px;
+
+            width: fit-content;
+            max-width: 100%;
+
+            margin-bottom: 8px;
+
+            padding: 5px 10px;
+
+            border-radius: 999px;
+
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .learning-path {
+            background: #f5f3ff;
+            color: #6d28d9;
+        }
+
+        .training-module {
+            background: #ecfdf5;
+            color: #047857;
+        }
+
+        /* =========================================================
+           META
+        ========================================================= */
+        .task-meta {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 6px;
+
+            margin: 4px 0 12px;
+        }
+
+        .meta-pill {
+            display: inline-flex;
+            align-items: center;
+
+            gap: 4px;
+
+            padding: 5px 9px;
+
+            border-radius: 999px;
+
+            background: #f2f4f7;
+
+            color: #475467;
+
+            font-size: 10px;
+            font-weight: 700;
+
+            transition:
+                transform .2s;
+        }
+
+        .meta-pill:hover {
+            transform:
+                translateY(-2px);
+        }
+
+        .skill-pill {
+            background: #eef2ff;
+            color: #4f46e5;
+        }
+
+        .ai-pill {
+            background:
+                linear-gradient(
+                    135deg,
+                    #ecfdf5,
+                    #e0f2fe
+                );
+
+            color: #0f766e;
+        }
+
+        .review-pill {
+            background: #fff7ed;
+            color: #c2410c;
+
+            animation:
+                softPulse 2s infinite;
+        }
+
+        /* =========================================================
+           STATUS
+        ========================================================= */
+        .task-status {
+            display: inline-flex;
+            align-items: center;
+
+            gap: 6px;
+
+            padding: 5px 10px;
+
+            border-radius: 999px;
+
+            font-size: 10px;
+            font-weight: 800;
+
+            letter-spacing: .3px;
+
+            text-transform: uppercase;
+
+            white-space: nowrap;
+        }
+
+        .task-status::before {
+            content: "";
+
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+
+            background:
+                currentColor;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-in-progress {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .status-in-progress::before,
+        .status-submitted::before {
+            animation:
+                dot 1.4s infinite;
+        }
+
+        .status-submitted {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-needs-improvement {
+            background: #fce7f3;
+            color: #be185d;
+        }
+
+        .status-completed {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        /* =========================================================
+           PROGRESS
+        ========================================================= */
+        .progress-top {
+            display: flex;
+            justify-content: space-between;
+
+            margin-bottom: 6px;
+
+            color: var(--muted);
+
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .progress-top strong {
+            color: var(--ink);
+
+            font-variant-numeric:
+                tabular-nums;
+        }
+
+        .progress {
+            height: 8px;
+
+            background:
+                rgba(16, 24, 40, .07);
+
+            border-radius: 99px;
+
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            position: relative;
+
+            height: 100%;
+
+            width: 0;
+
+            border-radius: 99px;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    var(--primary),
+                    var(--accent)
+                );
+
+            transition:
+                width 1.2s var(--ease);
+
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: "";
+
+            position: absolute;
+
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(255, 255, 255, .6),
+                    transparent
+                );
+
+            transform:
+                translateX(-100%);
+
+            animation:
+                shine 2.6s 1.4s infinite;
+        }
+
+        /* =========================================================
+           FOOTER / ACTION
+        ========================================================= */
+        .task-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 10px;
+
+            margin-top: 15px;
+            padding-top: 14px;
+
+            border-top:
+                1px dashed #dfe3ea;
+        }
+
+        .task-info {
+            color: #98a2b3;
+
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .task-actions {
+            display: flex;
+            align-items: center;
+
+            gap: 6px;
+        }
+
+        .task-view {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 8px 13px;
+
+            border-radius: 11px;
+
+            border:
+                1px solid var(--line);
+
+            background: #fff;
+
+            color: #344054;
+
+            font-size: 11px;
+            font-weight: 700;
+
+            transition:
+                all .25s var(--ease);
+        }
+
+        .task-view:hover {
+            background: var(--ink);
+
+            border-color:
+                var(--ink);
+
+            color: #fff;
+
+            transform:
+                translateX(3px);
+        }
+
+        .task-view:active {
+            transform:
+                scale(.97);
+        }
+
+        /* =========================================================
+           EMPTY
+        ========================================================= */
+        .empty {
+            padding: 30px 14px;
+
+            text-align: center;
+
+            color: var(--muted);
+        }
+
+        .empty .empty-icon {
+            width: 52px;
+            height: 52px;
+
+            margin:
+                0 auto 12px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 16px;
+
+            background: #f4f2ff;
+
+            color: #5b55ed;
+
+            font-size: 22px;
+
+            animation:
+                float 4s ease-in-out infinite;
+        }
+
+        .empty strong {
+            display: block;
+
+            margin-bottom: 5px;
+
+            color: var(--ink);
+
+            font-size: 13px;
+        }
+
+        .empty p {
+            max-width: 380px;
+
+            margin:
+                0 auto 12px;
+
+            font-size: 12px;
+
+            line-height: 1.5;
+        }
+
+        .empty a {
+            display: inline-block;
+
+            padding: 9px 14px;
+
+            border-radius: 10px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #6366f1,
+                    #4f46e5
+                );
+
+            color: #fff;
+
+            font-size: 12px;
+            font-weight: 700;
+
+            box-shadow:
+                0 6px 14px rgba(79, 70, 229, .22);
+
+            transition: .2s;
+        }
+
+        .empty a:hover {
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+                0 10px 20px rgba(79, 70, 229, .3);
+        }
+
+        #noMatch {
+            display: none;
+        }
+
+        /* =========================================================
+           NOTIFICATIONS
+        ========================================================= */
+        .notification-panel {
+            position: fixed;
+
+            right: 25px;
+            top: 72px;
+
+            width:
+                min(350px, calc(100vw - 30px));
+
+            z-index: 1200;
+
+            padding: 15px;
+
+            border:
+                1px solid var(--line);
+
+            border-radius: 18px;
+
+            background:
+                rgba(255, 255, 255, .97);
+
+            backdrop-filter:
+                blur(18px);
+
+            box-shadow:
+                0 20px 55px rgba(16, 24, 40, .16);
+
+            max-height: 70vh;
+
+            overflow-y: auto;
+
+            opacity: 0;
+            visibility: hidden;
+
+            transform:
+                translateY(-10px)
+                scale(.98);
+
+            transition:
+                all .25s var(--ease);
+        }
+
+        .notification-panel.show {
+            opacity: 1;
+            visibility: visible;
+
+            transform: none;
+        }
+
+        .notification-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 10px;
+        }
+
+        .notification-head strong {
+            font-size: 13px;
+        }
+
+        .notification-head button {
+            border: 0;
+            background: none;
+
+            cursor: pointer;
+
+            color: var(--muted);
+
+            padding: 4px 6px;
+
+            border-radius: 8px;
+        }
+
+        .notification-head button:hover {
+            background: #f2f4f7;
+        }
+
+        .notice {
+            display: flex;
+
+            gap: 10px;
+
+            padding: 11px 8px;
+
+            border-radius: 11px;
+
+            transition: .2s;
+        }
+
+        .notice:hover {
+            background: #f7f8fc;
+        }
+
+        .notice-dot {
+            width: 8px;
+            height: 8px;
+
+            margin-top: 5px;
+
+            border-radius: 50%;
+
+            background: var(--primary);
+
+            flex: 0 0 8px;
+        }
+
+        .notice p {
+            font-size: 11px;
+
+            line-height: 1.45;
+
+            color: var(--muted);
+        }
+
+        .notice strong {
+            color: var(--ink);
+        }
+
+        /* =========================================================
+           ANIMATIONS
+        ========================================================= */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes dropIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        @keyframes pop {
+            0% {
+                opacity: .4;
+                transform: scale(.92);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes grow {
+            from {
+                transform: scaleX(0);
+            }
+
+            to {
+                transform: scaleX(1);
+            }
+        }
+
+        @keyframes flow {
+            0% {
+                background-position: 0 50%, 0% 50%;
+            }
+
+            50% {
+                background-position: 0 50%, 100% 50%;
+            }
+
+            100% {
+                background-position: 0 50%, 0% 50%;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-14px);
+            }
+        }
+
+        @keyframes bob {
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-3px);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes shine {
+            to {
+                transform: translateX(100%);
+            }
+        }
+
+        @keyframes dot {
+            0%, 100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.7);
+            }
+        }
+
+        @keyframes softPulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .6;
+            }
+        }
+
+        @keyframes pulseBadge {
+            0%, 100% {
+                box-shadow:
+                    0 0 0 0 rgba(239, 68, 68, .45);
+            }
+
+            50% {
+                box-shadow:
+                    0 0 0 6px rgba(239, 68, 68, 0);
+            }
+        }
+
+        /* =========================================================
+           RESPONSIVE
+        ========================================================= */
+        @media (max-width: 1200px) {
+
+            :root {
+                --side: 245px;
+            }
+
+            .content {
+                padding:
+                    26px 25px 45px;
+            }
+
+            .header {
+                padding:
+                    14px 25px;
+            }
+
+            .task-grid {
+                grid-template-columns:
+                    repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 900px) {
+
+            :root {
+                --side: var(--side-compact);
+            }
+
+            .sidebar .brand {
+                justify-content: center;
+
+                padding:
+                    22px 0 14px;
+            }
+
+            .brand-name,
+            .menu-label,
+            .menu a span:not(.icon),
+            .logout button span:not(.icon) {
+                display: none;
+            }
+
+            .nav {
+                padding:
+                    0 10px 12px;
+            }
+
+            .menu a {
+                justify-content: center;
+
+                padding:
+                    11px 8px;
+
+                gap: 0;
+            }
+
+            .icon {
+                width: 100%;
+            }
+
+            .sidebar-bottom {
+                padding: 10px;
+            }
+
+            .header {
+                padding:
+                    13px 20px;
+            }
+        }
+
+        @media (max-width: 650px) {
+
+            :root {
+                --side: 0px;
+            }
+
+            .sidebar {
+                width: 265px;
+
+                transform:
+                    translateX(-105%);
+
+                animation: none;
+            }
+
+            .sidebar.open {
+                transform: none;
+            }
+
+            .sidebar .brand {
+                justify-content: flex-start;
+
+                padding:
+                    22px 24px 14px;
+            }
+
+            .brand-name,
+            .menu-label {
+                display: block;
+            }
+
+            .menu a span:not(.icon),
+            .logout button span:not(.icon) {
+                display: inline;
+            }
+
+            .menu a {
+                justify-content: flex-start;
+
+                padding:
+                    10px 12px;
+
+                gap: 12px;
+            }
+
+            .icon {
+                width: 23px;
+            }
+
+            .nav {
+                padding:
+                    0 14px 12px;
+            }
+
+            .sidebar-bottom {
+                padding:
+                    10px 14px 16px;
+            }
+
+            .mobile-menu {
+                display: grid;
+                place-items: center;
+            }
+
+            .header {
+                min-height: 70px;
+
+                padding:
+                    12px 16px;
+            }
+
+            .header-title {
+                font-size: 18px;
+            }
+
+            .header-subtitle,
+            .name,
+            .role-name {
+                display: none;
+            }
+
+            .content {
+                padding:
+                    20px 15px 35px;
+            }
+
+            .welcome {
+                padding:
+                    23px 20px;
+
+                border-radius: 20px;
+            }
+
+            .welcome h1 {
+                font-size: 23px;
+            }
+
+            .stats,
+            .task-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 18px;
+
+                border-radius: 18px;
+            }
+
+            .notification-panel {
+                right: 15px;
+                top: 66px;
+            }
+
+            .task-foot {
+                align-items: flex-start;
+
+                flex-direction: column;
+            }
+
+            .task-actions {
+                width: 100%;
+            }
+
+            .task-view {
+                flex: 1;
+            }
+        }
+
+        /* =========================================================
+           ACCESSIBILITY
+        ========================================================= */
+        :focus-visible {
+            outline:
+                3px solid rgba(99, 91, 255, .45);
+
+            outline-offset: 2px;
+
+            border-radius: 10px;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration:
+                    .01ms !important;
+
+                animation-delay:
+                    0ms !important;
+
+                animation-iteration-count:
+                    1 !important;
+
+                transition-duration:
+                    .01ms !important;
+
+                scroll-behavior:
+                    auto !important;
+            }
+
+            .task-item.reveal {
+                opacity: 1;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<a class="skip" href="#content">
+    Skip to content
+</a>
+
+<div class="overlay" id="overlay"></div>
+
+<!-- =========================================================
+     EMPLOYEE SIDEBAR
+     
+     IMPORTANT:
+     Every navigation URL here belongs to EMPLOYEE.
+     There are NO /trainer/... URLs in this page.
+========================================================= -->
+<aside class="sidebar"
+       id="sidebar"
+       aria-label="Employee navigation">
+
+    <div class="brand">
+
+        <div class="brand-mark">
+            C
+        </div>
+
+        <div class="brand-name">
+            Capacit<span>ix</span>
+        </div>
+
+    </div>
+
+    <nav class="nav"
+     id="nav"
+     aria-label="Employee menu">
+
+    <!-- =========================================================
+         LEARNING
+    ========================================================== -->
+    <div class="menu-label">
+        Learning
+    </div>
+
+    <ul class="menu">
+
+        <!-- EMPLOYEE DASHBOARD -->
+        <li>
+            <a th:href="@{/employee/dashboard}"
+               href="/employee/dashboard"
+               title="Dashboard">
+
+                <span class="icon">⌂</span>
+
+                <span>Dashboard</span>
+
+            </a>
+        </li>
+
+        <!-- MY COMPETENCIES -->
+        <li>
+            <a th:href="@{/employee/competencies}"
+               href="/employee/competencies"
+               title="My Competencies">
+
+                <span class="icon">◈</span>
+
+                <span>My Competencies</span>
+
+            </a>
+        </li>
+
+        <!-- ASSESSMENTS -->
+        <li>
+            <a th:href="@{/employee/assessments}"
+               href="/employee/assessments"
+               title="Assessments">
+
+                <span class="icon">✓</span>
+
+                <span>Assessments</span>
+
+            </a>
+        </li>
+
+        <!-- SKILL GAPS -->
+        <li>
+            <a th:href="@{/employee/skill-gaps}"
+               href="/employee/skill-gaps"
+               title="Skill Gaps">
+
+                <span class="icon">△</span>
+
+                <span>Skill Gaps</span>
+
+            </a>
+        </li>
+
+        <!-- MY LEARNING PATH -->
+        <li>
+            <a th:href="@{/employee/learning-path}"
+               href="/employee/learning-path"
+               title="My Learning Path">
+
+                <span class="icon">◎</span>
+
+                <span>My Learning Path</span>
+
+            </a>
+        </li>
+
+        <!-- TRAINING -->
+        <li>
+            <a th:href="@{/employee/training}"
+               href="/employee/training"
+               title="Training">
+
+                <span class="icon">▣</span>
+
+                <span>Training</span>
+
+            </a>
+        </li>
+
+    </ul>
+
+
+    <!-- =========================================================
+         PRACTICE
+    ========================================================== -->
+    <div class="menu-label">
+        Practice
+    </div>
+
+    <ul class="menu">
+
+        <!-- PRACTICAL TASKS - CURRENT PAGE -->
+        <li>
+            <a class="active"
+               th:href="@{/employee/practical-tasks}"
+               href="/employee/practical-tasks"
+               aria-current="page"
+               title="Practical Tasks">
+
+                <span class="icon">◆</span>
+
+                <span>Practical Tasks</span>
+
+            </a>
+        </li>
+
+    </ul>
+
+
+    <!-- =========================================================
+         PROGRESS
+    ========================================================== -->
+    <div class="menu-label">
+        Progress
+    </div>
+
+    <ul class="menu">
+
+        <!-- MY PROGRESS -->
+        <li>
+            <a th:href="@{/employee/progress}"
+               href="/employee/progress"
+               title="My Progress">
+
+                <span class="icon">↗</span>
+
+                <span>My Progress</span>
+
+            </a>
+        </li>
+
+        <!-- CERTIFICATES -->
+       
+
+    </ul>
+
+
+    <!-- =========================================================
+         ACCOUNT
+    ========================================================== -->
+    <div class="menu-label">
+        Account
+    </div>
+
+    <ul class="menu">
+
+        <!-- MY PROFILE -->
+        <li>
+            <a th:href="@{/employee/profile}"
+               href="/employee/profile"
+               title="My Profile">
+
+                <span class="icon">●</span>
+
+                <span>My Profile</span>
+
+            </a>
+        </li>
+
+        <!-- SETTINGS -->
+        <li>
+            <a th:href="@{/employee/settings}"
+               href="/employee/settings"
+               title="Settings">
+
+                <span class="icon">⚙</span>
+
+                <span>Settings</span>
+
+            </a>
+        </li>
+
+    </ul>
+
+</nav>
+
+    <div class="sidebar-bottom">
+
+        <div class="logout">
+
+            <form th:action="@{/logout}"
+                  method="post">
+
+                <button type="submit"
+                        title="Logout">
+
+                    <span class="icon">
+                        ↪
+                    </span>
+
+                    <span>
+                        Logout
+                    </span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+<main class="main"
+      id="main">
+
+    <!-- HEADER -->
+    <header class="header">
+
+        <div class="header-left">
+
+            <button class="mobile-menu"
+                    id="mobileMenu"
+                    type="button"
+                    aria-label="Open menu"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+
+                ☰
+
+            </button>
+
+            <div>
+
+                <div class="header-title">
+                    Practical Tasks
+                </div>
+
+                <div class="header-subtitle">
+                    Complete practical work and apply the skills you are learning
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="header-right">
+
+            <button class="header-btn"
+                    id="notificationBtn"
+                    type="button"
+                    aria-label="Notifications"
+                    aria-expanded="false"
+                    aria-controls="notificationPanel">
+
+                🔔
+
+                <span class="badge"
+                      th:if="${notifications != null and !notifications.isEmpty()}"
+                      th:text="${notifications.size() > 9 ? '9+' : notifications.size()}">
+                    0
+                </span>
+
+            </button>
+
+
+            <div class="profile">
+
+                <div class="avatar"
+                     th:text="${userInitial != null and !userInitial.isBlank()
+                        ? userInitial
+                        : 'E'}">
+
+                    E
+
+                </div>
+
+                <div>
+
+                    <div class="name"
+                         th:text="${userName != null and !userName.isBlank()
+                            ? userName
+                            : 'Employee'}">
+
+                        Student
+
+                    </div>
+
+                    <div class="role-name">
+                        Student
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENT
+    ====================================================== -->
+    <section class="content"
+             id="content">
+
+
+        <!-- =================================================
+             WELCOME
+        ================================================== -->
+        <div class="welcome">
+
+            <div class="welcome-chip">
+                ✦ Hands-on learning
+            </div>
+
+            <h1>
+                Your Practical Tasks
+            </h1>
+
+            <p>
+                Apply the skills you have developed through your personalized
+                learning path. Complete practical tasks, submit your work,
+                and improve your competency through hands-on practice.
+            </p>
+
+            <div class="flow-steps"
+                 aria-label="Learning workflow">
+
+                <span>
+                    Skill Gap
+                </span>
+
+                <i>
+                    ›
+                </i>
+
+                <span>
+                    Learning Path
+                </span>
+
+                <i>
+                    ›
+                </i>
+
+                <span>
+                    Training
+                </span>
+
+                <i>
+                    ›
+                </i>
+
+                <span>
+                    Practical Task
+                </span>
+
+                <i>
+                    ›
+                </i>
+
+                <span>
+                    Submission
+                </span>
+
+                <i>
+                    ›
+                </i>
+
+                <span class="goal">
+                    Competency
+                </span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             STATS
+        ================================================== -->
+        <div class="stats">
+
+            <!-- TOTAL -->
+            <div class="stat">
+
+                <div class="stat-top">
+
+                    <div>
+
+                        <div class="number"
+                             th:data-count="${totalTasks != null ? totalTasks : 0}"
+                             th:text="${totalTasks != null ? totalTasks : 0}">
+                            0
+                        </div>
+
+                        <div class="label">
+                            Total Tasks
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon">
+                        ◆
+                    </div>
+
+                </div>
+
+                <div class="trend">
+                    Practical tasks assigned to you
+                </div>
+
+            </div>
+
+
+            <!-- ACTIVE -->
+            <div class="stat s-pink">
+
+                <div class="stat-top">
+
+                    <div>
+
+                        <div class="number"
+                             th:data-count="${activeTasks != null ? activeTasks : 0}"
+                             th:text="${activeTasks != null ? activeTasks : 0}">
+                            0
+                        </div>
+
+                        <div class="label">
+                            Active Tasks
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon">
+                        ✓
+                    </div>
+
+                </div>
+
+                <div class="trend">
+                    Tasks that require your attention
+                </div>
+
+            </div>
+
+
+            <!-- COMPLETED -->
+            <div class="stat s-green">
+
+                <div class="stat-top">
+
+                    <div>
+
+                        <div class="number"
+                             th:data-count="${completedTasks != null ? completedTasks : 0}"
+                             th:text="${completedTasks != null ? completedTasks : 0}">
+                            0
+                        </div>
+
+                        <div class="label">
+                            Completed
+                        </div>
+
+                    </div>
+
+                    <div class="stat-icon">
+                        ▤
+                    </div>
+
+                </div>
+
+                <div class="trend">
+                    Practical tasks completed successfully
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             TASK LIBRARY
+        ================================================== -->
+        <div class="card">
+
+            <div class="card-head">
+
+                <div>
+
+                    <h2>
+                        My Practical Tasks
+                    </h2>
+
+                    <div class="card-sub">
+                        Complete the assigned practical work and track your progress.
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- TASKS AVAILABLE -->
+            <div th:if="${tasks != null and !tasks.isEmpty()}">
+
+                <!-- TOOLBAR -->
+                <div class="toolbar">
+
+                    <input class="search"
+                           id="taskSearch"
+                           type="search"
+                           placeholder="Search task or skill  ( / )"
+                           aria-label="Search practical tasks"
+                           autocomplete="off">
+
+
+                    <div class="chips"
+                         id="filterChips"
+                         role="group"
+                         aria-label="Filter by status">
+
+                        <button type="button"
+                                class="chip on"
+                                data-filter="all">
+                            All
+                        </button>
+
+                        <button type="button"
+                                class="chip"
+                                data-filter="pending">
+                            Pending
+                        </button>
+
+                        <button type="button"
+                                class="chip"
+                                data-filter="in-progress">
+                            In progress
+                        </button>
+
+                        <button type="button"
+                                class="chip"
+                                data-filter="submitted">
+                            Submitted
+                        </button>
+
+                        <button type="button"
+                                class="chip"
+                                data-filter="needs-improvement">
+                            Needs improvement
+                        </button>
+
+                        <button type="button"
+                                class="chip"
+                                data-filter="completed">
+                            Completed
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     TASK GRID
+                ================================================== -->
+                <div class="task-grid"
+                     id="taskGrid">
+
+
+                    <article class="task-item reveal"
+
+                             th:each="task, iter : ${tasks}"
+
+                             th:data-status="${task.status != null
+                                ? #strings.toLowerCase(task.status.toString()).replace('_','-')
+                                : 'pending'}"
+
+                             th:data-title="${task.title != null
+                                ? #strings.toLowerCase(task.title)
+                                : ''}"
+
+                             th:data-skill="${task.skillName != null
+                                ? #strings.toLowerCase(task.skillName)
+                                : ''}"
+
+                             th:style="'transition-delay:' + ${(iter.index % 3) * 90} + 'ms'">
+
+
+                        <!-- TASK TOP -->
+                        <div class="task-top">
+
+                            <div class="task-icon"
+                                 th:style="'animation-delay:-' + ${iter.index % 5} + 's'">
+
+                                ◆
+
+                            </div>
+
+
+                            <span class="task-status"
+
+                                  th:classappend="${'status-' +
+                                    (task.status != null
+                                    ? #strings.toLowerCase(task.status.toString()).replace('_','-')
+                                    : 'pending')}"
+
+                                  th:text="${task.status != null
+                                    ? #strings.replace(task.status.toString(), '_', ' ')
+                                    : 'PENDING'}">
+
+                                PENDING
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- TASK NAME -->
+                        <div class="task-name"
+                             th:text="${task.title != null
+                                ? task.title
+                                : 'Practical Task'}">
+
+                            Practical Task
+
+                        </div>
+
+
+                        <!-- DESCRIPTION -->
+                        <div class="task-text"
+                             th:text="${task.description != null
+                                and !#strings.isEmpty(task.description)
+                                ? task.description
+                                : 'Practical task designed to improve your competency.'}">
+
+                            Practical task description.
+
+                        </div>
+
+
+                        <!-- LEARNING PATH -->
+                        <div class="learning-path"
+                             th:if="${task.learningPathItem != null
+                                and task.learningPathItem.learningPath != null}">
+
+                            <span>
+                                ↗
+                            </span>
+
+                            <span th:text="${task.learningPathItem.learningPath.title != null
+                                ? task.learningPathItem.learningPath.title
+                                : 'Personalized Learning Path'}">
+
+                                Personalized Learning Path
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- TRAINING MODULE -->
+                        <div class="training-module"
+                             th:if="${task.trainingModule != null}">
+
+                            <span>
+                                ▣
+                            </span>
+
+                            <span th:text="${task.trainingModule.title != null
+                                ? task.trainingModule.title
+                                : 'Training Module'}">
+
+                                Training Module
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- TASK META -->
+                        <div class="task-meta">
+
+                            <!-- SKILL -->
+                            <span class="meta-pill skill-pill"
+                                  th:if="${task.skillName != null
+                                    and !#strings.isEmpty(task.skillName)}">
+
+                                ◆
+
+                                <span th:text="${task.skillName}">
+                                    Java
+                                </span>
+
+                            </span>
+
+
+                            <!-- AI GENERATED -->
+                            <span class="meta-pill ai-pill"
+                                  th:if="${task.aiGenerated != null
+                                    and task.aiGenerated}">
+
+                                ✦ AI Generated
+
+                            </span>
+
+
+                            <!-- DIFFICULTY -->
+                            <span class="meta-pill"
+                                  th:if="${task.difficulty != null}">
+
+                                ◈
+
+                                <span th:text="${task.difficulty}">
+                                    Medium
+                                </span>
+
+                            </span>
+
+
+                            <!-- TIME -->
+                            <span class="meta-pill"
+                                  th:if="${task.estimatedMinutes != null}">
+
+                                ⏱
+
+                                <span th:text="${task.estimatedMinutes + ' min'}">
+                                    30 min
+                                </span>
+
+                            </span>
+
+
+                            <!-- SUBMITTED -->
+                            <span class="meta-pill review-pill"
+                                  th:if="${task.status != null
+                                    and task.status.toString() == 'SUBMITTED'}">
+
+                                ✓ Submitted
+
+                            </span>
+
+                        </div>
+
+
+                        <!-- PROGRESS -->
+                        <div class="progress-wrap">
+
+                            <div class="progress-top">
+
+                                <span>
+                                    Your Progress
+                                </span>
+
+                                <strong th:text="${task.progressPercentage != null
+                                    ? task.progressPercentage + '%'
+                                    : '0%'}">
+
+                                    0%
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="progress"
+                                 role="progressbar"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+
+                                 th:attr="aria-valuenow=${task.progressPercentage != null
+                                    ? task.progressPercentage
+                                    : 0}">
+
+                                <div class="progress-fill"
+
+                                     th:data-width="${task.progressPercentage != null
+                                        ? task.progressPercentage
+                                        : 0}">
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- TASK FOOT -->
+                        <div class="task-foot">
+
+                            <span class="task-info"
+
+                                  th:text="${task.createdAt != null
+                                    ? 'Created ' + #temporals.format(task.createdAt, 'dd MMM yyyy')
+                                    : 'Practical competency'}">
+
+                                Practical competency
+
+                            </span>
+
+
+                            <div class="task-actions">
+
+                                <!--
+                                    IMPORTANT:
+                                    Employee goes to EMPLOYEE task URL.
+                                    Never /trainer/practical-tasks/{id}.
+                                -->
+                                <a class="task-view"
+
+                                   th:href="@{/employee/practical-tasks/{taskId}(taskId=${task.id})}">
+
+                                    View Task →
+
+                                </a>
+
+                            </div>
+
+                        </div>
+
+                    </article>
+
+                </div>
+
+
+                <!-- NO SEARCH RESULT -->
+                <div class="empty"
+                     id="noMatch">
+
+                    <div class="empty-icon">
+                        ⌕
+                    </div>
+
+                    <strong>
+                        No tasks match your search
+                    </strong>
+
+                    <p>
+                        Try another task title, skill name, or status.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 NO TASKS
+            ================================================== -->
+            <div class="empty"
+                 th:if="${tasks == null or tasks.isEmpty()}">
+
+                <div class="empty-icon">
+                    ◆
+                </div>
+
+                <strong>
+                    No practical tasks available
+                </strong>
+
+                <p>
+                    You currently have no practical tasks assigned.
+                    Complete your assessment and training to continue
+                    your competency development.
+                </p>
+
+                <a th:href="@{/employee/training}"
+                   href="/employee/training">
+
+                    Continue Training
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- =========================================================
+     NOTIFICATIONS
+========================================================= -->
+<div class="notification-panel"
+     id="notificationPanel"
+     role="dialog"
+     aria-label="Notifications">
+
+    <div class="notification-head">
+
+        <strong>
+            Notifications
+        </strong>
+
+        <button id="closeNotifications"
+                type="button"
+                aria-label="Close notifications">
+
+            ✕
+
+        </button>
+
+    </div>
+
+
+    <div class="notice"
+         th:each="n : ${notifications}"
+         th:if="${notifications != null}">
+
+        <span class="notice-dot"></span>
+
+        <p>
+
+            <strong th:text="${n.title}">
+                Title
+            </strong>
+
+            <br>
+
+            <span th:text="${n.message}">
+                Message
+            </span>
+
+        </p>
+
+    </div>
+
+
+    <div class="empty"
+         th:if="${notifications == null or notifications.isEmpty()}">
+
+        <strong>
+            You're all caught up
+        </strong>
+
+        <p>
+            New activity related to your learning will appear here.
+        </p>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    /* =========================================================
+       HELPERS
+    ========================================================= */
+
+    const $ = (selector, root = document) =>
+        root.querySelector(selector);
+
+    const $$ = (selector, root = document) =>
+        [...root.querySelectorAll(selector)];
+
+    const reduceMotion =
+        matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const mainEl =
+        $('#main');
+
+
+    /* =========================================================
+       SIDEBAR
+    ========================================================= */
+
+    const sidebar =
+        $('#sidebar');
+
+    const overlay =
+        $('#overlay');
+
+    const mobileMenu =
+        $('#mobileMenu');
+
+
+    function setSidebar(open) {
+
+        if (!sidebar) {
+            return;
+        }
+
+        sidebar.classList.toggle(
+            'open',
+            open
+        );
+
+
+        if (overlay) {
+
+            overlay.classList.toggle(
+                'show',
+                open
+            );
+
+        }
+
+
+        document.body.classList.toggle(
+            'no-scroll',
+            open
+        );
+
+
+        if (mobileMenu) {
+
+            mobileMenu.setAttribute(
+                'aria-expanded',
+                String(open)
+            );
+
+        }
+
+    }
+
+
+    /* =========================================================
+       NOTIFICATION PANEL
+    ========================================================= */
+
+    const nBtn =
+        $('#notificationBtn');
+
+    const nPanel =
+        $('#notificationPanel');
+
+
+    function setPanel(open) {
+
+        if (!nPanel || !nBtn) {
+            return;
+        }
+
+        nPanel.classList.toggle(
+            'show',
+            open
+        );
+
+        nBtn.setAttribute(
+            'aria-expanded',
+            String(open)
+        );
+
+    }
+
+
+    /* =========================================================
+       MOBILE MENU
+    ========================================================= */
+
+    if (mobileMenu) {
+
+        mobileMenu.addEventListener(
+            'click',
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                setSidebar(
+                    !sidebar.classList.contains('open')
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       OVERLAY
+    ========================================================= */
+
+    if (overlay) {
+
+        overlay.addEventListener(
+            'click',
+            function () {
+
+                setSidebar(false);
+                setPanel(false);
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       SIDEBAR NAVIGATION
+       
+       IMPORTANT:
+       We DO NOT prevent navigation.
+       Browser follows the actual Thymeleaf href.
+    ========================================================= */
+
+    $$('.menu a').forEach(
+        function (link) {
+
+            link.addEventListener(
+                'click',
+                function () {
+
+                    const href =
+                        link.getAttribute('href');
+
+                    if (
+                        href &&
+                        href !== '#' &&
+                        href.trim() !== ''
+                    ) {
+
+                        if (
+                            window.innerWidth <= 650
+                        ) {
+
+                            setSidebar(false);
+
+                        }
+
+                        /*
+                         * Do NOT call preventDefault().
+                         *
+                         * The employee browser must navigate
+                         * normally to:
+                         *
+                         * /employee/dashboard
+                         * /employee/assessments
+                         * /employee/training
+                         * /employee/practical-tasks
+                         */
+
+                    }
+
+                }
+            );
+
+        }
+    );
+
+
+    /* =========================================================
+       LOGOUT
+    ========================================================= */
+
+    const logoutForm =
+        document.querySelector('.logout form');
+
+
+    if (logoutForm) {
+
+        logoutForm.addEventListener(
+            'submit',
+            function () {
+
+                setSidebar(false);
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       NOTIFICATIONS
+    ========================================================= */
+
+    if (nBtn) {
+
+        nBtn.addEventListener(
+            'click',
+            function (event) {
+
+                event.stopPropagation();
+
+                setPanel(
+                    !nPanel.classList.contains('show')
+                );
+
+            }
+        );
+
+    }
+
+
+    const closeNotifications =
+        $('#closeNotifications');
+
+
+    if (closeNotifications) {
+
+        closeNotifications.addEventListener(
+            'click',
+            function () {
+
+                setPanel(false);
+
+            }
+        );
+
+    }
+
+
+    document.addEventListener(
+        'click',
+        function (event) {
+
+            if (!nPanel || !nBtn) {
+                return;
+            }
+
+            if (
+                !nPanel.contains(event.target) &&
+                !nBtn.contains(event.target)
+            ) {
+
+                setPanel(false);
+
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       RESIZE
+    ========================================================= */
+
+    window.addEventListener(
+        'resize',
+        function () {
+
+            if (
+                window.innerWidth > 650
+            ) {
+
+                setSidebar(false);
+
+            }
+
+        }
+    );
+
+
+    /* =========================================================
+       ACTIVE NAV ITEM
+    ========================================================= */
+
+    (function () {
+
+        const active =
+            $('.menu a.active');
+
+        const nav =
+            $('#nav');
+
+        if (active && nav) {
+
+            nav.scrollTop =
+                Math.max(
+                    0,
+                    active.offsetTop -
+                    nav.clientHeight / 2 +
+                    active.offsetHeight / 2
+                );
+
+        }
+
+    })();
+
+
+    /* =========================================================
+       COUNT-UP
+    ========================================================= */
+
+    $$('.number[data-count]').forEach(
+        function (el) {
+
+            const target =
+                parseFloat(el.dataset.count) || 0;
+
+            const finalText =
+                el.textContent;
+
+            if (
+                reduceMotion ||
+                target === 0
+            ) {
+                return;
+            }
+
+            const start =
+                performance.now();
+
+            const duration =
+                900;
+
+
+            (function tick(now) {
+
+                const progress =
+                    Math.min(
+                        (now - start) / duration,
+                        1
+                    );
+
+
+                el.textContent =
+                    Math.round(
+                        target *
+                        (
+                            1 -
+                            Math.pow(
+                                1 - progress,
+                                3
+                            )
+                        )
+                    );
+
+
+                if (progress < 1) {
+
+                    requestAnimationFrame(
+                        tick
+                    );
+
+                } else {
+
+                    el.textContent =
+                        finalText;
+
+                }
+
+            })(start);
+
+        }
+    );
+
+
+    /* =========================================================
+       PROGRESS
+    ========================================================= */
+
+    const clamp =
+        value =>
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    parseFloat(value) || 0
+                )
+            );
+
+
+    const fillBar =
+        function (element) {
+
+            element.style.width =
+                clamp(
+                    element.dataset.width
+                ) + '%';
+
+        };
+
+
+    const showCard =
+        function (card) {
+
+            card.classList.add('in');
+
+            const progress =
+                $('.progress-fill', card);
+
+            if (progress) {
+
+                fillBar(progress);
+
+            }
+
+        };
+
+
+    const cards =
+        $$('.task-item');
+
+
+    /* =========================================================
+       CARD OBSERVER
+    ========================================================= */
+
+    if (
+        'IntersectionObserver' in window
+    ) {
+
+        const observer =
+            new IntersectionObserver(
+
+                function (entries, obs) {
+
+                    entries.forEach(
+                        function (entry) {
+
+                            if (
+                                entry.isIntersecting
+                            ) {
+
+                                showCard(
+                                    entry.target
+                                );
+
+                                obs.unobserve(
+                                    entry.target
+                                );
+
+                            }
+
+                        }
+                    );
+
+                },
+
+                {
+                    root: mainEl,
+                    threshold: .08
+                }
+
+            );
+
+
+        cards.forEach(
+            function (card) {
+
+                observer.observe(card);
+
+            }
+        );
+
+    } else {
+
+        cards.forEach(showCard);
+
+    }
+
+
+    /* =========================================================
+       SAFETY NET
+    ========================================================= */
+
+    setTimeout(
+        function () {
+
+            cards.forEach(
+                function (card) {
+
+                    if (
+                        !card.classList.contains('in')
+                    ) {
+
+                        showCard(card);
+
+                    }
+
+                }
+            );
+
+        },
+        2500
+    );
+
+
+    /* =========================================================
+       SEARCH + FILTER
+    ========================================================= */
+
+    const search =
+        $('#taskSearch');
+
+    const chipsBox =
+        $('#filterChips');
+
+    const noMatch =
+        $('#noMatch');
+
+
+    if (search && chipsBox) {
+
+        const chips =
+            $$('.chip', chipsBox);
+
+
+        const norm =
+            function (value) {
+
+                return (value || '')
+                    .toLowerCase()
+                    .replaceAll('_', '-')
+                    .trim();
+
+            };
+
+
+        let status =
+            'all';
+
+
+        const apply =
+            function () {
+
+                const query =
+                    search.value
+                        .trim()
+                        .toLowerCase();
+
+
+                let shown =
+                    0;
+
+
+                cards.forEach(
+                    function (card) {
+
+                        const matchesStatus =
+                            status === 'all' ||
+                            norm(
+                                card.dataset.status
+                            ) === status;
+
+
+                        const matchesSearch =
+                            !query ||
+
+                            (
+                                card.dataset.title ||
+                                ''
+                            ).includes(query) ||
+
+                            (
+                                card.dataset.skill ||
+                                ''
+                            ).includes(query);
+
+
+                        const matches =
+                            matchesStatus &&
+                            matchesSearch;
+
+
+                        const wasHidden =
+                            card.hidden;
+
+
+                        card.hidden =
+                            !matches;
+
+
+                        if (matches) {
+
+                            shown++;
+
+                            showCard(card);
+
+
+                            if (
+                                wasHidden &&
+                                !reduceMotion
+                            ) {
+
+                                card.classList.remove(
+                                    'enter'
+                                );
+
+                                void card.offsetWidth;
+
+                                card.classList.add(
+                                    'enter'
+                                );
+
+                            }
+
+                        }
+
+                    }
+                );
+
+
+                if (noMatch) {
+
+                    noMatch.style.display =
+                        shown
+                            ? 'none'
+                            : 'block';
+
+                }
+
+            };
+
+
+        search.addEventListener(
+            'input',
+            apply
+        );
+
+
+        chips.forEach(
+            function (chip) {
+
+                chip.addEventListener(
+                    'click',
+                    function () {
+
+                        chips.forEach(
+                            function (item) {
+
+                                item.classList.remove(
+                                    'on'
+                                );
+
+                            }
+                        );
+
+
+                        chip.classList.add(
+                            'on'
+                        );
+
+
+                        status =
+                            norm(
+                                chip.dataset.filter
+                            );
+
+
+                        apply();
+
+                    }
+                );
+
+            }
+        );
+
+    }
+
+
+    /* =========================================================
+       KEYBOARD SHORTCUTS
+    ========================================================= */
+
+    document.addEventListener(
+        'keydown',
+        function (event) {
+
+            const tag =
+                (
+                    document.activeElement || {}
+                ).tagName;
+
+
+            if (
+                event.key === '/' &&
+                search &&
+                tag !== 'INPUT' &&
+                tag !== 'SELECT' &&
+                tag !== 'TEXTAREA'
+            ) {
+
+                event.preventDefault();
+
+                search.focus();
+
+            }
+
+
+            if (
+                event.key === 'Escape'
+            ) {
+
+                setPanel(false);
+
+                setSidebar(false);
+
+
+                if (
+                    search &&
+                    document.activeElement === search
+                ) {
+
+                    search.blur();
+
+                }
+
+            }
+
+        }
+    );
+
+</script>
+
+</body>
+</html>
