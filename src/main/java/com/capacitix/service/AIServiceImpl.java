@@ -4,27 +4,21 @@ package com.capacitix.service;
 import com.capacitix.dto.LearningPathItem;
 import com.capacitix.dto.LearningPathResponse;
 import com.capacitix.entity.User;
-
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.annotation.PostConstruct;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpStatusCodeException;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
-import jakarta.annotation.PostConstruct;
-
-import java.time.Duration;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,32 +27,26 @@ import java.util.Map;
 @Slf4j
 public class AIServiceImpl implements AIService {
 
+    private final RestClient.Builder restClientBuilder;
+
     // =========================================================
     // GROQ CONFIGURATION
     // =========================================================
 
-    @Value("${GROQ_API_KEY:${groq.api.key:}}")
+    @Value("${groq.api-key:}")
     private String groqApiKey;
 
-    @Value("${groq.api.url:https://api.groq.com/openai/v1}")
+    @Value("${groq.base-url:https://api.groq.com/openai/v1}")
     private String groqBaseUrl;
 
     @Value("${groq.model:openai/gpt-oss-120b}")
     private String groqModel;
 
-    @Value("${groq.timeout:60000}")
-    private long groqTimeout;
-
-    @Value("${groq.connect-timeout:10000}")
-    private long connectTimeout;
-
-    @Value("${groq.temperature:0.3}")
+    @Value("${groq.temperature:0.2}")
     private double groqTemperature;
 
-    @Value("${groq.max-tokens:500}")
+    @Value("${groq.max-tokens:4096}")
     private int groqMaxTokens;
-
-    private final ObjectMapper objectMapper;
 
     private RestClient restClient;
 
@@ -67,51 +55,24 @@ public class AIServiceImpl implements AIService {
     // =========================================================
 
     @PostConstruct
-    public void initializeGroqClient() {
+    public void initialize() {
 
-        SimpleClientHttpRequestFactory factory =
-                new SimpleClientHttpRequestFactory();
-
-        factory.setConnectTimeout(
-                Duration.ofMillis(
-                        Math.max(connectTimeout, 1000)
-                )
-        );
-
-        factory.setReadTimeout(
-                Duration.ofMillis(
-                        Math.max(groqTimeout, 10000)
-                )
-        );
-
-        restClient = RestClient.builder()
-                .baseUrl(removeTrailingSlash(groqBaseUrl))
-                .requestFactory(factory)
+        restClient = restClientBuilder
+                .baseUrl(groqBaseUrl)
                 .defaultHeader(
-                        HttpHeaders.AUTHORIZATION,
-                        "Bearer " + (
-                                groqApiKey == null
-                                        ? ""
-                                        : groqApiKey
-                        )
+                        "Authorization",
+                        "Bearer " + (groqApiKey == null ? "" : groqApiKey)
                 )
                 .defaultHeader(
-                        HttpHeaders.CONTENT_TYPE,
-                        MediaType.APPLICATION_JSON_VALUE
-                )
-                .defaultHeader(
-                        HttpHeaders.ACCEPT,
+                        "Content-Type",
                         MediaType.APPLICATION_JSON_VALUE
                 )
                 .build();
 
-        log.info("========================================");
-        log.info("CAPACITIX AI SERVICE INITIALIZED");
-        log.info("Provider: Groq");
-        log.info("Model: {}", groqModel);
-        log.info("Timeout: {} ms", groqTimeout);
-        log.info("Strategy: SINGLE REQUEST");
-        log.info("========================================");
+        log.info(
+                "CapacitiX Learning Path AI initialized | Provider: Groq | Model: {}",
+                groqModel
+        );
     }
 
     // =========================================================
@@ -133,7 +94,10 @@ public class AIServiceImpl implements AIService {
         List<SkillAnalysisService.SkillResult> gaps =
                 getSkillGaps(skillGaps);
 
-        // No gaps: do not call Groq.
+        // -----------------------------------------------------
+        // NO SKILL GAPS
+        // -----------------------------------------------------
+
         if (gaps.isEmpty()) {
 
             log.info(
@@ -150,12 +114,37 @@ public class AIServiceImpl implements AIService {
             );
         }
 
+        // -----------------------------------------------------
+        // CHECK GROQ API KEY
+        // -----------------------------------------------------
+
+        if (groqApiKey == null || groqApiKey.isBlank()) {
+
+            log.error(
+                    "Groq API key is not configured. Using fallback recommendation."
+            );
+
+            return buildLearningPathResponse(
+                    employee,
+                    gaps,
+                    getFallbackRecommendation()
+            );
+        }
+
+        // -----------------------------------------------------
+        // BUILD PROMPT
+        // -----------------------------------------------------
+
         String prompt = buildLearningPathPrompt(
                 employee,
                 gaps
         );
 
         String aiResponse;
+
+        // =====================================================
+        // ONE GROQ API REQUEST
+        // =====================================================
 
         try {
 
@@ -167,10 +156,56 @@ public class AIServiceImpl implements AIService {
 
             long startTime = System.nanoTime();
 
-            aiResponse = callGroq(prompt);
+            Map<String, Object> requestBody = Map.of(
+                    "model", groqModel,
+                    "messages", List.of(
+                            Map.of(
+                                    "role", "system",
+                                    "content",
+                                    "You are CapacitiX, an enterprise employee learning assistant. "
+                                            + "Use only the employee assessment data supplied. "
+                                            + "Never invent scores, competencies, or employee information. "
+                                            + "Give concise, practical, professional recommendations."
+                            ),
+                            Map.of(
+                                    "role", "user",
+                                    "content", prompt
+                            )
+                    ),
+                    "temperature", groqTemperature,
+                    "max_completion_tokens", groqMaxTokens
+            );
+
+            JsonNode response = restClient.post()
+                    .uri("/chat/completions")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(requestBody)
+                    .retrieve()
+                    .body(JsonNode.class);
 
             long elapsedMillis =
                     (System.nanoTime() - startTime) / 1_000_000;
+
+            // -------------------------------------------------
+            // EXTRACT AI RESPONSE
+            // -------------------------------------------------
+
+            if (response == null
+                    || !response.has("choices")
+                    || !response.get("choices").isArray()
+                    || response.get("choices").isEmpty()) {
+
+                throw new IllegalStateException(
+                        "Groq returned an invalid or empty response."
+                );
+            }
+
+            aiResponse = response
+                    .path("choices")
+                    .get(0)
+                    .path("message")
+                    .path("content")
+                    .asText("");
 
             if (aiResponse == null || aiResponse.isBlank()) {
 
@@ -182,11 +217,34 @@ public class AIServiceImpl implements AIService {
 
             } else {
 
+                aiResponse = aiResponse.trim();
+
                 log.info(
-                        "Groq learning-path generation completed in {} ms.",
+                        "Learning path AI generation completed | Time={} ms",
                         elapsedMillis
                 );
             }
+
+        } catch (RestClientResponseException exception) {
+
+            log.error(
+                    "Groq API error during learning-path generation | HTTP Status={} | Response={}",
+                    exception.getStatusCode(),
+                    exception.getResponseBodyAsString(),
+                    exception
+            );
+
+            aiResponse = getFallbackRecommendation();
+
+        } catch (RestClientException exception) {
+
+            log.error(
+                    "Unable to connect to Groq during learning-path generation: {}",
+                    exception.getMessage(),
+                    exception
+            );
+
+            aiResponse = getFallbackRecommendation();
 
         } catch (Exception exception) {
 
@@ -197,216 +255,18 @@ public class AIServiceImpl implements AIService {
                     exception
             );
 
-            // Preserve fallback behaviour.
             aiResponse = getFallbackRecommendation();
         }
+
+        // =====================================================
+        // BUILD FINAL RESPONSE
+        // =====================================================
 
         return buildLearningPathResponse(
                 employee,
                 gaps,
                 aiResponse
         );
-    }
-
-    // =========================================================
-    // GROQ API CALL
-    // =========================================================
-
-    private String callGroq(String prompt) {
-
-        if (groqApiKey == null || groqApiKey.isBlank()) {
-
-            throw new IllegalStateException(
-                    "Groq API key is missing. Configure GROQ_API_KEY."
-            );
-        }
-
-        Map<String, Object> systemMessage = Map.of(
-                "role",
-                "system",
-                "content",
-                """
-                You are CapacitiX, an intelligent enterprise learning assistant.
-
-                Analyze employee assessment skill gaps carefully.
-                Give accurate, concise and professional recommendations.
-                Use only the provided information.
-                Never invent employee scores or competencies.
-                """
-        );
-
-        Map<String, Object> userMessage = Map.of(
-                "role",
-                "user",
-                "content",
-                prompt
-        );
-
-        Map<String, Object> request = new LinkedHashMap<>();
-
-        request.put("model", groqModel);
-        request.put(
-                "messages",
-                List.of(systemMessage, userMessage)
-        );
-        request.put(
-                "temperature",
-                Math.max(0.0, Math.min(0.5, groqTemperature))
-        );
-        request.put(
-                "max_tokens",
-                Math.max(100, Math.min(1000, groqMaxTokens))
-        );
-        request.put("top_p", 0.9);
-
-        try {
-
-            String rawResponse = restClient.post()
-                    .uri("/chat/completions")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .body(request)
-                    .retrieve()
-                    .body(String.class);
-
-            if (rawResponse == null || rawResponse.isBlank()) {
-
-                throw new RuntimeException(
-                        "Groq returned an empty HTTP response."
-                );
-            }
-
-            JsonNode root =
-                    objectMapper.readTree(rawResponse);
-
-            if (root == null || !root.isObject()) {
-
-                throw new RuntimeException(
-                        "Invalid Groq response."
-                );
-            }
-
-            if (root.has("error")
-                    && !root.path("error").isNull()) {
-
-                throw new RuntimeException(
-                        "Groq API error: "
-                                + root.path("error").toString()
-                );
-            }
-
-            JsonNode choices = root.path("choices");
-
-            if (!choices.isArray() || choices.isEmpty()) {
-
-                throw new RuntimeException(
-                        "Groq returned no completion choices."
-                );
-            }
-
-            JsonNode choice = choices.get(0);
-
-            String content = choice
-                    .path("message")
-                    .path("content")
-                    .asText("");
-
-            if (content.isBlank()) {
-
-                throw new RuntimeException(
-                        "Groq returned empty generated content."
-                );
-            }
-
-            JsonNode usage = root.path("usage");
-
-            if (usage.isObject()) {
-
-                log.info(
-                        "Learning path token usage: prompt={}, completion={}, total={}",
-                        usage.path("prompt_tokens").asInt(-1),
-                        usage.path("completion_tokens").asInt(-1),
-                        usage.path("total_tokens").asInt(-1)
-                );
-            }
-
-            return content.trim();
-
-        } catch (HttpStatusCodeException exception) {
-
-            log.error(
-                    "Groq HTTP error: Status={}, Response={}",
-                    exception.getStatusCode(),
-                    safePreview(
-                            exception.getResponseBodyAsString()
-                    )
-            );
-
-            throw new RuntimeException(
-                    "Groq API request failed. HTTP "
-                            + exception.getStatusCode().value()
-                            + ": "
-                            + groqErrorMessage(
-                                    exception.getResponseBodyAsString()
-                            ),
-                    exception
-            );
-
-        } catch (ResourceAccessException exception) {
-
-            throw new RuntimeException(
-                    "Groq request timed out or connection failed. "
-                            + "Configured timeout: "
-                            + groqTimeout + " ms.",
-                    exception
-            );
-
-        } catch (RuntimeException exception) {
-
-            throw exception;
-
-        } catch (Exception exception) {
-
-            throw new RuntimeException(
-                    "Unable to process Groq response: "
-                            + exception.getMessage(),
-                    exception
-            );
-        }
-    }
-
-    // =========================================================
-    // GROQ ERROR MESSAGE
-    // =========================================================
-
-    private String groqErrorMessage(String response) {
-
-        if (response == null || response.isBlank()) {
-            return "No error details returned.";
-        }
-
-        try {
-
-            JsonNode root =
-                    objectMapper.readTree(response);
-
-            JsonNode error = root.path("error");
-
-            if (error.isObject()) {
-
-                return error.path("message")
-                        .asText("Unknown Groq API error.");
-            }
-
-            if (error.isTextual()) {
-                return error.asText();
-            }
-
-        } catch (Exception ignored) {
-            // Use safe preview below.
-        }
-
-        return safePreview(response);
     }
 
     // =========================================================
@@ -442,6 +302,8 @@ public class AIServiceImpl implements AIService {
         StringBuilder prompt = new StringBuilder(1000);
 
         prompt.append("""
+                You are CapacitiX, an enterprise employee learning assistant.
+
                 Analyze the actual assessment skill gaps provided below.
 
                 RULES:
@@ -497,7 +359,7 @@ public class AIServiceImpl implements AIService {
         }
 
         prompt.append("""
-                
+
                 PROVIDE:
                 1. Overall assessment observation.
                 2. Most important improvement area.
@@ -790,47 +652,5 @@ public class AIServiceImpl implements AIService {
         }
 
         return value;
-    }
-
-    // =========================================================
-    // URL HELPER
-    // =========================================================
-
-    private String removeTrailingSlash(String url) {
-
-        if (url == null || url.isBlank()) {
-            return "https://api.groq.com/openai/v1";
-        }
-
-        String result = url.trim();
-
-        while (result.endsWith("/")) {
-            result = result.substring(
-                    0,
-                    result.length() - 1
-            );
-        }
-
-        return result;
-    }
-
-    // =========================================================
-    // SAFE RESPONSE PREVIEW
-    // =========================================================
-
-    private String safePreview(String value) {
-
-        if (value == null || value.isBlank()) {
-            return "[empty response]";
-        }
-
-        String result = value
-                .replace('\n', ' ')
-                .replace('\r', ' ')
-                .trim();
-
-        return result.length() > 500
-                ? result.substring(0, 500) + "..."
-                : result;
     }
 }

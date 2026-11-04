@@ -201,4 +201,16 @@ public class User {
 
         EMPLOYEE
     }
+
+
+    public void setRole(String string) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setRole'");
+    }
+
+
+    public void setRole(Role admin) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setRole'");
+    }
 }
