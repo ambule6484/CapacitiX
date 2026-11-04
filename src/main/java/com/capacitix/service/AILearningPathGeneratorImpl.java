@@ -80,11 +80,7 @@ public class AILearningPathGeneratorImpl
         }
 
         // -----------------------------------------------------
-<<<<<<< HEAD
-        // Generate using AI / 
-=======
-        // Generate using AI / Ollama
->>>>>>> personal/main
+// Generate using AI / Ollama
         // -----------------------------------------------------
 
         LearningPathResponse response =
@@ -106,3 +102,4 @@ public class AILearningPathGeneratorImpl
         return response;
     }
 }
+
